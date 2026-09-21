@@ -1,0 +1,16 @@
+import tabula
+import pandas as pd
+import os
+
+INPUT_PDF = "input/input.pdf"
+OUTPUT_EXCEL = "output/output.xlsx"
+
+os.makedirs("output", exist_ok=True)
+
+tables = tabula.read_pdf(INPUT_PDF, pages="all", multiple_tables=True)
+
+with pd.ExcelWriter(OUTPUT_EXCEL, engine="openpyxl") as writer:
+    for i, table in enumerate(tables):
+        table.to_excel(writer, sheet_name=f"Page_{i+1}", index=False)
+
+print("PDF to Excel conversion completed!")
