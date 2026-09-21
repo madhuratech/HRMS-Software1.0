@@ -148,7 +148,7 @@ export function Login({ onLogin, onRegisterClick }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Email Address</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-3 text-slate-400" size={18} />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                   <input
                     type="email"
                     value={email}
@@ -162,7 +162,7 @@ export function Login({ onLogin, onRegisterClick }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 text-slate-400" size={18} />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                   <input
                     type="password"
                     value={password}

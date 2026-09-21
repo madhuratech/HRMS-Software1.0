@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import AppDropdown from '../ui/AppDropdown';
-import { User, Lock, Mail, CheckCircle, Loader2, Users, Briefcase, KeyRound, ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
+import { User, Lock, Mail, CheckCircle, Loader2, Users, Briefcase, KeyRound, ShieldCheck, CheckCircle2, TrendingUp, ChevronDown } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 
 export function Register({ onRegister, onLoginClick, onHomeClick }) {
@@ -223,7 +222,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Full Name</label>
               <div className="relative">
-                <User className="absolute left-3.5 top-3 text-slate-400" size={18} />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                 <input
                   type="text"
                   value={name}
@@ -247,7 +246,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
               </label>
               <div className="relative flex gap-2">
                 <div className="relative flex-1">
-                  <Mail className="absolute left-3.5 top-3 text-slate-400" size={18} />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                   <input
                     type="email"
                     value={email}
@@ -319,19 +318,17 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Account Role</label>
               <div className="relative">
-                <Briefcase className="absolute left-3.5 top-3 text-slate-400 z-10 pointer-events-none" size={18} />
-                <div className="pl-10">
-                  <AppDropdown
-                    value={role}
-                    onChange={(val) => setRole(val)}
-                    disabled={isVerifiedForCurrentEmail}
-                    options={[
-                      { value: 'Employee', label: 'Employee' },
-                      { value: 'Admin', label: 'Organization Admin' }
-                    ]}
-                    className="w-full"
-                  />
-                </div>
+                <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={18} />
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  disabled={isVerifiedForCurrentEmail}
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-60 appearance-none cursor-pointer"
+                >
+                  <option value="Employee">Employee</option>
+                  <option value="Admin">Organization Admin</option>
+                </select>
+                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
               </div>
             </div>
 
@@ -340,7 +337,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-3 text-slate-400" size={18} />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                   <input
                     type="password"
                     value={password}
@@ -355,7 +352,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Confirm Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-3 text-slate-400" size={18} />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                   <input
                     type="password"
                     value={confirmPassword}
