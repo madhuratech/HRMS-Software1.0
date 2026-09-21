@@ -240,16 +240,14 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
             {/* Full Name */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">Full Name</label>
-              <div className="relative">
-                <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 pointer-events-none">
-                  <User size={20} />
-                </div>
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+                <User size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="text"
                   value={name}
                   onChange={handleNameChange}
                   disabled={isVerifiedForCurrentEmail}
-                  className="w-full pl-[50px] pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-60"
+                  className="w-full bg-transparent border-0 shadow-none text-sm focus:outline-none focus:ring-0 disabled:opacity-60"
                   placeholder="Enter your full name"
                   required />
               </div>
@@ -266,16 +264,14 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                 )}
               </div>
               <div className="relative flex gap-2">
-                <div className="relative flex-1">
-                  <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 pointer-events-none">
-                    <Mail size={20} />
-                  </div>
+                <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500 transition-all flex-1">
+                  <Mail size={18} className="text-slate-400 shrink-0" />
                   <input
                     type="email"
                     value={email}
                     onChange={handleEmailChange}
                     disabled={isVerifiedForCurrentEmail}
-                    className="w-full pl-[50px] pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-60"
+                    className="w-full bg-transparent border-0 shadow-none text-sm focus:outline-none focus:ring-0 disabled:opacity-60"
                     placeholder="name@company.com"
                     required />
                 </div>
@@ -345,22 +341,18 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                   type="button"
                   disabled={isVerifiedForCurrentEmail}
                   onClick={() => !isVerifiedForCurrentEmail && setIsRoleDropdownOpen(!isRoleDropdownOpen)}
-                  className={`w-full pl-[50px] pr-10 py-2.5 bg-slate-50 border rounded-lg text-sm text-left transition-all flex items-center justify-between disabled:opacity-60 cursor-pointer ${
+                  className={`w-full py-2.5 px-3 bg-slate-50 border rounded-lg text-sm text-left transition-all flex items-center gap-3 disabled:opacity-60 cursor-pointer ${
                     isRoleDropdownOpen 
                       ? 'border-blue-500 ring-2 ring-blue-500 bg-white' 
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <span className="text-slate-800 font-medium">
+                  <Briefcase size={18} className="text-slate-400 shrink-0" />
+                  <span className="text-slate-800 font-medium flex-1">
                     {role === 'Admin' ? 'Organization Admin' : 'Employee'}
                   </span>
+                  <ChevronDown className={`text-slate-400 shrink-0 transition-transform duration-200 ${isRoleDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} size={18} />
                 </button>
-                <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 pointer-events-none z-10">
-                  <Briefcase size={20} />
-                </div>
-                <div className="absolute right-0 top-0 bottom-0 w-10 flex items-center justify-center text-slate-400 pointer-events-none">
-                  <ChevronDown className={`transition-transform duration-200 ${isRoleDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} size={18} />
-                </div>
 
                 {/* Floating Custom Options Menu */}
                 {isRoleDropdownOpen && (
@@ -394,16 +386,14 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
             {/* Password (Full Width Straight Down) */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">Password</label>
-              <div className="relative">
-                <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 pointer-events-none">
-                  <Lock size={20} />
-                </div>
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+                <Lock size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={!isVerifiedForCurrentEmail}
-                  className="w-full pl-[50px] pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-50"
+                  className="w-full bg-transparent border-0 shadow-none text-sm focus:outline-none focus:ring-0 disabled:opacity-50"
                   placeholder="Min 6 characters"
                   required />
               </div>
@@ -412,16 +402,14 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
             {/* Confirm Password (Full Width Straight Down) */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">Confirm Password</label>
-              <div className="relative">
-                <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 pointer-events-none">
-                  <Lock size={20} />
-                </div>
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+                <Lock size={18} className="text-slate-400 shrink-0" />
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={!isVerifiedForCurrentEmail}
-                  className="w-full pl-[50px] pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-50"
+                  className="w-full bg-transparent border-0 shadow-none text-sm focus:outline-none focus:ring-0 disabled:opacity-50"
                   placeholder="Confirm password"
                   required />
               </div>

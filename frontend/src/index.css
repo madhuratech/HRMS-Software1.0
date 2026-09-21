@@ -3942,3 +3942,15 @@ textarea[class]:focus {
   border-color: #93C5FD !important;
   box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.25) !important;
 }
+
+/* Remove inner borders from inputs inside flex icon containers */
+.flex > input,
+.flex > input:focus,
+.flex > input[class],
+.flex > input[class]:focus {
+  border: none !important;
+  border-width: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+}

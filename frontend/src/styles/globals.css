@@ -15,6 +15,15 @@ body {
   box-sizing: border-box;
 }
 
+/* Remove all default borders from inputs inside flex wrappers */
+.flex > input,
+.flex > textarea,
+.flex > select {
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
 }
