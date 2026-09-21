@@ -8,6 +8,7 @@ router.post("/register", authController.register);
 router.get("/me", authenticateJWT, authController.getMe);
 router.post("/verify-email-request", authController.verifyEmailRequest);
 router.post("/verify-otp", authController.verifyOtp);
+router.post("/verify-email-confirm", authController.verifyOtp);
 
 // LinkedIn OAuth Connect, Callback & Configuration
 router.get("/linkedin/connect", authController.connectLinkedIn);

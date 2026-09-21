@@ -248,6 +248,7 @@ exports.getMe = async (req, res) => {
 exports.verifyEmailRequest = async (req, res) => {
   const { name, email, role } = req.body;
 
+
   if (!email || !role || !name) {
     return res.status(400).json({ success: false, message: "Name, email, and role are required." });
   }
@@ -255,18 +256,24 @@ exports.verifyEmailRequest = async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const cleanName = name.trim();
 
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(cleanEmail)) {
+    return res.status(400).json({ success: false, message: "Please enter a valid email address." });
+  }
+
   // 1. Check duplicate account in users table
   const dupCheckSql = "SELECT id FROM users WHERE LOWER(email) = LOWER(?)";
   db.query(dupCheckSql, [cleanEmail], async (dupErr, dupRes) => {
     if (dupErr) {
-      console.error(dupErr);
+      console.error("Duplicate check error:", dupErr);
       return res.status(500).json({ success: false, message: "Database query error" });
     }
 
     if (dupRes.length > 0) {
       return res.status(400).json({ 
-        success: false,
-        message: "An account already exists for this company email. Please sign in instead." 
+        success: false, 
+        message: "An account already exists for this email address. Please sign in instead." 
       });
     }
 
@@ -282,65 +289,14 @@ exports.verifyEmailRequest = async (req, res) => {
       const diffSeconds = Math.floor((now - createdAt) / 1000);
       if (diffSeconds < 60) {
         return res.status(400).json({ 
-          success: false,
+          success: false, 
           message: `Resend available in ${60 - diffSeconds} seconds. Please wait.` 
         });
       }
     }
 
-    // 3. Authorization check
-    if (role === 'Admin') {
-      const adminCountSql = "SELECT COUNT(*) as count FROM users WHERE role = 'SUPER_ADMIN'";
-      db.query(adminCountSql, async (acErr, acRes) => {
-        if (acErr) return res.status(500).json({ success: false, message: "Database error" });
-
-        if (acRes[0].count > 0) {
-          return res.status(400).json({ 
-            success: false,
-            message: "Admin registration is blocked. Additional Admin accounts must be created only through the authorized Admin functionality." 
-          });
-        }
-        
-        // Initial setup Admin allowed
-        sendOtpToEmail(cleanName, cleanEmail, res);
-      });
-    } else {
-      // Employee registration -> MUST verify exact email exists in Employee database
-      const checkEmpSql = `
-        SELECT e.*, r.name as role_name, desg.role_name as designation_name
-        FROM employees e
-        LEFT JOIN roles r ON e.role_id = r.id
-        LEFT JOIN designations desg ON e.designation_id = desg.id
-        WHERE LOWER(e.email) = LOWER(?)
-      `;
-
-      db.query(checkEmpSql, [cleanEmail], async (empErr, empRes) => {
-        if (empErr) return res.status(500).json({ success: false, message: "Database error" });
-
-        if (empRes.length === 0) {
-          return res.status(400).json({ 
-            success: false,
-            message: "This company email is not registered in HRMS. Please contact your HR/Admin." 
-          });
-        }
-
-        const employee = empRes[0];
-
-        // Verify Full Name matches case-insensitively & trimmed
-        const cleanDbName = employee.name.toLowerCase().replace(/\s+/g, '');
-        const cleanInputName = cleanName.toLowerCase().replace(/\s+/g, '');
-
-        if (cleanDbName !== cleanInputName) {
-          return res.status(400).json({ 
-            success: false,
-            message: "The entered name does not match our records for this company email." 
-          });
-        }
-
-        // Exact company employee match confirmed -> Send OTP
-        sendOtpToEmail(cleanName, cleanEmail, res);
-      });
-    }
+    // 3. Dispatch OTP via Resend API to the entered email
+    sendOtpToEmail(cleanName, cleanEmail, res);
   });
 };
 
@@ -367,22 +323,21 @@ async function sendOtpToEmail(name, email, res) {
         return res.status(500).json({ success: false, message: "Failed to generate verification OTP." });
       }
 
-      // Send REAL email via Nodemailer to process.env.SMTP_USER
+      // Send REAL email via Resend API to the user's manual email
       try {
-        const adminOtpRecipient = (process.env.SMTP_USER || process.env.EMAIL_USER || email).trim();
-        await emailService.sendOtpEmail({ toEmail: adminOtpRecipient, recipientName: `Administrator (Registration for ${name})`, otpCode });
+        await emailService.sendOtpEmail({ toEmail: email, recipientName: name, otpCode });
         return res.json({ 
-          success: true,
+          success: true, 
           sessionId,
-          message: "Verification code sent to the authorized administrator. Please obtain the code to continue.",
+          message: `Verification code sent to ${email}. Please check your inbox or spam.`,
           email
         });
       } catch (mailErr) {
         console.error("Failed to send OTP email:", mailErr);
         db.query("DELETE FROM email_verifications WHERE session_id = ?", [sessionId]);
         return res.status(500).json({ 
-          success: false,
-          message: "Unable to send verification email. Please check your SMTP configuration or try again later." 
+          success: false, 
+          message: "Unable to send verification email: " + (mailErr.message || "Please check configuration.") 
         });
       }
     });
@@ -393,9 +348,10 @@ async function sendOtpToEmail(name, email, res) {
 }
 
 exports.verifyOtp = (req, res) => {
-  const { email, code, sessionId } = req.body;
+  const { email, code, otp, sessionId } = req.body;
+  const otpCode = code || otp;
 
-  if (!email || !code || !sessionId) {
+  if (!email || !otpCode || !sessionId) {
     return res.status(400).json({ success: false, verified: false, message: "Email, session ID, and 6-digit verification code are required." });
   }
 
@@ -427,7 +383,7 @@ exports.verifyOtp = (req, res) => {
     }
 
     // 3. Compare OTP code with stored bcrypt hash
-    const isMatch = await bcrypt.compare(code, record.otp_hash);
+    const isMatch = await bcrypt.compare(String(otpCode).trim(), record.otp_hash);
 
     if (!isMatch) {
       const newAttempts = record.attempt_count + 1;
@@ -481,28 +437,9 @@ exports.register = async (req, res) => {
     return res.status(400).json({ success: false, message: "Password must be at least 6 characters long." });
   }
 
-  // Independent Backend Validation #1: Authorization Membership
   const targetRole = role === 'Admin' ? 'SUPER_ADMIN' : 'EMPLOYEE';
 
-  if (targetRole === 'EMPLOYEE') {
-    const findEmpSql = "SELECT id FROM employees WHERE LOWER(email) = LOWER(?)";
-    const empRes = await new Promise((resolve) => {
-      db.query(findEmpSql, [cleanEmail], (e, r) => resolve(r || []));
-    });
-    if (empRes.length === 0) {
-      return res.status(400).json({ success: false, message: "This company email is not authorized for registration." });
-    }
-  } else if (targetRole === 'SUPER_ADMIN') {
-    const adminCountSql = "SELECT COUNT(*) as count FROM users WHERE role = 'SUPER_ADMIN'";
-    const acRes = await new Promise((resolve) => {
-      db.query(adminCountSql, (e, r) => resolve(r || []));
-    });
-    if (acRes && acRes[0] && acRes[0].count > 0) {
-      return res.status(400).json({ success: false, message: "Admin registration is unauthorized." });
-    }
-  }
-
-  // Independent Backend Validation #2: Verification Session & Email Match
+  // Verification Session & Email Match check
   const sqlCheckVer = "SELECT * FROM email_verifications WHERE session_id = ? AND LOWER(email) = LOWER(?) AND verified = 1";
   db.query(sqlCheckVer, [sessionId, cleanEmail], async (err, results) => {
     if (err) return res.status(500).json({ success: false, message: "Database query error." });
@@ -513,12 +450,12 @@ exports.register = async (req, res) => {
 
     const verRecord = results[0];
 
-    // Independent Backend Validation #3: Expiration Check
+    // Expiration Check
     if (new Date(verRecord.expires_at) < new Date()) {
       return res.status(400).json({ success: false, message: "Verification session expired. Please verify your email again." });
     }
 
-    // Independent Backend Validation #4: Uniqueness Check
+    // Uniqueness Check in users table
     const dupCheckSql = "SELECT id FROM users WHERE LOWER(email) = LOWER(?)";
     db.query(dupCheckSql, [cleanEmail], async (dupErr, dupRes) => {
       if (dupErr) return res.status(500).json({ success: false, message: "Database error." });
@@ -531,13 +468,26 @@ exports.register = async (req, res) => {
         const password_hash = await bcrypt.hash(password, 10);
         let employee_id = null;
 
-        if (targetRole === 'EMPLOYEE') {
-          const findEmpSql = "SELECT id FROM employees WHERE LOWER(email) = LOWER(?)";
-          const empRes = await new Promise((resolve) => {
-            db.query(findEmpSql, [cleanEmail], (e, r) => resolve(r || []));
-          });
-          if (empRes.length > 0) {
-            employee_id = empRes[0].id;
+        // Check if employee record exists in employees table
+        const findEmpSql = "SELECT id FROM employees WHERE LOWER(email) = LOWER(?)";
+        const empRes = await new Promise((resolve) => {
+          db.query(findEmpSql, [cleanEmail], (e, r) => resolve(r || []));
+        });
+
+        if (empRes.length > 0) {
+          employee_id = empRes[0].id;
+        } else {
+          // Create employee record so the user has a full profile in HRMS
+          try {
+            const createEmpSql = "INSERT INTO employees (name, email, password_hash) VALUES (?, ?, ?)";
+            const newEmp = await new Promise((resolve) => {
+              db.query(createEmpSql, [cleanName, cleanEmail, password_hash], (e, r) => resolve(r || null));
+            });
+            if (newEmp && newEmp.insertId) {
+              employee_id = newEmp.insertId;
+            }
+          } catch (empCreateErr) {
+            console.warn("Could not auto-create employee record:", empCreateErr.message);
           }
         }
 
@@ -563,6 +513,7 @@ exports.register = async (req, res) => {
     });
   });
 };
+
 
 /**
  * Initiates LinkedIn OAuth Flow requesting standard enabled scopes:
