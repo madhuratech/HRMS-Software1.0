@@ -6,8 +6,6 @@ import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { Login } from './components/auth/Login';
 import { Register } from './components/auth/Register';
-import { LandingPage } from './components/landing/LandingPage';
-import { PricingPage } from './components/landing/PricingPage';
 import { PermissionGuard } from './components/auth/PermissionGuard';
 import { AdminManagerRegister } from './components/auth/AdminManagerRegister';
 import { NotificationsPage } from './components/notifications/NotificationsPage';
@@ -159,7 +157,7 @@ import { CustomCursor } from './components/ui/CustomCursor';
 import { Agentation } from 'agentation';
 
 function App() {
-  const [authView, setAuthView] = useState('landing'); // 'landing' | 'login' | 'register' | 'pricing'
+  const [authView, setAuthView] = useState('login'); // 'login' | 'register'
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
@@ -295,7 +293,7 @@ function App() {
     setIsLoggedIn(false);
     setUserRole('SUPER_ADMIN');
     setUserName('');
-    setAuthView('landing');
+    setAuthView('login');
 
     // Clear all persisted user-specific auth, role, and permission storage
     localStorage.removeItem('hrms_auth');
@@ -360,38 +358,15 @@ function App() {
         <Register
           onRegister={handleLogin}
           onLoginClick={() => setAuthView('login')}
-          onHomeClick={() => setAuthView('landing')}
         />
       );
     }
 
-    if (authView === 'login') {
-      return (
-        <Login
-          onLogin={handleLogin}
-          onRegisterClick={() => setAuthView('register')}
-          onHomeClick={() => setAuthView('landing')}
-        />
-      );
-    }
-
-    if (authView === 'pricing') {
-      return (
-        <PricingPage 
-          onOpenLogin={() => setAuthView('login')}
-          onBackToHome={() => setAuthView('landing')}
-        />
-      );
-    }
-
-    // Default opening view: Landing Page
+    // Default opening view: Direct Login Page
     return (
-      <LandingPage
-        onOpenLogin={() => setAuthView('login')}
-        onOpenRegister={() => setAuthView('register')}
-        onOpenPricing={() => setAuthView('pricing')}
-        onQuickDemoLogin={handleQuickDemoLogin}
-        isLoggedIn={false}
+      <Login
+        onLogin={handleLogin}
+        onRegisterClick={() => setAuthView('register')}
       />
     );
   }
@@ -438,16 +413,8 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/landing" element={
-              <LandingPage
-                onOpenLogin={() => {}}
-                onOpenRegister={() => {}}
-                onQuickDemoLogin={handleQuickDemoLogin}
-                isLoggedIn={true}
-                userRole={userRole}
-              />
-            } />
-            <Route path="/home" element={<Navigate to="/landing" replace />} />
+            <Route path="/landing" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/home" element={<Navigate to="/dashboard" replace />} />
             
             {/* Public Career Website Routes */}
             <Route path="/career" element={<PublicCareerPage />} />

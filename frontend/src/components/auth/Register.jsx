@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AppDropdown from '../ui/AppDropdown';
-import { User, Lock, Mail, CheckCircle, Loader2, Users, Briefcase, KeyRound, ArrowLeft, Sparkles, CheckCircle2 } from 'lucide-react';
+import { User, Lock, Mail, CheckCircle, Loader2, Users, Briefcase, KeyRound, ShieldCheck, CheckCircle2, TrendingUp } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 
 export function Register({ onRegister, onLoginClick, onHomeClick }) {
@@ -160,77 +160,59 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
   const isVerifiedForCurrentEmail = emailVerified && email.trim().toLowerCase() === verifiedEmail.trim().toLowerCase();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 flex flex-col items-center justify-center p-4 relative">
-      
-      {/* Back to Home Link */}
-      {onHomeClick && (
-        <button
-          onClick={onHomeClick}
-          className="absolute top-6 left-6 text-xs sm:text-sm font-bold text-slate-300 hover:text-amber-400 flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-amber-400/40 backdrop-blur-sm transition-all duration-200">
-          <ArrowLeft size={16} />
-          <span>Back to Madhura HRMS Home</span>
-        </button>
-      )}
-
-      <div className="bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-blue-900 flex items-center justify-center p-4 py-8">
+      <div className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row my-auto">
         
         {/* Left Side - Brand & Info */}
-        <div className="md:w-1/2 bg-slate-900 p-10 sm:p-12 text-white flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
-          
+        <div className="md:w-1/2 bg-blue-600 p-8 sm:p-12 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-full bg-[url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-10 pointer-events-none"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-600/90 to-indigo-900/90 pointer-events-none"></div>
+
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center text-slate-950 shadow-lg shadow-amber-400/20">
-                <Users size={26} />
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-md">
+                <TrendingUp size={24} />
               </div>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight">Madhura <span className="text-amber-400">HRMS</span></h1>
-                <p className="text-xs text-slate-400 font-medium">Enterprise Workforce Platform</p>
-              </div>
+              <h1 className="text-2xl font-bold tracking-tight">Madhura HRMS</h1>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4 leading-tight">
               Modernize Your HR & Team Management
             </h2>
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+            <p className="text-blue-100 text-base leading-relaxed">
               Join thousands of businesses managing attendance, automated payroll, multi-tier approvals, and talent performance with ease.
             </p>
           </div>
 
           <div className="relative z-10 grid grid-cols-2 gap-4 mt-8">
-            <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-              <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold mb-1">
-                <Sparkles size={14} /> Instant Setup
-              </div>
-              <h3 className="font-bold text-sm text-white">Quick Onboard</h3>
-              <p className="text-xs text-slate-400">Ready in under 24 hrs</p>
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20">
+              <ShieldCheck className="mb-2 text-blue-200" />
+              <h3 className="font-bold">Instant Setup</h3>
+              <p className="text-xs text-blue-100">Ready in under 24 hrs</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-              <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold mb-1">
-                <CheckCircle2 size={14} /> 100% Compliant
-              </div>
-              <h3 className="font-bold text-sm text-white">Statutory Tax</h3>
-              <p className="text-xs text-slate-400">PF, ESI & TDS enabled</p>
+            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20">
+              <CheckCircle2 className="mb-2 text-blue-200" />
+              <h3 className="font-bold">100% Compliant</h3>
+              <p className="text-xs text-blue-100">PF, ESI & TDS enabled</p>
             </div>
           </div>
         </div>
 
         {/* Right Side - Registration Form */}
-        <div className="md:w-1/2 p-8 sm:p-12 bg-white flex flex-col justify-center relative max-h-[90vh] overflow-y-auto">
+        <div className="md:w-1/2 p-8 sm:p-12 bg-white flex flex-col justify-center">
           <div className="mb-6">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-1.5">Create Account</h2>
-            <p className="text-sm text-slate-500 font-medium">Register your business credentials to get started.</p>
+            <h2 className="text-2xl font-bold text-slate-800 mb-1">Create Account</h2>
+            <p className="text-sm text-slate-500">Register your business credentials to get started.</p>
           </div>
 
           {errorMsg && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">
               {errorMsg}
             </div>
           )}
 
           {successMsg && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-xl">
+            <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg">
               {successMsg}
             </div>
           )}
@@ -239,7 +221,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
             
             {/* Full Name */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Full Name</label>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Full Name</label>
               <div className="relative">
                 <User className="absolute left-3.5 top-3 text-slate-400" size={18} />
                 <input
@@ -247,7 +229,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                   value={name}
                   onChange={handleNameChange}
                   disabled={isVerifiedForCurrentEmail}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 focus:bg-white focus:outline-none transition-all disabled:opacity-70"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-60"
                   placeholder="Enter your full name"
                   required />
               </div>
@@ -255,10 +237,10 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
 
             {/* Company Email Address */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex justify-between">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex justify-between">
                 <span>Company Email</span>
                 {isVerifiedForCurrentEmail && (
-                  <span className="text-emerald-600 text-xs font-bold flex items-center gap-1">
+                  <span className="text-emerald-600 text-xs font-bold flex items-center gap-1 normal-case">
                     <CheckCircle size={13} /> Verified
                   </span>
                 )}
@@ -271,7 +253,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                     value={email}
                     onChange={handleEmailChange}
                     disabled={isVerifiedForCurrentEmail}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 focus:bg-white focus:outline-none transition-all disabled:opacity-70"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-60"
                     placeholder="name@company.com"
                     required />
                 </div>
@@ -280,7 +262,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                     type="button"
                     onClick={handleVerifyEmailRequest}
                     disabled={loading || !name || !email}
-                    className="px-4 py-2 bg-slate-900 text-amber-400 text-xs font-bold rounded-xl hover:bg-slate-800 disabled:opacity-50 min-w-[100px] transition-all shadow-xs"
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold rounded-lg transition-all shadow-sm shrink-0 flex items-center justify-center min-w-[105px]"
                   >
                     {loading ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Verify Email'}
                   </button>
@@ -290,9 +272,9 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
 
             {/* OTP Code Entry UI */}
             {otpSent && !isVerifiedForCurrentEmail && (
-              <div className="p-4 bg-amber-50/70 border border-amber-300 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                  <KeyRound size={15} className="text-amber-600" />
+              <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl space-y-2.5 animate-in fade-in">
+                <div className="flex items-center gap-2 text-xs font-bold text-blue-900">
+                  <KeyRound size={15} className="text-blue-600" />
                   <span>Enter 6-Digit OTP sent to {email}</span>
                 </div>
                 
@@ -302,7 +284,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                     maxLength={6}
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg text-center font-mono font-bold tracking-widest text-base focus:ring-2 focus:ring-slate-900 focus:outline-none"
+                    className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-center font-mono font-bold tracking-widest text-base focus:ring-2 focus:ring-blue-500 focus:outline-none"
                     placeholder="• • • • • •"
                     autoFocus
                   />
@@ -310,21 +292,21 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                     type="button"
                     onClick={handleConfirmOtp}
                     disabled={loading || otpCode.length < 4}
-                    className="px-4 py-2 bg-slate-900 text-amber-400 text-xs font-bold rounded-lg hover:bg-slate-800 disabled:opacity-50 transition-all shrink-0"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-all shrink-0 flex items-center justify-center"
                   >
                     {loading ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Confirm OTP'}
                   </button>
                 </div>
 
                 <div className="flex justify-between items-center text-[11px] text-slate-500">
-                  <span>Didn't receive the email? Check spam.</span>
+                  <span>Didn't receive email? Check spam.</span>
                   {cooldown > 0 ? (
                     <span className="font-semibold text-slate-600">Resend in {cooldown}s</span>
                   ) : (
                     <button
                       type="button"
                       onClick={handleVerifyEmailRequest}
-                      className="font-bold text-slate-900 hover:underline"
+                      className="font-bold text-blue-600 hover:underline"
                     >
                       Resend OTP
                     </button>
@@ -335,9 +317,9 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
 
             {/* Select Role */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Account Role</label>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Account Role</label>
               <div className="relative">
-                <Briefcase className="absolute left-3.5 top-3 text-slate-400" size={18} />
+                <Briefcase className="absolute left-3.5 top-3 text-slate-400 z-10 pointer-events-none" size={18} />
                 <div className="pl-10">
                   <AppDropdown
                     value={role}
@@ -353,53 +335,55 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
               </div>
             </div>
 
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-3 text-slate-400" size={18} />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={!isVerifiedForCurrentEmail}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 focus:bg-white focus:outline-none transition-all disabled:opacity-50"
-                  placeholder="Create password"
-                  required />
+            {/* Password and Confirm Password */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3 text-slate-400" size={18} />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={!isVerifiedForCurrentEmail}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-50"
+                    placeholder="Min 6 characters"
+                    required />
+                </div>
               </div>
-            </div>
 
-            {/* Confirm Password */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Confirm Password</label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-3 text-slate-400" size={18} />
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={!isVerifiedForCurrentEmail}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-slate-900 focus:bg-white focus:outline-none transition-all disabled:opacity-50"
-                  placeholder="Confirm password"
-                  required />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-3 text-slate-400" size={18} />
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={!isVerifiedForCurrentEmail}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-50"
+                    placeholder="Confirm password"
+                    required />
+                </div>
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading || !isVerifiedForCurrentEmail}
-              className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-amber-400 font-extrabold py-3.5 rounded-xl shadow-lg shadow-slate-900/15 transition-all flex items-center justify-center gap-2 mt-4 text-sm"
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 mt-4 text-sm"
             >
               {loading ? <Loader2 className="animate-spin" size={18} /> : 'Create Account & Start Trial'}
             </button>
           </form>
           
           <div className="mt-6 text-center">
-            <p className="text-xs sm:text-sm text-slate-500">
+            <p className="text-sm text-slate-500">
               Already have an account?{' '}
               <button
+                type="button"
                 onClick={onLoginClick}
-                className="text-slate-900 font-bold hover:underline"
+                className="text-blue-600 font-bold hover:underline"
               >
                 Sign In
               </button>

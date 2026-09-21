@@ -17,7 +17,7 @@ export function Login({ onLogin, onRegisterClick }) {
     const knownPresets = ['admin@hawkeye.com', 'madhuratechcbe@gmail.com', 'dhilipanmadhuratech@gmail.com', 'muthu@gmail.com'];
     if (!email || knownPresets.includes(email.trim().toLowerCase())) {
       setEmail(emailPreset);
-      setPassword('Admin@123');
+      setPassword('admin@123');
     }
     setErrorMsg('');
   };
@@ -73,14 +73,14 @@ export function Login({ onLogin, onRegisterClick }) {
 
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-blue-600">
+              <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-md">
                 <TrendingUp size={24} />
               </div>
-              <h1 className="text-2xl font-bold tracking-tight">HAWKEYE NEST</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Madhura HRMS</h1>
             </div>
-            <h2 className="text-4xl font-bold mb-4">Enterprise Management Solution</h2>
+            <h2 className="text-4xl font-bold mb-4">Enterprise Workforce Platform</h2>
             <p className="text-blue-100 text-lg leading-relaxed">
-              Unified platform for HR, Sales, and Service management across all your branches.
+              Unified platform for attendance, automated payroll, multi-tier approvals, and talent performance.
             </p>
           </div>
 
@@ -92,8 +92,8 @@ export function Login({ onLogin, onRegisterClick }) {
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/20">
               <Wrench className="mb-2 text-blue-200" />
-              <h3 className="font-bold">Service Ops</h3>
-              <p className="text-xs text-blue-100">Job card tracking</p>
+              <h3 className="font-bold">100% Compliant</h3>
+              <p className="text-xs text-blue-100">PF, ESI & TDS enabled</p>
             </div>
           </div>
         </div>
@@ -194,7 +194,7 @@ export function Login({ onLogin, onRegisterClick }) {
           </div>
 
           <p className="mt-8 text-center text-xs text-slate-400">
-            © 2026 HAWKEYE NEST. All rights reserved.
+            © 2026 Madhura HRMS. All rights reserved.
           </p>
         </div>
       </div>
