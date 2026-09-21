@@ -148,12 +148,14 @@ export function Login({ onLogin, onRegisterClick }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Email Address</label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                  <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 pointer-events-none">
+                    <User size={20} />
+                  </div>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                    className="w-full pl-[50px] pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
                     placeholder="name@company.com"
                     required />
                 </div>
@@ -162,12 +164,14 @@ export function Login({ onLogin, onRegisterClick }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                  <div className="absolute left-0 top-0 bottom-0 w-12 flex items-center justify-center text-slate-400 pointer-events-none">
+                    <Lock size={20} />
+                  </div>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+                    className="w-full pl-[50px] pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
                     placeholder="••••••••"
                     required />
                 </div>
