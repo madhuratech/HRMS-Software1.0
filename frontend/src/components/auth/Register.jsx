@@ -1,13 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { User, Lock, Mail, CheckCircle, Loader2, Users, Briefcase, KeyRound, ShieldCheck, CheckCircle2, TrendingUp, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { User, Lock, Mail, CheckCircle, Loader2, Users, Briefcase, KeyRound, ShieldCheck, CheckCircle2, TrendingUp, ChevronDown, Check } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 
 export function Register({ onRegister, onLoginClick, onHomeClick }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('Employee'); // 'Admin' | 'Employee'
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const roleDropdownRef = useRef(null);
+
+  const roleOptions = [
+    { value: 'Employee', label: 'Employee' },
+    { value: 'Admin', label: 'Organization Admin' }
+  ];
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Close custom dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target)) {
+        setIsRoleDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Session & Verification States
   const [sessionId, setSessionId] = useState('');
@@ -219,8 +238,8 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
           <form onSubmit={handleSubmitRegister} className="space-y-4">
             
             {/* Full Name */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Full Name</label>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">Full Name</label>
               <div className="relative">
                 <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
                 <input
@@ -235,15 +254,15 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
             </div>
 
             {/* Company Email Address */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider flex justify-between">
-                <span>Company Email</span>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Company Email</label>
                 {isVerifiedForCurrentEmail && (
                   <span className="text-emerald-600 text-xs font-bold flex items-center gap-1 normal-case">
                     <CheckCircle size={13} /> Verified
                   </span>
                 )}
-              </label>
+              </div>
               <div className="relative flex gap-2">
                 <div className="relative flex-1">
                   <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
@@ -314,54 +333,85 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
               </div>
             )}
 
-            {/* Select Role */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Account Role</label>
+            {/* Account Role (Custom Dropdown UI) */}
+            <div className="space-y-2" ref={roleDropdownRef}>
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">Account Role</label>
               <div className="relative">
-                <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={18} />
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
+                <button
+                  type="button"
                   disabled={isVerifiedForCurrentEmail}
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-60 appearance-none cursor-pointer"
+                  onClick={() => !isVerifiedForCurrentEmail && setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                  className={`w-full pl-10 pr-10 py-2.5 bg-slate-50 border rounded-lg text-sm text-left transition-all flex items-center justify-between disabled:opacity-60 cursor-pointer ${
+                    isRoleDropdownOpen 
+                      ? 'border-blue-500 ring-2 ring-blue-500 bg-white' 
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
                 >
-                  <option value="Employee">Employee</option>
-                  <option value="Admin">Organization Admin</option>
-                </select>
-                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                  <span className="text-slate-800 font-medium">
+                    {role === 'Admin' ? 'Organization Admin' : 'Employee'}
+                  </span>
+                </button>
+                <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10" size={18} />
+                <ChevronDown className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none transition-transform duration-200 ${isRoleDropdownOpen ? 'rotate-180 text-blue-600' : ''}`} size={16} />
+
+                {/* Floating Custom Options Menu */}
+                {isRoleDropdownOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1.5 overflow-hidden animate-in fade-in">
+                    {roleOptions.map((opt) => {
+                      const isSelected = role === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setRole(opt.value);
+                            setIsRoleDropdownOpen(false);
+                          }}
+                          className={`w-full px-4 py-2.5 text-sm text-left flex items-center justify-between transition-colors ${
+                            isSelected
+                              ? 'bg-blue-50 text-blue-600 font-semibold'
+                              : 'text-slate-700 hover:bg-slate-50 hover:text-blue-600'
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {isSelected && <Check size={16} className="text-blue-600" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Password and Confirm Password */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    disabled={!isVerifiedForCurrentEmail}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-50"
-                    placeholder="Min 6 characters"
-                    required />
-                </div>
+            {/* Password (Full Width Straight Down) */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={!isVerifiedForCurrentEmail}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-50"
+                  placeholder="Min 6 characters"
+                  required />
               </div>
+            </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={!isVerifiedForCurrentEmail}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-50"
-                    placeholder="Confirm password"
-                    required />
-                </div>
+            {/* Confirm Password (Full Width Straight Down) */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider block">Confirm Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={18} />
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={!isVerifiedForCurrentEmail}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all disabled:opacity-50"
+                  placeholder="Confirm password"
+                  required />
               </div>
             </div>
 
