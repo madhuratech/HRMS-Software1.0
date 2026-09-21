@@ -3,7 +3,7 @@ import AppDropdown from '../ui/AppDropdown';
 import { Search, Download, Plus, MoreVertical, Star, ChevronLeft, ChevronRight, X, Eye, Edit3, Trash2, Calendar, FileText, CheckCircle2, UserCheck, Briefcase, Mail, Phone, MapPin, DollarSign, Clock, Send, ShieldCheck, ArrowRightLeft } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { canCreate, canEdit, canDelete, canExport, checkActionPermission } from '../../lib/permissions';
-import { apiFetch } from '../../lib/api';
+import { apiFetch, API_URL } from '../../lib/api';
 
 export default function Candidates() {
   const { addToast } = useToast();
@@ -136,15 +136,10 @@ export default function Candidates() {
   const handleUpdateStatus = async (candidateId, newStatus) => {
     if (!checkActionPermission('candidates', 'EDIT')) return;
     try {
-      const res = await fetch(`http://localhost:5000/app/candidates/${candidateId}/status`, {
+      const data = await apiFetch(`/candidates/${candidateId}/status`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
         body: JSON.stringify({ status: newStatus })
       });
-      const data = await res.json();
       if (data.success) {
         addToast(`Candidate status updated to ${newStatus}`, 'success');
         fetchCandidates();
@@ -159,15 +154,10 @@ export default function Candidates() {
   const handleHireCandidate = async (candidate) => {
     if (!checkActionPermission('candidates', 'EDIT')) return;
     try {
-      const res = await fetch(`http://localhost:5000/app/candidates/${candidate.id}/convert-to-employee`, {
+      const data = await apiFetch(`/candidates/${candidate.id}/convert-to-employee`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
         body: JSON.stringify({})
       });
-      const data = await res.json();
       if (data.success) {
         const expCount = data.data?.copied_experiences_count || 0;
         addToast(
@@ -187,11 +177,9 @@ export default function Candidates() {
     if (!checkActionPermission('candidates', 'DELETE')) return;
     if (!window.confirm(`Are you sure you want to delete candidate ${name}?`)) return;
     try {
-      const res = await fetch(`http://localhost:5000/app/candidates/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+      const data = await apiFetch(`/candidates/${id}`, {
+        method: 'DELETE'
       });
-      const data = await res.json();
       if (data.success) {
         addToast('Candidate deleted successfully', 'success');
         fetchCandidates();
@@ -836,7 +824,7 @@ export default function Candidates() {
                     </span>
                   </div>
                   <a
-                    href={selectedCandidate.resume?.startsWith('http') ? selectedCandidate.resume : `${import.meta.env.VITE_BACKEND_URL || (window.location.port === '3000' ? 'http://localhost:5000' : window.location.origin)}${selectedCandidate.resume?.startsWith('/') ? '' : '/'}${selectedCandidate.resume}`}
+                    href={selectedCandidate.resume?.startsWith('http') ? selectedCandidate.resume : `${API_URL || window.location.origin}${selectedCandidate.resume?.startsWith('/') ? '' : '/'}${selectedCandidate.resume}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors"

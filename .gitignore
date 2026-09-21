@@ -10,6 +10,9 @@ mobile/node_modules/
 backend/.env
 frontend/.env
 backend/.env.local
+!frontend/.env.production
+!frontend/.env.example
+!*.env.example
 
 # Logs and scratch
 *.log

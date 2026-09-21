@@ -34,7 +34,7 @@ export default function PublicJobDetails() {
     coverLetter: ''
   });
 
-  const API_URL = import.meta.env.VITE_HRMS_API_URL || '';
+  const API_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_HRMS_API_URL || '').replace(/\/+$/, '');
 
   useEffect(() => {
     const fetchJobDetails = async () => {

@@ -1,11 +1,10 @@
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { API_URL } from './api';
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
-
-const RENDER_BACKEND_URL = 'https://madhura-hrm.onrender.com';
 
 export function getAvatarUrl(profilePhoto, empName = 'User', empId = 1) {
   if (profilePhoto && typeof profilePhoto === 'string' && profilePhoto.trim() !== '') {
@@ -23,14 +22,10 @@ export function getAvatarUrl(profilePhoto, empName = 'User', empId = 1) {
     }
     if (trimmed.startsWith('/') || trimmed.startsWith('uploads')) {
       const cleanPath = '/' + trimmed.replace(/^\/+/, '');
-      const isLocal = typeof window !== 'undefined' && (
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.startsWith('192.168.') ||
-        window.location.hostname.startsWith('10.') ||
-        Boolean(window.location.port)
-      );
-      return isLocal ? cleanPath : `${RENDER_BACKEND_URL}${cleanPath}`;
+      if (API_URL) {
+        return `${API_URL}${cleanPath}`;
+      }
+      return cleanPath;
     }
     return '/' + trimmed.replace(/^\/+/, '');
   }

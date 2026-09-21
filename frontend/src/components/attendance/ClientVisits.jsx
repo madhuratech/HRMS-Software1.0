@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Map, { Marker, NavigationControl, Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { apiFetch } from '../../lib/api';
+import { apiFetch, API_URL } from '../../lib/api';
 import { 
   MapPin, Navigation, Camera, CheckCircle2, XCircle, Play, Pause, 
   Map as MapIcon, Building, LogOut, Search, Loader2, Link, Image, 
@@ -23,14 +23,10 @@ function resolveVisitPhotoUrl(photoPath) {
     return trimmed;
   }
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  const isLocal = typeof window !== 'undefined' && (
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.startsWith('192.168.') ||
-    window.location.hostname.startsWith('10.') ||
-    Boolean(window.location.port)
-  );
-  return isLocal ? cleanPath : `https://madhura-hrm.onrender.com${cleanPath}`;
+  if (API_URL) {
+    return `${API_URL}${cleanPath}`;
+  }
+  return cleanPath;
 }
 
 function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {

@@ -10,7 +10,7 @@ export default function PublicCareerPage() {
   const [search, setSearch] = useState('');
   const [department, setDepartment] = useState('');
 
-  const API_URL = import.meta.env.VITE_HRMS_API_URL || '';
+  const API_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_HRMS_API_URL || '').replace(/\/+$/, '');
 
   const fetchPublicJobs = async () => {
     setLoading(true);

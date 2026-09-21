@@ -4,6 +4,7 @@ import { Search, Download, Eye, CheckCircle2, XCircle, Calendar, FileText, UserC
 import { useToast } from '../ui/Toast';
 import { useNavigate } from 'react-router-dom';
 import { canEdit, checkActionPermission } from '../../lib/permissions';
+import { API_URL } from '../../lib/api';
 
 export default function CandidateScreening() {
   const { addToast } = useToast();
@@ -53,7 +54,7 @@ export default function CandidateScreening() {
   };
 
   const getResumeUrl = (resumePath, applicationId) => {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || (window.location.port === '3000' ? 'http://localhost:5000' : window.location.origin);
+    const backendUrl = API_URL || window.location.origin;
     if (applicationId) {
       return `${backendUrl}/api/applications/${applicationId}/resume`;
     }
@@ -71,7 +72,7 @@ export default function CandidateScreening() {
       e.stopPropagation();
     }
     const appId = applicationId || selectedCandidate?.application_id || selectedCandidate?.id;
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || (window.location.port === '3000' ? 'http://localhost:5000' : window.location.origin);
+    const backendUrl = API_URL || window.location.origin;
     const url = appId ? `${backendUrl}/api/applications/${appId}/resume` : (resumePath ? getResumeUrl(resumePath) : null);
 
     console.log('[handleViewResume]', {

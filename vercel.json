@@ -6,15 +6,15 @@
   "rewrites": [
     {
       "source": "/app/:path*",
-      "destination": "https://madhura-hrm.onrender.com/app/:path*"
+      "destination": "https://hrms-software1-0.onrender.com/app/:path*"
     },
     {
       "source": "/api/:path*",
-      "destination": "https://madhura-hrm.onrender.com/api/:path*"
+      "destination": "https://hrms-software1-0.onrender.com/api/:path*"
     },
     {
       "source": "/uploads/:path*",
-      "destination": "https://madhura-hrm.onrender.com/uploads/:path*"
+      "destination": "https://hrms-software1-0.onrender.com/uploads/:path*"
     },
     {
       "source": "/(.*)",

@@ -1,5 +1,19 @@
-const RENDER_BACKEND_URL = 'https://madhura-hrm.onrender.com';
-const API_BASE = '/app';
+// Centralized API Base URL configured via environment variable
+export const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  import.meta.env.VITE_HRMS_API_URL ||
+  ''
+).replace(/\/+$/, '');
+
+export const getApiUrl = (path = '') => {
+  if (!path) return API_URL;
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return API_URL ? `${API_URL}${cleanPath}` : cleanPath;
+};
 
 export const getAuthToken = () => {
   const auth = localStorage.getItem('hrms_auth');
@@ -36,13 +50,20 @@ export const getAuthHeaders = (extraHeaders = {}) => {
 
 export const apiFetch = async (path, options = {}) => {
   let targetPath = path || '';
-  if (targetPath.startsWith('/app/')) {
-    targetPath = targetPath.substring(4);
-  } else if (targetPath.startsWith('/api/')) {
-    targetPath = targetPath.substring(4);
-  }
-  if (!targetPath.startsWith('/')) {
-    targetPath = '/' + targetPath;
+  let url;
+
+  if (targetPath.startsWith('http://') || targetPath.startsWith('https://')) {
+    url = targetPath;
+  } else {
+    if (!targetPath.startsWith('/')) {
+      targetPath = '/' + targetPath;
+    }
+    let fullPath = targetPath;
+    // Prefix /app if not already prefixed with /app/, /api/, or /uploads/
+    if (!fullPath.startsWith('/app/') && !fullPath.startsWith('/api/') && !fullPath.startsWith('/uploads/')) {
+      fullPath = `/app${targetPath}`;
+    }
+    url = API_URL ? `${API_URL}${fullPath}` : fullPath;
   }
 
   const isFormData = options.body instanceof FormData;
@@ -56,7 +77,7 @@ export const apiFetch = async (path, options = {}) => {
   }
 
   try {
-    const res = await fetch(`${API_BASE}${targetPath}`, { ...options, headers });
+    const res = await fetch(url, { ...options, headers });
     const text = await res.text();
     if (!text || !text.trim()) {
       return { success: res.ok, status: res.status };
@@ -70,7 +91,6 @@ export const apiFetch = async (path, options = {}) => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       return { success: false, offline: true, message: 'Internet connection unavailable' };
     }
-    // Only warn if this isn't a transient network drop
     console.warn(`apiFetch notice for ${path}:`, e.message || e);
     return { success: false, message: e.message || 'Network request failed' };
   }

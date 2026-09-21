@@ -66,21 +66,36 @@ runMigrationsSafely();
 
 const app = express();
 
+const envOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map(s => s.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
 const allowedOrigins = [
+  'https://hrms-software1-0-one.vercel.app',
   'https://madhuratech.com',
   'https://www.madhuratech.com',
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  ...envOrigins
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.replace(/\/+$/, '');
+    if (
+      allowedOrigins.includes(cleanOrigin) ||
+      allowedOrigins.some(o => o.toLowerCase() === cleanOrigin.toLowerCase()) ||
+      process.env.NODE_ENV !== 'production'
+    ) {
       return callback(null, true);
     }
-    return callback(null, true);
+    return callback(new Error(`CORS origin not allowed: ${origin}`));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-employee-id', 'x-user-role', 'Pragma', 'Cache-Control']
 }));
 app.use(express.json());
 

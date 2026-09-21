@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { canCreate, canEdit, canDelete, checkActionPermission } from '../../lib/permissions';
+import { API_URL } from '../../lib/api';
 
 // ─── Custom Dropdown ─────────────────────────────────────────────────────────
 function CustomSelect({ id, value, onChange, options, placeholder = 'Select...', accentColor = '#3B82F6', isOpen, onToggle, onClose }) {
@@ -1445,7 +1446,7 @@ export default function JobOpenings() {
 
                 <div style={{ paddingTop: '4px' }}>
                   <a
-                    href="http://localhost:5000/app/auth/linkedin/connect"
+                    href={`${API_URL || ''}/app/auth/linkedin/connect`}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
