@@ -468,28 +468,33 @@ exports.register = async (req, res) => {
         const password_hash = await bcrypt.hash(password, 10);
         let employee_id = null;
 
-        // Check if employee record exists in employees table
-        const findEmpSql = "SELECT id FROM employees WHERE LOWER(email) = LOWER(?)";
-        const empRes = await new Promise((resolve) => {
-          db.query(findEmpSql, [cleanEmail], (e, r) => resolve(r || []));
-        });
+        // Super Admin is the Owner of the organization, NOT an employee.
+        // Therefore, NEVER add Super Admin to the employees table.
+        if (targetRole !== 'SUPER_ADMIN') {
+          // Check if employee record exists in employees table
+          const findEmpSql = "SELECT id FROM employees WHERE LOWER(email) = LOWER(?)";
+          const empRes = await new Promise((resolve) => {
+            db.query(findEmpSql, [cleanEmail], (e, r) => resolve(r || []));
+          });
 
-        if (empRes.length > 0) {
-          employee_id = empRes[0].id;
-        } else {
-          // Create employee record so the user has a full profile in HRMS
-          try {
-            const createEmpSql = "INSERT INTO employees (name, email, password_hash) VALUES (?, ?, ?)";
-            const newEmp = await new Promise((resolve) => {
-              db.query(createEmpSql, [cleanName, cleanEmail, password_hash], (e, r) => resolve(r || null));
-            });
-            if (newEmp && newEmp.insertId) {
-              employee_id = newEmp.insertId;
+          if (empRes.length > 0) {
+            employee_id = empRes[0].id;
+          } else {
+            // Create employee record only for regular employees
+            try {
+              const createEmpSql = "INSERT INTO employees (name, email, password_hash) VALUES (?, ?, ?)";
+              const newEmp = await new Promise((resolve) => {
+                db.query(createEmpSql, [cleanName, cleanEmail, password_hash], (e, r) => resolve(r || null));
+              });
+              if (newEmp && newEmp.insertId) {
+                employee_id = newEmp.insertId;
+              }
+            } catch (empCreateErr) {
+              console.warn("Could not auto-create employee record:", empCreateErr.message);
             }
-          } catch (empCreateErr) {
-            console.warn("Could not auto-create employee record:", empCreateErr.message);
           }
         }
+
 
         const insertUserSql = `
           INSERT INTO users (employee_id, full_name, email, password_hash, role, email_verified, email_verified_at, account_status)

@@ -289,19 +289,21 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
 
             {/* OTP Code Entry UI */}
             {otpSent && !isVerifiedForCurrentEmail && (
-              <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl space-y-2.5 animate-in fade-in">
+              <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3.5 my-1.5 transition-all shadow-sm">
                 <div className="flex items-center gap-2 text-xs font-bold text-blue-900">
-                  <KeyRound size={15} className="text-blue-600" />
-                  <span>Enter 6-Digit OTP sent to {email}</span>
+                  <KeyRound size={16} className="text-blue-600 shrink-0" />
+                  <span className="truncate">Enter 6-Digit OTP sent to <span className="font-semibold text-blue-700">{email}</span></span>
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex gap-2.5 items-stretch">
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     maxLength={6}
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                    className="w-full px-3 py-2 bg-white border border-blue-300 rounded-lg text-center font-mono font-bold tracking-widest text-base focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="otp-input-box"
                     placeholder="• • • • • •"
                     autoFocus
                   />
@@ -309,21 +311,23 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                     type="button"
                     onClick={handleConfirmOtp}
                     disabled={loading || otpCode.length < 4}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white text-xs font-bold rounded-lg transition-all shrink-0 flex items-center justify-center cursor-pointer"
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold rounded-xl transition-all shadow-sm shrink-0 flex items-center justify-center min-w-[110px] cursor-pointer disabled:cursor-not-allowed"
                   >
-                    {loading ? <Loader2 className="animate-spin mx-auto" size={16} /> : 'Confirm OTP'}
+                    {loading ? <Loader2 className="animate-spin" size={16} /> : 'Confirm OTP'}
                   </button>
                 </div>
 
-                <div className="flex justify-between items-center text-[11px] text-slate-500">
-                  <span>Didn't receive email? Check spam folder.</span>
+                <div className="flex justify-between items-center text-xs text-slate-500 pt-0.5">
+                  <span className="text-[11px] text-slate-500">Didn't receive email? Check spam folder.</span>
                   {cooldown > 0 ? (
-                    <span className="font-semibold text-slate-600">Resend in {cooldown}s</span>
+                    <span className="text-[11px] font-semibold text-slate-600 bg-white/80 px-2.5 py-0.5 rounded-md border border-slate-200/80">
+                      Resend in {cooldown}s
+                    </span>
                   ) : (
                     <button
                       type="button"
                       onClick={handleVerifyEmailRequest}
-                      className="font-bold text-blue-600 hover:underline cursor-pointer"
+                      className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
                     >
                       Resend OTP
                     </button>
@@ -331,6 +335,7 @@ export function Register({ onRegister, onLoginClick, onHomeClick }) {
                 </div>
               </div>
             )}
+
 
             {/* Account Role (Custom Dropdown UI) */}
             <div className="space-y-2" ref={roleDropdownRef}>

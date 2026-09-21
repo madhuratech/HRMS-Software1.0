@@ -3943,14 +3943,36 @@ textarea[class]:focus {
   box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.25) !important;
 }
 
-/* Remove inner borders from inputs inside flex icon containers */
-.flex > input,
-.flex > input:focus,
-.flex > input[class],
-.flex > input[class]:focus {
+/* Remove inner borders only from inputs inside seamless icon containers */
+.flex.items-center.bg-slate-50 > input,
+.flex.items-center.bg-slate-50 > input:focus,
+.input-seamless {
   border: none !important;
   border-width: 0 !important;
   box-shadow: none !important;
   outline: none !important;
   background: transparent !important;
 }
+
+/* Dedicated styling for OTP Verification Input */
+.otp-input-box {
+  background-color: #ffffff !important;
+  border: 1.5px solid #93c5fd !important;
+  border-radius: 10px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  color: #1e293b !important;
+  font-family: monospace !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: 8px !important;
+  text-align: center !important;
+  outline: none !important;
+  padding: 10px 14px !important;
+  width: 100% !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.otp-input-box:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+}

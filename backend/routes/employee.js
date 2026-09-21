@@ -237,8 +237,12 @@ router.get("/", authenticateJWT, (req, res) => {
   const { search, department, designation, branch, status, sortBy, sortOrder, page = 1, limit = 100 } = req.query;
 
   getTeamLeaderContext(req, (errCtx, ctx) => {
-    let conditions = ["1=1"];
+    let conditions = [
+      "1=1",
+      "e.email NOT IN (SELECT email FROM users WHERE role = 'SUPER_ADMIN')"
+    ];
     let params = [];
+
 
     if (ctx.isTeamLeader) {
       if (!ctx.teamId) {
