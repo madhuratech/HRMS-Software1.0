@@ -1,0 +1,30 @@
+CREATE TABLE IF NOT EXISTS teams (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  team_name VARCHAR(100) NOT NULL,
+  lead_id INT,
+  description TEXT,
+  color VARCHAR(20) DEFAULT '#3B82F6',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lead_id) REFERENCES employees(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS shifts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  shift_name VARCHAR(100) NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  grace_time INT DEFAULT 15, -- in minutes
+  shift_type VARCHAR(50) DEFAULT 'Regular',
+  color VARCHAR(20) DEFAULT '#3B82F6',
+  status VARCHAR(20) DEFAULT 'Active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS holidays (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  holiday_name VARCHAR(100) NOT NULL,
+  holiday_date DATE NOT NULL,
+  holiday_type VARCHAR(50) DEFAULT 'National',
+  location VARCHAR(100) DEFAULT 'All Locations',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

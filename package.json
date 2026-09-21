@@ -1,0 +1,9 @@
+{
+  "name": "hrms-software-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm install --include=dev && npm run build",
+    "install-all": "cd frontend && npm install && cd ../backend && npm install"
+  }
+}
