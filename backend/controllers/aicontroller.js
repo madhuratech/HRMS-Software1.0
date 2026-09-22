@@ -19,9 +19,14 @@ const chatwithAI = async (req, res) => {
     res.json({ success: true, message: text, toolUsed, structuredData, suggestions: suggestions || [], sources });
   } catch (error) {
     console.error('Error in chatwithAI:', error);
+    const detailedMessage = error.response?.data?.error?.message 
+      || error.error?.message 
+      || error.message 
+      || 'AI request failed';
     res.status(500).json({ 
       success: false, 
-      message: 'AI request failed'
+      message: detailedMessage,
+      error: detailedMessage
     });
   }
 };

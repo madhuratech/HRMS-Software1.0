@@ -7,12 +7,20 @@ let openai;
 
 function getOpenAIClient() {
   if (!openai) {
+    const isGroq = !!process.env.GROQ_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY;
+    const baseURL = isGroq ? "https://api.groq.com/openai/v1" : "https://openrouter.ai/api/v1";
+
     openai = new Openai({
-      apiKey: process.env.OPENROUTER_API_KEY,
-      baseURL: "https://openrouter.ai/api/v1",
+      apiKey,
+      baseURL,
     });
   }
   return openai;
+}
+
+function getAIModel() {
+  return process.env.GROQ_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-oss-120b";
 }
 
 // Helper to wrap db.query in a Promise
@@ -649,7 +657,7 @@ async function executeTool(name, args, userId) {
 // AI routing helper using LLM
 async function routeIntent(message, conversationId, dbMessages) {
   const client = getOpenAIClient();
-  
+
   // Format recent chat history context for the router
   let historyContext = "";
   if (dbMessages && dbMessages.length > 0) {
@@ -682,7 +690,7 @@ Respond strictly with a JSON object in this format (no markdown formatting block
 
   try {
     const response = await client.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || "openrouter/free",
+      model: getAIModel(),
       messages: [
         { role: "system", content: "You are a precise classifier. Return only the JSON object." },
         { role: "user", content: routerPrompt }
@@ -801,7 +809,7 @@ function sanitizeConversationHistory(dbMessages, isToolEnabled) {
       messages.push(msg);
     } else if (msg.role === 'assistant') {
       if (msg.tool_calls) {
-        const validToolCalls = msg.tool_calls.filter(tc => 
+        const validToolCalls = msg.tool_calls.filter(tc =>
           tc.id && tc.type === 'function' && tc.function && tc.function.name && tc.function.arguments
         );
         if (validToolCalls.length > 0) {
@@ -835,184 +843,184 @@ async function generateResponse(message, conversationId, userId) {
 
     // 1. Ensure conversation exists
     const convs = await queryDB("SELECT id FROM ai_conversations WHERE conversation_id = ?", [conversationId]);
-  if (convs.length === 0) {
-    let title = message.trim();
-    if (title.length > 50) {
-      title = title.substring(0, 47) + "...";
+    if (convs.length === 0) {
+      let title = message.trim();
+      if (title.length > 50) {
+        title = title.substring(0, 47) + "...";
+      }
+      await queryDB(
+        "INSERT INTO ai_conversations (conversation_id, user_id, title) VALUES (?, ?, ?)",
+        [conversationId, userId, title]
+      );
     }
-    await queryDB(
-      "INSERT INTO ai_conversations (conversation_id, user_id, title) VALUES (?, ?, ?)",
-      [conversationId, userId, title]
-    );
-  }
 
-  // 2. Load previous messages from DB (limit 30) for history and context
-  const dbMessages = await queryDB(`
+    // 2. Load previous messages from DB (limit 30) for history and context
+    const dbMessages = await queryDB(`
     SELECT role, content, tool_name, tool_call_id FROM (
       SELECT * FROM ai_messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT 30
     ) sub ORDER BY id ASC
   `, [conversationId]);
 
-  // 3. Save User Message to DB
-  await queryDB(
-    "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'user', ?)",
-    [conversationId, message]
-  );
-
-  // 4. Determine user message intent using AI routing layer
-  const intent = await routeIntent(message, conversationId, dbMessages);
-
-  // 5. Handle intent routing
-  if (intent === 'CASUAL') {
-    console.log('[AI] Route: CASUAL');
-    console.log('[AI] Tools enabled: false');
-    console.log('[AI] Calling OpenRouter without tools');
-    
-    const sysPrompt = `You are a friendly AI HR Assistant. Answer the user's greeting or casual message naturally and concisely. Do NOT call any tools.`;
-    const response = await client.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || "openrouter/free",
-      messages: [
-        { role: "system", content: sysPrompt },
-        ...sanitizeConversationHistory(dbMessages, false),
-        { role: "user", content: message }
-      ],
-      max_tokens: 1000
-    });
-    console.log('[AI] Response received successfully');
-
-    const replyText = response.choices[0].message.content || '';
-    const { cleanText, suggestions } = parseSuggestionsFromText(replyText);
-
+    // 3. Save User Message to DB
     await queryDB(
-      "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
-      [conversationId, cleanText]
+      "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'user', ?)",
+      [conversationId, message]
     );
 
-    return {
-      text: cleanText,
-      toolUsed: null,
-      structuredData: { type: 'casual' },
-      suggestions: suggestions || []
-    };
-  }
+    // 4. Determine user message intent using AI routing layer
+    const intent = await routeIntent(message, conversationId, dbMessages);
 
-  if (intent === 'GENERAL') {
-    console.log('[AI] Route: GENERAL');
-    console.log('[AI] Tools enabled: false');
-    console.log('[AI] Calling OpenRouter without tools');
+    // 5. Handle intent routing
+    if (intent === 'CASUAL') {
+      console.log('[AI] Route: CASUAL');
+      console.log('[AI] Tools enabled: false');
+      console.log('[AI] Calling OpenRouter without tools');
 
-    const sysPrompt = `You are the AI HR Assistant. Answer general knowledge or theory questions (e.g. programming, math, tech explanations) naturally and theoretically. Do NOT call HRMS tools or search the web.`;
-    const response = await client.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || "openrouter/free",
-      messages: [
-        { role: "system", content: sysPrompt },
-        ...sanitizeConversationHistory(dbMessages, false),
-        { role: "user", content: message }
-      ],
-      max_tokens: 2000
-    });
-    console.log('[AI] Response received successfully');
+      const sysPrompt = `You are a friendly AI HR Assistant. Answer the user's greeting or casual message naturally and concisely. Do NOT call any tools.`;
+      const response = await client.chat.completions.create({
+        model: getAIModel(),
+        messages: [
+          { role: "system", content: sysPrompt },
+          ...sanitizeConversationHistory(dbMessages, false),
+          { role: "user", content: message }
+        ],
+        max_tokens: 1000
+      });
+      console.log('[AI] Response received successfully');
 
-    const replyText = response.choices[0].message.content || '';
-    const { cleanText, suggestions } = parseSuggestionsFromText(replyText);
+      const replyText = response.choices[0].message.content || '';
+      const { cleanText, suggestions } = parseSuggestionsFromText(replyText);
 
-    await queryDB(
-      "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
-      [conversationId, cleanText]
-    );
+      await queryDB(
+        "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
+        [conversationId, cleanText]
+      );
 
-    return {
-      text: cleanText,
-      toolUsed: null,
-      structuredData: { type: 'theory' },
-      suggestions: suggestions || []
-    };
-  }
+      return {
+        text: cleanText,
+        toolUsed: null,
+        structuredData: { type: 'casual' },
+        suggestions: suggestions || []
+      };
+    }
 
-  if (intent === 'POLICY/RAG') {
-    console.log('[AI] Route: POLICY/RAG');
-    console.log('[AI] Tools enabled: false');
-    console.log('[AI] Calling OpenRouter without tools');
+    if (intent === 'GENERAL') {
+      console.log('[AI] Route: GENERAL');
+      console.log('[AI] Tools enabled: false');
+      console.log('[AI] Calling OpenRouter without tools');
 
-    const policyContext = retrievePolicyContext(message);
-    const sysPrompt = `You are the AI HR Assistant. Answer company-specific policy questions strictly using the provided policy documents context below.
+      const sysPrompt = `You are the AI HR Assistant. Answer general knowledge or theory questions (e.g. programming, math, tech explanations) naturally and theoretically. Do NOT call HRMS tools or search the web.`;
+      const response = await client.chat.completions.create({
+        model: getAIModel(),
+        messages: [
+          { role: "system", content: sysPrompt },
+          ...sanitizeConversationHistory(dbMessages, false),
+          { role: "user", content: message }
+        ],
+        max_tokens: 2000
+      });
+      console.log('[AI] Response received successfully');
+
+      const replyText = response.choices[0].message.content || '';
+      const { cleanText, suggestions } = parseSuggestionsFromText(replyText);
+
+      await queryDB(
+        "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
+        [conversationId, cleanText]
+      );
+
+      return {
+        text: cleanText,
+        toolUsed: null,
+        structuredData: { type: 'theory' },
+        suggestions: suggestions || []
+      };
+    }
+
+    if (intent === 'POLICY/RAG') {
+      console.log('[AI] Route: POLICY/RAG');
+      console.log('[AI] Tools enabled: false');
+      console.log('[AI] Calling OpenRouter without tools');
+
+      const policyContext = retrievePolicyContext(message);
+      const sysPrompt = `You are the AI HR Assistant. Answer company-specific policy questions strictly using the provided policy documents context below.
 If the provided context does not contain the answer, say "I'm sorry, but that information is unavailable in our company policy documents."
 Do NOT invent or assume any policies.
 
 Company Policy Documents:
 ${policyContext || "None available."}`;
 
-    const response = await client.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || "openrouter/free",
-      messages: [
-        { role: "system", content: sysPrompt },
-        ...sanitizeConversationHistory(dbMessages, false),
-        { role: "user", content: message }
-      ],
-      max_tokens: 2000
-    });
-    console.log('[AI] Response received successfully');
+      const response = await client.chat.completions.create({
+        model: getAIModel(),
+        messages: [
+          { role: "system", content: sysPrompt },
+          ...sanitizeConversationHistory(dbMessages, false),
+          { role: "user", content: message }
+        ],
+        max_tokens: 2000
+      });
+      console.log('[AI] Response received successfully');
 
-    const replyText = response.choices[0].message.content || '';
-    const { cleanText, suggestions } = parseSuggestionsFromText(replyText);
+      const replyText = response.choices[0].message.content || '';
+      const { cleanText, suggestions } = parseSuggestionsFromText(replyText);
 
-    await queryDB(
-      "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
-      [conversationId, cleanText]
-    );
+      await queryDB(
+        "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
+        [conversationId, cleanText]
+      );
 
-    return {
-      text: cleanText,
-      toolUsed: null,
-      structuredData: { type: 'theory' },
-      suggestions: suggestions || []
-    };
-  }
+      return {
+        text: cleanText,
+        toolUsed: null,
+        structuredData: { type: 'theory' },
+        suggestions: suggestions || []
+      };
+    }
 
-  if (intent === 'CURRENT_EXTERNAL') {
-    const searchResults = await performWebSearch(message);
-    const sysPrompt = `You are the AI HR Assistant. Answer current/external questions using the provided web search results.
+    if (intent === 'CURRENT_EXTERNAL') {
+      const searchResults = await performWebSearch(message);
+      const sysPrompt = `You are the AI HR Assistant. Answer current/external questions using the provided web search results.
 Always prioritize search results over training memory. If the search results do not contain the answer, say you don't know rather than speculating.
 Web Search Results:
 ${JSON.stringify(searchResults)}`;
 
-    const response = await client.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || "openrouter/free",
-      messages: [
-        { role: "system", content: sysPrompt },
-        ...sanitizeConversationHistory(dbMessages, false),
-        { role: "user", content: message }
-      ],
-      max_tokens: 2000
-    });
+      const response = await client.chat.completions.create({
+        model: getAIModel(),
+        messages: [
+          { role: "system", content: sysPrompt },
+          ...sanitizeConversationHistory(dbMessages, false),
+          { role: "user", content: message }
+        ],
+        max_tokens: 2000
+      });
 
-    const replyText = response.choices[0].message.content || '';
-    const { cleanText, suggestions } = parseSuggestionsFromText(replyText);
+      const replyText = response.choices[0].message.content || '';
+      const { cleanText, suggestions } = parseSuggestionsFromText(replyText);
 
-    await queryDB(
-      "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
-      [conversationId, cleanText]
-    );
+      await queryDB(
+        "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
+        [conversationId, cleanText]
+      );
 
-    return {
-      text: cleanText,
-      toolUsed: {
-        name: "Web Search Tool",
-        status: "Success",
-        description: `Searched web for "${message}"`
-      },
-      structuredData: { type: 'web_answer', query: message, results: searchResults },
-      suggestions: suggestions || []
-    };
-  }
+      return {
+        text: cleanText,
+        toolUsed: {
+          name: "Web Search Tool",
+          status: "Success",
+          description: `Searched web for "${message}"`
+        },
+        structuredData: { type: 'web_answer', query: message, results: searchResults },
+        suggestions: suggestions || []
+      };
+    }
 
-  console.log('[AI] Route: HRMS');
-  console.log('[AI] Tools enabled: true');
+    console.log('[AI] Route: HRMS');
+    console.log('[AI] Tools enabled: true');
 
-  const messages = [
-    {
-      role: "system",
-      content: `You are the AI HR Assistant for a human resource management system (HRMS).
+    const messages = [
+      {
+        role: "system",
+        content: `You are the AI HR Assistant for a human resource management system (HRMS).
 You answer questions related to employees, leave management, attendance, payroll, departments, designations, holidays, recruitment, projects, and company information by executing tools.
 Never guess or invent numbers or names.
 Max 5 tool iterations per response.
@@ -1023,211 +1031,528 @@ Always analyze the conversation history to resolve pronouns like "he", "she", "h
 FOLLOW-UP SUGGESTIONS:
 After answering, append this JSON suffix to your final text response:
 SUGGESTIONS:["suggestion 1","suggestion 2","suggestion 3"]`
-    },
-    ...sanitizeConversationHistory(dbMessages, true),
-    {
-      role: "user",
-      content: message
+      },
+      ...sanitizeConversationHistory(dbMessages, true),
+      {
+        role: "user",
+        content: message
+      }
+    ];
+
+    let toolUsed = null;
+    let structuredData = null; // holds typed result for rich frontend rendering
+    const MAX_TOOL_ITERATIONS = 5;
+
+    for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
+      const response = await client.chat.completions.create({
+        model: getAIModel(),
+        messages,
+        tools: tools.filter(t => t.function.name !== 'web_search'),
+        tool_choice: "auto",
+        max_tokens: 4096
+      });
+
+      const responseMessage = response.choices[0].message;
+
+      if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
+        for (const toolCall of responseMessage.tool_calls) {
+          console.log('[AI] Tool call: ' + toolCall.function.name);
+          console.log('[AI] Tool call ID: ' + toolCall.id);
+
+          await queryDB(
+            "INSERT INTO ai_messages (conversation_id, role, content, tool_name, tool_call_id) VALUES (?, 'assistant', ?, ?, ?)",
+            [conversationId, toolCall.function.arguments, toolCall.function.name, toolCall.id]
+          );
+        }
+
+        messages.push(responseMessage);
+
+        for (const toolCall of responseMessage.tool_calls) {
+          const functionName = toolCall.function.name;
+          let functionArgs = {};
+          try {
+            functionArgs = JSON.parse(toolCall.function.arguments);
+          } catch (e) {
+            console.error("Error parsing function arguments:", e);
+          }
+
+          const toolTitles = {
+            get_employees: "Employee List Tool",
+            get_employee_count: "Employee Count Tool",
+            get_employee: "Employee Detail Tool",
+            search_employee: "Employee Search Tool",
+            get_attendance: "Attendance Tool",
+            get_employee_attendance: "Attendance Detail Tool",
+            get_leave_balance: "Leave Balance Tool",
+            get_leave_requests: "Leave Request Tool",
+            get_departments: "Department Tool",
+            get_department_employees: "Department Employees Tool",
+            get_designations: "Designation Tool",
+            get_holidays: "Holiday Tool",
+            get_payroll_summary: "Payroll Summary Tool",
+            get_employee_payroll: "Employee Payroll Tool",
+            get_job_positions: "Recruitment Vacancy Tool",
+            get_candidates: "Candidate Applicants Tool",
+            get_interview_schedules: "Interview Schedule Tool",
+            get_company_profile: "Company Profile Tool",
+            get_projects: "Project Boards Tool",
+            get_tasks: "Sprint Tasks Tool",
+            get_support_tickets: "Support Helpdesk Tool",
+            calculator: "Calculator Tool"
+          };
+
+          try {
+            const { result, summary } = await executeTool(functionName, functionArgs, userId);
+
+            console.log('[AI] Tool result received');
+
+            toolUsed = {
+              name: toolTitles[functionName] || functionName,
+              status: "Success",
+              description: summary
+            };
+
+            if (functionName === 'get_employees' && Array.isArray(result)) {
+              structuredData = { type: 'employee_list', employees: result };
+            } else if (functionName === 'get_employee' && result && !result.error) {
+              structuredData = { type: 'employee_profile', employee: result };
+            } else if ((functionName === 'search_employee' || functionName === 'get_employee_count') && result && !result.error) {
+              if (Array.isArray(result) && result.length === 1) {
+                structuredData = { type: 'employee_profile', employee: result[0] };
+              } else if (Array.isArray(result) && result.length > 1) {
+                structuredData = { type: 'employee_list', employees: result };
+              }
+            } else if (functionName === 'get_attendance' && Array.isArray(result)) {
+              structuredData = { type: 'attendance_summary', attendance: result };
+            } else if (functionName === 'get_employee_attendance' && Array.isArray(result)) {
+              structuredData = { type: 'employee_attendance', attendance: result, employee_name: functionArgs.employee_name };
+            } else if (functionName === 'get_leave_balance' && Array.isArray(result)) {
+              structuredData = { type: 'leave_balance', balances: result, employee_name: functionArgs.employee_name || String(functionArgs.employee_id || '') };
+            } else if (functionName === 'get_leave_requests' && Array.isArray(result)) {
+              structuredData = { type: 'leave_request_list', requests: result };
+            } else if (functionName === 'get_departments' && Array.isArray(result)) {
+              structuredData = { type: 'department_list', departments: result };
+            } else if (functionName === 'get_department_employees' && Array.isArray(result)) {
+              structuredData = { type: 'department_employees', employees: result, department_name: functionArgs.department_name };
+            } else if (functionName === 'get_designations' && Array.isArray(result)) {
+              structuredData = { type: 'designation_list', designations: result };
+            } else if (functionName === 'get_holidays' && result) {
+              structuredData = { type: 'holiday_list', holidays: Array.isArray(result) ? result : (result.holidays || []) };
+            } else if (functionName === 'get_payroll_summary' && result) {
+              structuredData = { type: 'payroll_summary', summary: result };
+            } else if (functionName === 'get_employee_payroll' && Array.isArray(result)) {
+              structuredData = { type: 'employee_payroll', payroll: result, employee_name: functionArgs.employee_name };
+            } else if (functionName === 'get_job_positions' && Array.isArray(result)) {
+              structuredData = { type: 'job_positions', positions: result };
+            } else if (functionName === 'get_candidates' && Array.isArray(result)) {
+              structuredData = { type: 'candidates', candidates: result };
+            } else if (functionName === 'get_interview_schedules' && Array.isArray(result)) {
+              structuredData = { type: 'interview_schedules', schedules: result };
+            } else if (functionName === 'get_company_profile' && result) {
+              structuredData = { type: 'company_profile', profile: result };
+            } else if (functionName === 'get_projects' && Array.isArray(result)) {
+              structuredData = { type: 'projects', projects: result };
+            } else if (functionName === 'get_tasks' && Array.isArray(result)) {
+              structuredData = { type: 'tasks', tasks: result };
+            } else if (functionName === 'get_support_tickets' && Array.isArray(result)) {
+              structuredData = { type: 'support_tickets', tickets: result };
+            } else if (functionName === 'calculator' && result) {
+              structuredData = { type: 'theory', calculation: result };
+            }
+
+            await queryDB(
+              "INSERT INTO ai_messages (conversation_id, role, content, tool_name, tool_call_id) VALUES (?, 'tool', ?, ?, ?)",
+              [conversationId, JSON.stringify(result), functionName, toolCall.id]
+            );
+
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              name: functionName,
+              content: JSON.stringify(result)
+            });
+
+          } catch (toolError) {
+            console.error("Error executing tool:", toolError);
+            toolUsed = {
+              name: toolTitles[functionName] || functionName,
+              status: "Failed",
+              description: `Failed to query: ${toolError.message}`
+            };
+
+            await queryDB(
+              "INSERT INTO ai_messages (conversation_id, role, content, tool_name, tool_call_id) VALUES (?, 'tool', ?, ?, ?)",
+              [conversationId, JSON.stringify({ error: toolError.message }), functionName, toolCall.id]
+            );
+
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              name: functionName,
+              content: JSON.stringify({ error: toolError.message })
+            });
+          }
+        }
+      } else {
+        console.log('[AI] Final response received');
+        const { cleanText: rawText, suggestions: rawSugs } = parseSuggestionsFromText(responseMessage.content || '');
+
+        await queryDB(
+          "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
+          [conversationId, rawText]
+        );
+
+        return {
+          text: rawText,
+          toolUsed,
+          structuredData,
+          suggestions: rawSugs
+        };
+      }
     }
-  ];
 
-  let toolUsed = null;
-  let structuredData = null; // holds typed result for rich frontend rendering
-  const MAX_TOOL_ITERATIONS = 5;
-
-  for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
-    const response = await client.chat.completions.create({
-      model: process.env.OPENROUTER_MODEL || "openrouter/free",
+    const finalResponse = await client.chat.completions.create({
+      model: getAIModel(),
       messages,
-      tools: tools.filter(t => t.function.name !== 'web_search'),
-      tool_choice: "auto",
       max_tokens: 4096
     });
 
-    const responseMessage = response.choices[0].message;
+    const { cleanText: fbText, suggestions: fbSugs } = parseSuggestionsFromText(finalResponse.choices[0].message.content || '');
+    await queryDB(
+      "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
+      [conversationId, fbText]
+    );
 
-    if (responseMessage.tool_calls && responseMessage.tool_calls.length > 0) {
-      for (const toolCall of responseMessage.tool_calls) {
-        console.log('[AI] Tool call: ' + toolCall.function.name);
-        console.log('[AI] Tool call ID: ' + toolCall.id);
+    return {
+      text: fbText,
+      toolUsed,
+      structuredData,
+      suggestions: fbSugs
+    };
+  } catch (err) {
+    console.warn("AI model execution issue, falling back to local HRMS intelligence engine:", err.message);
+    return await handleOfflineFallback(message, conversationId, userId, err);
+  }
+}
 
-        await queryDB(
-          "INSERT INTO ai_messages (conversation_id, role, content, tool_name, tool_call_id) VALUES (?, 'assistant', ?, ?, ?)",
-          [conversationId, toolCall.function.arguments, toolCall.function.name, toolCall.id]
-        );
-      }
+// Resilient Fallback Engine for handling requests when upstream LLM is unreachable or errors
+async function handleOfflineFallback(message, conversationId, userId, originalError) {
+  try {
+    const q = (message || '').toLowerCase().trim();
 
-      messages.push(responseMessage);
+    // 1. GREETINGS & CASUAL TALK
+    const greetings = ['hi', 'hai', 'haii', 'hello', 'hey', 'heyy', 'hola', 'good morning', 'good afternoon', 'good evening', 'howdy', 'sup', 'yo', 'saptiya', 'vanakkam', 'namaste'];
+    const isGreeting = greetings.some(g => q === g || q.startsWith(g + ' ') || q.endsWith(' ' + g) || q.includes('bro') || q.includes('how are you'));
 
-      for (const toolCall of responseMessage.tool_calls) {
-        const functionName = toolCall.function.name;
-        let functionArgs = {};
-        try {
-          functionArgs = JSON.parse(toolCall.function.arguments);
-        } catch (e) {
-          console.error("Error parsing function arguments:", e);
-        }
-
-        const toolTitles = {
-          get_employees: "Employee List Tool",
-          get_employee_count: "Employee Count Tool",
-          get_employee: "Employee Detail Tool",
-          search_employee: "Employee Search Tool",
-          get_attendance: "Attendance Tool",
-          get_employee_attendance: "Attendance Detail Tool",
-          get_leave_balance: "Leave Balance Tool",
-          get_leave_requests: "Leave Request Tool",
-          get_departments: "Department Tool",
-          get_department_employees: "Department Employees Tool",
-          get_designations: "Designation Tool",
-          get_holidays: "Holiday Tool",
-          get_payroll_summary: "Payroll Summary Tool",
-          get_employee_payroll: "Employee Payroll Tool",
-          get_job_positions: "Recruitment Vacancy Tool",
-          get_candidates: "Candidate Applicants Tool",
-          get_interview_schedules: "Interview Schedule Tool",
-          get_company_profile: "Company Profile Tool",
-          get_projects: "Project Boards Tool",
-          get_tasks: "Sprint Tasks Tool",
-          get_support_tickets: "Support Helpdesk Tool",
-          calculator: "Calculator Tool"
-        };
-
-        try {
-          const { result, summary } = await executeTool(functionName, functionArgs, userId);
-
-          console.log('[AI] Tool result received');
-
-          toolUsed = {
-            name: toolTitles[functionName] || functionName,
-            status: "Success",
-            description: summary
-          };
-
-          if (functionName === 'get_employees' && Array.isArray(result)) {
-            structuredData = { type: 'employee_list', employees: result };
-          } else if (functionName === 'get_employee' && result && !result.error) {
-            structuredData = { type: 'employee_profile', employee: result };
-          } else if ((functionName === 'search_employee' || functionName === 'get_employee_count') && result && !result.error) {
-            if (Array.isArray(result) && result.length === 1) {
-              structuredData = { type: 'employee_profile', employee: result[0] };
-            } else if (Array.isArray(result) && result.length > 1) {
-              structuredData = { type: 'employee_list', employees: result };
-            }
-          } else if (functionName === 'get_attendance' && Array.isArray(result)) {
-            structuredData = { type: 'attendance_summary', attendance: result };
-          } else if (functionName === 'get_employee_attendance' && Array.isArray(result)) {
-            structuredData = { type: 'employee_attendance', attendance: result, employee_name: functionArgs.employee_name };
-          } else if (functionName === 'get_leave_balance' && Array.isArray(result)) {
-            structuredData = { type: 'leave_balance', balances: result, employee_name: functionArgs.employee_name || String(functionArgs.employee_id || '') };
-          } else if (functionName === 'get_leave_requests' && Array.isArray(result)) {
-            structuredData = { type: 'leave_request_list', requests: result };
-          } else if (functionName === 'get_departments' && Array.isArray(result)) {
-            structuredData = { type: 'department_list', departments: result };
-          } else if (functionName === 'get_department_employees' && Array.isArray(result)) {
-            structuredData = { type: 'department_employees', employees: result, department_name: functionArgs.department_name };
-          } else if (functionName === 'get_designations' && Array.isArray(result)) {
-            structuredData = { type: 'designation_list', designations: result };
-          } else if (functionName === 'get_holidays' && result) {
-            structuredData = { type: 'holiday_list', holidays: Array.isArray(result) ? result : (result.holidays || []) };
-          } else if (functionName === 'get_payroll_summary' && result) {
-            structuredData = { type: 'payroll_summary', summary: result };
-          } else if (functionName === 'get_employee_payroll' && Array.isArray(result)) {
-            structuredData = { type: 'employee_payroll', payroll: result, employee_name: functionArgs.employee_name };
-          } else if (functionName === 'get_job_positions' && Array.isArray(result)) {
-            structuredData = { type: 'job_positions', positions: result };
-          } else if (functionName === 'get_candidates' && Array.isArray(result)) {
-            structuredData = { type: 'candidates', candidates: result };
-          } else if (functionName === 'get_interview_schedules' && Array.isArray(result)) {
-            structuredData = { type: 'interview_schedules', schedules: result };
-          } else if (functionName === 'get_company_profile' && result) {
-            structuredData = { type: 'company_profile', profile: result };
-          } else if (functionName === 'get_projects' && Array.isArray(result)) {
-            structuredData = { type: 'projects', projects: result };
-          } else if (functionName === 'get_tasks' && Array.isArray(result)) {
-            structuredData = { type: 'tasks', tasks: result };
-          } else if (functionName === 'get_support_tickets' && Array.isArray(result)) {
-            structuredData = { type: 'support_tickets', tickets: result };
-          } else if (functionName === 'calculator' && result) {
-            structuredData = { type: 'theory', calculation: result };
-          }
-
-          await queryDB(
-            "INSERT INTO ai_messages (conversation_id, role, content, tool_name, tool_call_id) VALUES (?, 'tool', ?, ?, ?)",
-            [conversationId, JSON.stringify(result), functionName, toolCall.id]
-          );
-
-          messages.push({
-            role: "tool",
-            tool_call_id: toolCall.id,
-            name: functionName,
-            content: JSON.stringify(result)
-          });
-
-        } catch (toolError) {
-          console.error("Error executing tool:", toolError);
-          toolUsed = {
-            name: toolTitles[functionName] || functionName,
-            status: "Failed",
-            description: `Failed to query: ${toolError.message}`
-          };
-
-          await queryDB(
-            "INSERT INTO ai_messages (conversation_id, role, content, tool_name, tool_call_id) VALUES (?, 'tool', ?, ?, ?)",
-            [conversationId, JSON.stringify({ error: toolError.message }), functionName, toolCall.id]
-          );
-
-          messages.push({
-            role: "tool",
-            tool_call_id: toolCall.id,
-            name: functionName,
-            content: JSON.stringify({ error: toolError.message })
-          });
-        }
-      }
-    } else {
-      console.log('[AI] Final response received');
-      const { cleanText: rawText, suggestions: rawSugs } = parseSuggestionsFromText(responseMessage.content || '');
-
-      await queryDB(
-        "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
-        [conversationId, rawText]
-      );
-
+    if (isGreeting) {
+      const reply = "Hello! 👋 I'm your HRMS AI Assistant. I can help you search employees, view attendance reports, check leave balances, list departments, and answer company HR policies. How can I help you today?";
+      const suggestions = ["Show employee list", "View attendance summary", "Check leave balances", "Show departments"];
+      await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
       return {
-        text: rawText,
-        toolUsed,
-        structuredData,
-        suggestions: rawSugs
+        text: reply,
+        toolUsed: null,
+        structuredData: null,
+        suggestions
       };
     }
-  }
 
-  const finalResponse = await client.chat.completions.create({
-    model: process.env.OPENROUTER_MODEL || "openrouter/free",
-    messages,
-    max_tokens: 4096
-  });
+    // 2. MATH / CALCULATOR
+    if (isCalculation(message)) {
+      try {
+        const { result, summary } = await executeTool('calculator', { expression: message.replace(/calculate/i, '').trim() }, userId);
+        const reply = `Result: ${result.result}`;
+        await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+        return {
+          text: reply,
+          toolUsed: { name: "Calculator Tool", status: "Success", description: summary },
+          structuredData: null,
+          suggestions: ["Show employee list", "View attendance summary"]
+        };
+      } catch (calcErr) {
+        // continue
+      }
+    }
 
-  const { cleanText: fbText, suggestions: fbSugs } = parseSuggestionsFromText(finalResponse.choices[0].message.content || '');
-  await queryDB(
-    "INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)",
-    [conversationId, fbText]
-  );
+    // 3. ATTENDANCE
+    if (q.includes('attendance') || q.includes('present') || q.includes('absent') || q.includes('check in') || q.includes('check out') || q.includes('who is in')) {
+      try {
+        const { result, summary } = await executeTool('get_attendance', {}, userId);
+        const reply = "Here is the attendance summary records from the system:";
+        await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+        return {
+          text: reply,
+          toolUsed: { name: "Attendance Tool", status: "Success", description: summary },
+          structuredData: { type: 'attendance_summary', attendance: result },
+          suggestions: ["Show employee list", "Check leave balances", "Show departments"]
+        };
+      } catch (attErr) {
+        console.error("Fallback attendance tool error:", attErr);
+      }
+    }
 
-  return {
-    text: fbText,
-    toolUsed,
-    structuredData,
-    suggestions: fbSugs
-  };
-  } catch (err) {
-    console.error("AI Assistant Error details:", {
-      status: err.status || err.statusCode,
-      message: err.message,
-      model: process.env.OPENROUTER_MODEL || "openrouter/free"
-    });
-    throw err;
+    // 4. EMPLOYEES & DIRECTORY
+    if (q.includes('employee') || q.includes('staff') || q.includes('worker') || q.includes('colleague') || q.includes('team member')) {
+      try {
+        const nameMatch = message.match(/(?:for|of|named|employee)\s+([A-Za-z]+(?:\s+[A-Za-z]+)?)/i);
+        if (q.includes('search') || (nameMatch && !q.includes('list') && !q.includes('all') && !q.includes('show me'))) {
+          const searchParam = nameMatch ? nameMatch[1] : message.replace(/employee|search|find|details|profile|info/gi, '').trim();
+          if (searchParam && searchParam.length > 1) {
+            const { result, summary } = await executeTool('search_employee', { query: searchParam }, userId);
+            if (result && !result.error && result.length > 0) {
+              const reply = `Found matching employee details for "${searchParam}":`;
+              await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+              return {
+                text: reply,
+                toolUsed: { name: "Employee Search Tool", status: "Success", description: summary },
+                structuredData: result.length === 1 ? { type: 'employee_profile', employee: result[0] } : { type: 'employee_list', employees: result },
+                suggestions: ["View attendance summary", "Check leave balances", "Show departments"]
+              };
+            }
+          }
+        }
+
+        const { result, summary } = await executeTool('get_employees', {}, userId);
+        const reply = `Here is the organization employee directory (${Array.isArray(result) ? result.length : 0} active employees):`;
+        await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+        return {
+          text: reply,
+          toolUsed: { name: "Employee List Tool", status: "Success", description: summary },
+          structuredData: { type: 'employee_list', employees: result },
+          suggestions: ["View attendance summary", "Check leave balances", "Show departments"]
+        };
+      } catch (empErr) {
+        console.error("Fallback employee tool error:", empErr);
+      }
+    }
+
+    // 5. LEAVES & VACATIONS
+    if (q.includes('leave') || q.includes('vacation')) {
+      try {
+        if (q.includes('request') || q.includes('pending') || q.includes('applied') || q.includes('application')) {
+          const { result, summary } = await executeTool('get_leave_requests', {}, userId);
+          const reply = "Here are the recent leave requests:";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: { name: "Leave Request Tool", status: "Success", description: summary },
+            structuredData: { type: 'leave_request_list', requests: result },
+            suggestions: ["Check leave balances", "Show employee list", "View attendance summary"]
+          };
+        } else {
+          const { result, summary } = await executeTool('get_leave_balance', {}, userId);
+          const reply = "Here is the leave balance details:";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: { name: "Leave Balance Tool", status: "Success", description: summary },
+            structuredData: { type: 'leave_balance', balances: result },
+            suggestions: ["Show leave requests", "View attendance summary", "Show employee list"]
+          };
+        }
+      } catch (leaveErr) {
+        console.error("Fallback leave tool error:", leaveErr);
+      }
+    }
+
+    // 6. DEPARTMENTS
+    if (q.includes('department') || q.includes('dept')) {
+      try {
+        const { result, summary } = await executeTool('get_departments', {}, userId);
+        const reply = "Here is the list of departments in the organization:";
+        await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+        return {
+          text: reply,
+          toolUsed: { name: "Department Tool", status: "Success", description: summary },
+          structuredData: { type: 'department_list', departments: result },
+          suggestions: ["Show employee list", "View designations", "View attendance summary"]
+        };
+      } catch (deptErr) {
+        console.error("Fallback department tool error:", deptErr);
+      }
+    }
+
+    // 7. DESIGNATIONS & ROLES
+    if (q.includes('designation') || q.includes('roles') || q.includes('job title')) {
+      try {
+        const { result, summary } = await executeTool('get_designations', {}, userId);
+        const reply = "Here are the designations available in the organization:";
+        await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+        return {
+          text: reply,
+          toolUsed: { name: "Designation Tool", status: "Success", description: summary },
+          structuredData: { type: 'designation_list', designations: result },
+          suggestions: ["Show departments", "Show employee list", "View attendance summary"]
+        };
+      } catch (desigErr) {
+        console.error("Fallback designation tool error:", desigErr);
+      }
+    }
+
+    // 8. HOLIDAYS
+    if (q.includes('holiday') || q.includes('festival') || q.includes('day off')) {
+      try {
+        const { result, summary } = await executeTool('get_holidays', {}, userId);
+        const reply = "Here is the company holiday calendar:";
+        await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+        return {
+          text: reply,
+          toolUsed: { name: "Holiday Tool", status: "Success", description: summary },
+          structuredData: { type: 'holiday_list', holidays: Array.isArray(result) ? result : (result.holidays || []) },
+          suggestions: ["Check leave balances", "Show employee list", "View attendance summary"]
+        };
+      } catch (holErr) {
+        console.error("Fallback holiday tool error:", holErr);
+      }
+    }
+
+    // 9. RECRUITMENT & CANDIDATES
+    if (q.includes('candidate') || q.includes('interview') || q.includes('recruitment') || q.includes('job opening') || q.includes('applicant')) {
+      try {
+        if (q.includes('interview') || q.includes('schedule')) {
+          const { result, summary } = await executeTool('get_interview_schedules', {}, userId);
+          const reply = "Here are the upcoming interview schedules:";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: { name: "Interview Schedule Tool", status: "Success", description: summary },
+            structuredData: { type: 'interview_schedules', schedules: result },
+            suggestions: ["View candidates", "Show job openings", "Show employee list"]
+          };
+        } else if (q.includes('opening') || q.includes('position') || q.includes('vacancy')) {
+          const { result, summary } = await executeTool('get_job_positions', {}, userId);
+          const reply = "Here are the active job positions:";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: { name: "Recruitment Vacancy Tool", status: "Success", description: summary },
+            structuredData: { type: 'job_positions', positions: result },
+            suggestions: ["View candidates", "Show employee list"]
+          };
+        } else {
+          const { result, summary } = await executeTool('get_candidates', {}, userId);
+          const reply = "Here are the candidate applicants:";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: { name: "Candidate Applicants Tool", status: "Success", description: summary },
+            structuredData: { type: 'candidates', candidates: result },
+            suggestions: ["Interview schedules", "Job openings", "Show employee list"]
+          };
+        }
+      } catch (recErr) {
+        console.error("Fallback recruitment tool error:", recErr);
+      }
+    }
+
+    // 10. PROJECTS & TASKS
+    if (q.includes('project') || q.includes('task') || q.includes('sprint') || q.includes('board')) {
+      try {
+        if (q.includes('task') || q.includes('sprint')) {
+          const { result, summary } = await executeTool('get_tasks', {}, userId);
+          const reply = "Here are the current tasks in the system:";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: { name: "Sprint Tasks Tool", status: "Success", description: summary },
+            structuredData: { type: 'tasks', tasks: result },
+            suggestions: ["View projects", "Show employee list"]
+          };
+        } else {
+          const { result, summary } = await executeTool('get_projects', {}, userId);
+          const reply = "Here are the active project boards:";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: { name: "Project Boards Tool", status: "Success", description: summary },
+            structuredData: { type: 'projects', projects: result },
+            suggestions: ["View tasks", "Show employee list"]
+          };
+        }
+      } catch (projErr) {
+        console.error("Fallback project tool error:", projErr);
+      }
+    }
+
+    // 11. SUPPORT TICKETS
+    if (q.includes('ticket') || q.includes('support') || q.includes('helpdesk')) {
+      try {
+        const { result, summary } = await executeTool('get_support_tickets', {}, userId);
+        const reply = "Here are the recent support tickets:";
+        await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+        return {
+          text: reply,
+          toolUsed: { name: "Support Helpdesk Tool", status: "Success", description: summary },
+          structuredData: { type: 'support_tickets', tickets: result },
+          suggestions: ["Show employee list", "View attendance summary"]
+        };
+      } catch (tickErr) {
+        console.error("Fallback ticket tool error:", tickErr);
+      }
+    }
+
+    // 12. COMPANY POLICIES (RAG from policies.json)
+    if (q.includes('policy') || q.includes('policies') || q.includes('maternity') || q.includes('wfh') || q.includes('work from home') || q.includes('dress code') || q.includes('code of conduct') || q.includes('leave policy')) {
+      const policyText = retrievePolicyContext(message);
+      if (policyText && policyText.trim()) {
+        const reply = `**HR Policies Information:**\n\n${policyText.split('\n\n').slice(0, 3).join('\n\n---\n\n')}`;
+        await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+        return {
+          text: reply,
+          toolUsed: null,
+          structuredData: { type: 'theory' },
+          suggestions: ["Check leave balances", "Show employee list", "View attendance summary"]
+        };
+      }
+    }
+
+    // 13. PAYROLL
+    if (q.includes('payroll') || q.includes('salary') || q.includes('payslip')) {
+      try {
+        const authorized = await isAuthorizedForPayroll(userId);
+        if (authorized) {
+          const { result, summary } = await executeTool('get_payroll_summary', {}, userId);
+          const reply = "Here is the payroll summary overview:";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: { name: "Payroll Summary Tool", status: "Success", description: summary },
+            structuredData: { type: 'payroll_summary', summary: result },
+            suggestions: ["Show employee list", "View attendance summary"]
+          };
+        } else {
+          const reply = "Payroll and salary details are confidential and restricted to Super Administrators and HR Managers.";
+          await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+          return {
+            text: reply,
+            toolUsed: null,
+            structuredData: null,
+            suggestions: ["Show employee list", "View attendance summary", "Check leave balances"]
+          };
+        }
+      } catch (payErr) {
+        console.error("Fallback payroll tool error:", payErr);
+      }
+    }
+
+    // 14. DEFAULT GRACEFUL RESPONSE
+    const reply = `I received your message: "${message}".\n\nI am currently operating in direct HRMS mode. You can ask me to view employee records, attendance summaries, leave balances, company policies, departments, and holidays using the buttons below:`;
+    const suggestions = ["Show employee list", "View attendance summary", "Check leave balances", "Show departments", "Company holidays"];
+    await queryDB("INSERT INTO ai_messages (conversation_id, role, content) VALUES (?, 'assistant', ?)", [conversationId, reply]);
+    return {
+      text: reply,
+      toolUsed: null,
+      structuredData: null,
+      suggestions
+    };
+  } catch (fallbackError) {
+    console.error("Fallback handler error:", fallbackError);
+    const reply = "I'm your HRMS Assistant. How can I assist you with employee records, attendance, or leave balances today?";
+    return {
+      text: reply,
+      toolUsed: null,
+      structuredData: null,
+      suggestions: ["Show employee list", "View attendance summary", "Check leave balances"]
+    };
   }
 }
 
@@ -1264,7 +1589,7 @@ async function performWebSearch(query) {
     while ((match = regex.exec(html)) !== null && results.length < 5) {
       let rawUrl = match[1];
       let title = match[2].replace(/<[^>]*>/g, '').trim();
-      
+
       let cleanUrl = rawUrl;
       if (rawUrl.includes('uddg=')) {
         const parts = rawUrl.split('uddg=');
@@ -1275,7 +1600,7 @@ async function performWebSearch(query) {
       } else if (rawUrl.startsWith('//')) {
         cleanUrl = 'https:' + rawUrl;
       }
-      
+
       results.push({ title, url: cleanUrl });
     }
 
