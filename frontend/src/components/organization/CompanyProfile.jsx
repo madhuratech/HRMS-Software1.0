@@ -75,7 +75,7 @@ const INITIAL_PROFILE = {
     headOfficeState: 'Tamil Nadu',
     headOfficeCountry: 'India',
     headOfficeZipCode: '600096',
-    headOfficeGoogleMapsUrl: 'https://maps.google.com/?q=Chennai',
+    headOfficeGoogleMapsUrl: '',
     branchName: 'Bengaluru Branch',
     branchAddress: 'No. 45, 80 Feet Road, Koramangala',
     branchCity: 'Bengaluru',
@@ -401,17 +401,33 @@ export function CompanyProfile() {
   };
 
   const getFormattedAddress = () => {
-    const { headOfficeAddress1, headOfficeAddress2, headOfficeCity, headOfficeState, headOfficeCountry } = profile?.address || {};
+    const { headOfficeAddress1, headOfficeAddress2, headOfficeLandmark, headOfficeCity, headOfficeState, headOfficeCountry, headOfficeZipCode } = profile?.address || {};
     const parts = [
       headOfficeAddress1,
       headOfficeAddress2,
+      headOfficeLandmark,
       headOfficeCity,
       headOfficeState,
-      headOfficeCountry
+      headOfficeCountry,
+      headOfficeZipCode
     ].filter(part => part && String(part).trim() !== '');
 
     if (parts.length === 0) return '—';
     return parts.join(', ');
+  };
+
+  const getGoogleMapsUrl = () => {
+    const customUrl = profile?.address?.headOfficeGoogleMapsUrl?.trim();
+    if (customUrl && !customUrl.toLowerCase().includes('q=chennai')) {
+      return customUrl.startsWith('http://') || customUrl.startsWith('https://')
+        ? customUrl
+        : `https://${customUrl}`;
+    }
+    const formatted = getFormattedAddress();
+    if (formatted && formatted !== '—') {
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatted)}`;
+    }
+    return null;
   };
 
   const renderEmptyState = (label, onAdd) => (
@@ -751,6 +767,16 @@ export function CompanyProfile() {
                         className="form-field-input"
                         value={tempProfile.address.headOfficeZipCode}
                         onChange={(e) => handleInputChange('address', 'headOfficeZipCode', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-group-field md:col-span-2">
+                      <label className="form-field-label">Google Maps Link (Optional)</label>
+                      <input
+                        type="text"
+                        className="form-field-input"
+                        placeholder="e.g. https://maps.google.com/?q=... (leave blank to auto-detect from address)"
+                        value={tempProfile.address.headOfficeGoogleMapsUrl || ''}
+                        onChange={(e) => handleInputChange('address', 'headOfficeGoogleMapsUrl', e.target.value)}
                       />
                     </div>
                   </div>
@@ -1272,8 +1298,8 @@ export function CompanyProfile() {
                       <div>
                         <p className="text-slate-400 font-medium">Google Maps Link</p>
                         <p className="text-slate-800 font-semibold mt-1">
-                          {profile.address.headOfficeGoogleMapsUrl ? (
-                            <a href={profile.address.headOfficeGoogleMapsUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                          {getGoogleMapsUrl() ? (
+                            <a href={getGoogleMapsUrl()} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
                               View Location
                             </a>
                           ) : '—'}

@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS company_profile (
     head_office_state VARCHAR(100) DEFAULT 'Tamil Nadu',
     head_office_country VARCHAR(100) DEFAULT 'India',
     head_office_zip_code VARCHAR(50) DEFAULT '600096',
-    head_office_google_maps_url VARCHAR(255) DEFAULT 'https://maps.google.com/?q=Chennai',
+    head_office_google_maps_url VARCHAR(255) DEFAULT NULL,
     branch_name VARCHAR(255) DEFAULT 'Bengaluru Branch',
     branch_address VARCHAR(255) DEFAULT 'No. 45, 80 Feet Road, Koramangala',
     branch_city VARCHAR(100) DEFAULT 'Bengaluru',
