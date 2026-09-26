@@ -284,7 +284,8 @@ function App() {
       role: role,
       token: 'mock_demo_jwt_token',
       employeeId: role === 'SUPER_ADMIN' ? 1 : (role === 'TEAM_LEADER' ? 3 : 2),
-      employeeCode: role === 'SUPER_ADMIN' ? 'EMP0001' : (role === 'TEAM_LEADER' ? 'EMP0003' : 'EMP0002')
+      employeeCode: role === 'SUPER_ADMIN' ? 'EMP0001' : (role === 'TEAM_LEADER' ? 'EMP0003' : 'EMP0002'),
+      employee_code: role === 'SUPER_ADMIN' ? 'EMP0001' : (role === 'TEAM_LEADER' ? 'EMP0003' : 'EMP0002')
     };
     handleLogin(role, name, userObj);
   };

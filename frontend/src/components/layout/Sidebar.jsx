@@ -27,7 +27,7 @@ import { cn, getAvatarUrl } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
 import { canView } from '../../lib/permissions';
 
-export function Sidebar({ userRole, onLogout, onClose }) {
+export function Sidebar({ userRole, onLogout, isOpen = false, onClose }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -496,9 +496,17 @@ export function Sidebar({ userRole, onLogout, onClose }) {
           </linearGradient>
         </defs>
       </svg>
-      <div className="sidebar custom-sidebar overflow-y-auto safe-area-top">
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div 
+          className="sidebar-backdrop fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-40 transition-opacity duration-300"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <aside className={cn("sidebar custom-sidebar overflow-y-auto safe-area-top", isOpen && "mobile-open")}>
         {/* Logo */}
-        <div className="p-5 custom-sidebar-border-b flex items-center justify-between">
+        <div className="p-4 sm:p-5 custom-sidebar-border-b flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -510,6 +518,16 @@ export function Sidebar({ userRole, onLogout, onClose }) {
               <p className="text-[10px] text-blue-200/80 uppercase tracking-widest font-semibold mt-0.5">HRMS</p>
             </div>
           </div>
+          {/* Mobile Close Button */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="mobile-close-btn p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors items-center justify-center"
+            title="Close menu"
+            aria-label="Close menu"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -555,7 +573,7 @@ export function Sidebar({ userRole, onLogout, onClose }) {
             </button>
           </div>
         </div>
-      </div>
+      </aside>
     </>
   );
 }

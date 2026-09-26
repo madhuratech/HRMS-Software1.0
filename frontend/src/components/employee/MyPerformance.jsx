@@ -14,7 +14,9 @@ export function MyPerformance() {
       try {
         const parsed = JSON.parse(auth);
         if (parsed.user && parsed.user.name) setUserName(parsed.user.name);
-        if (parsed.user && parsed.user.emp_id) setEmpId(parsed.user.emp_id);
+        if (parsed.user && (parsed.user.employee_code || parsed.user.employeeCode || parsed.user.emp_id)) {
+          setEmpId(parsed.user.employee_code || parsed.user.employeeCode || parsed.user.emp_id);
+        }
       } catch (e) {}
     }
 

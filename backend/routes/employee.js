@@ -7,16 +7,18 @@ const path = require("path");
 const fs = require("fs");
 const { authenticateJWT, checkPermission } = require("../middlewares/auth");
 const EmployeeExperienceService = require("../services/EmployeeExperienceService");
+const EmployeeCreationService = require("../services/EmployeeCreationService");
 
 /**
  * Helper to check if requester is Team Leader and get their assigned team_id
  */
 function getTeamLeaderContext(req, callback) {
   const roleHeader = req.headers['x-user-role'];
-  const userRole = roleHeader || (req.user && req.user.role) || '';
-  const isTL = userRole === 'TEAM_LEADER' || userRole === 'Team Leader' || (req.headers['x-employee-id'] === '11');
+  const userRole = (roleHeader || (req.user && req.user.role) || '').toUpperCase().trim();
+  const isAdminOrHR = ['SUPER_ADMIN', 'SUPERADMIN', 'ADMIN', 'HR', 'HR_MANAGER', 'HRMANAGER'].includes(userRole);
+  const isTL = !isAdminOrHR && (userRole === 'TEAM_LEADER' || userRole === 'TEAM LEADER');
 
-  let reqId = req.headers['x-employee-id'] || (req.user && (req.user.employee_id || req.user.id)) || 11;
+  let reqId = req.headers['x-employee-id'] || (req.user && (req.user.employee_id || req.user.id)) || null;
   let userEmail = (req.user && req.user.email) || null;
 
   if (typeof reqId === 'string' && !isNaN(parseInt(reqId))) {
@@ -176,6 +178,13 @@ router.get("/lookup/teams", (req, res) => {
   });
 });
 
+router.get("/lookup/managers", (req, res) => {
+  db.query("SELECT id, name, employee_code, employee_id FROM employees WHERE status = 'Active' ORDER BY name", (err, rows) => {
+    if (err) return res.status(500).json({ error: "Failed to fetch managers" });
+    res.json(rows);
+  });
+});
+
 /**
  * GET TEAM MEMBERS (Team Leader Only Endpoint)
  * Returns ONLY the authenticated Team Leader's own profile and members of their assigned team.
@@ -255,9 +264,9 @@ router.get("/", authenticateJWT, (req, res) => {
     }
 
     if (search) {
-      conditions.push("(e.name LIKE ? OR e.email LIKE ? OR e.phone LIKE ? OR CONCAT('EMP00', e.id) = ?)");
+      conditions.push("(e.name LIKE ? OR e.email LIKE ? OR e.phone LIKE ? OR e.employee_code LIKE ? OR e.employee_id LIKE ? OR CONCAT('EMP', LPAD(e.id, 4, '0')) = ?)");
       const searchWildcard = `%${search}%`;
-      params.push(searchWildcard, searchWildcard, searchWildcard, search);
+      params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, search);
     }
     if (department) {
       conditions.push("dept.dept_name = ?");
@@ -271,18 +280,27 @@ router.get("/", authenticateJWT, (req, res) => {
       conditions.push("b.branch_name = ?");
       params.push(branch);
     }
-    if (status) {
-      conditions.push("e.status = ?");
-      params.push(status);
-    }
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
-    const orderBy = sortBy ? `e.${sortBy}` : "e.created_at";
-    const order = sortOrder === "asc" ? "ASC" : "DESC";
+    let validSortCol = 'e.id';
+    if (sortBy === 'id') validSortCol = 'e.id';
+    else if (sortBy === 'employee_code' || sortBy === 'employee_id' || sortBy === 'code') validSortCol = 'COALESCE(NULLIF(e.employee_code, ""), NULLIF(e.employee_id, ""))';
+    else if (sortBy === 'name') validSortCol = 'e.name';
+    else if (sortBy === 'created_at') validSortCol = 'e.created_at';
+    else if (sortBy === 'join_date') validSortCol = 'e.join_date';
+
+    const order = (sortOrder && sortOrder.toLowerCase() === 'desc') ? 'DESC' : 'ASC';
+    const orderBy = validSortCol;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     const sql = `
       SELECT 
         e.id,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
+        COALESCE(NULLIF(e.employee_id, ''), NULLIF(e.employee_code, ''), '') as employee_id,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employeeId,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as emp_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as empId,
         e.name,
         e.email,
         e.phone,
@@ -358,181 +376,103 @@ router.get("/check-email", (req, res) => {
 });
 
 /**
- * CREATE EMPLOYEE & LINKED USER LOGIN ACCOUNT
+ * REAL-TIME EMPLOYEE ID / CODE DUPLICATE CHECK
  */
-router.post("/", authenticateJWT, checkPermission('employees', 'add_employee', 'create'), async (req, res) => {
-  const {
-    name,
-    email,
-    phone,
-    dob,
-    joinDate,
-    gender,
-    employmentType,
-    experience,
-    experience_type,
-    total_experience_years,
-    total_experience_months,
-    relevant_experience_years,
-    relevant_experience_months,
-    previous_experiences,
-    shiftType,
-    salary,
-    address,
-    emergencyContact,
-    bankDetails,
-    branch,
-    department,
-    designation,
-    managerName,
-    teamName,
-    password
-  } = req.body;
-
-  const finalExperience = experience !== undefined ? experience : (req.body.total_experience || null);
-  const finalShiftType = shiftType || req.body.shift_type || 'Regular Shift';
-
-  // Parse structured experience if not explicitly provided
-  const parsedExp = EmployeeExperienceService.parseExperienceString(finalExperience);
-  const finalExpType = experience_type || parsedExp.type || 'Fresher';
-  const finalTotYrs = !isNaN(parseInt(total_experience_years, 10)) ? parseInt(total_experience_years, 10) : (parsedExp.totalYears || 0);
-  const finalTotMos = !isNaN(parseInt(total_experience_months, 10)) ? parseInt(total_experience_months, 10) : (parsedExp.totalMonths || 0);
-  const finalRelYrs = !isNaN(parseInt(relevant_experience_years, 10)) ? parseInt(relevant_experience_years, 10) : (parsedExp.relevantYears || finalTotYrs || 0);
-  const finalRelMos = !isNaN(parseInt(relevant_experience_months, 10)) ? parseInt(relevant_experience_months, 10) : (parsedExp.relevantMonths || finalTotMos || 0);
-
-  if (!email || !email.trim()) {
-    return res.status(400).json({ message: "Login email is required." });
+router.get("/check-code", (req, res) => {
+  const { code } = req.query;
+  if (!code || !code.trim()) {
+    return res.json({ available: true, message: "Employee ID required" });
   }
 
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanName = (name || "").trim();
-
-  if (!cleanName) {
-    return res.status(400).json({ message: "Employee name is required." });
-  }
-
-  // 1. Double-check duplicate email in users or employees table
-  const dupCheckSql = `
-    SELECT 'user' as source FROM users WHERE LOWER(email) = ?
-    UNION
-    SELECT 'employee' as source FROM employees WHERE LOWER(email) = ?
+  const cleanCode = code.trim();
+  const sql = `
+    SELECT id FROM employees WHERE employee_code = ? OR employee_id = ?
     LIMIT 1
   `;
 
-  db.query(dupCheckSql, [cleanEmail, cleanEmail], async (dupErr, dupRows) => {
-    if (dupErr) {
-      console.error("Error checking email duplicate:", dupErr);
-      return res.status(500).json({ message: "Database error checking email availability" });
+  db.query(sql, [cleanCode, cleanCode], (err, rows) => {
+    if (err) {
+      console.error("Check code error:", err);
+      return res.status(500).json({ available: false, message: "Database query error" });
     }
 
-    if (dupRows && dupRows.length > 0) {
-      return res.status(400).json({
-        message: "This email is already registered. Please use another company email."
+    if (rows && rows.length > 0) {
+      return res.json({
+        available: false,
+        message: "Employee ID already exists"
       });
     }
 
-    try {
-      // 2. Hash password securely
-      const defaultPassword = password || "Admin2026";
-      const password_hash = await bcrypt.hash(defaultPassword, 10);
-
-      // 3. Create employee record first
-      const insertEmpSql = `
-        INSERT INTO employees
-        (name, email, phone, dob, join_date, gender, employment_type, experience, experience_type, total_experience_years, total_experience_months, relevant_experience_years, relevant_experience_months, shift_type, salary, address, emergency_contact, bank_details, password_hash, branch_id, department_id, designation_id, manager_id, team_id)
-        VALUES (
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-          (SELECT IF(? REGEXP '^[0-9]+$', ?, (SELECT id FROM branches WHERE branch_name = ? LIMIT 1))),
-          (SELECT IF(? REGEXP '^[0-9]+$', ?, (SELECT id FROM departments WHERE dept_name = ? LIMIT 1))),
-          (SELECT IF(? REGEXP '^[0-9]+$', ?, (SELECT id FROM designations WHERE role_name = ? OR role_code = ? LIMIT 1))),
-          (SELECT IF(? REGEXP '^[0-9]+$', ?, (SELECT id FROM (SELECT id FROM employees WHERE name = ? LIMIT 1) as temp))),
-          (SELECT IF(? REGEXP '^[0-9]+$', ?, (SELECT id FROM teams WHERE name = ? LIMIT 1)))
-        )
-      `;
-
-      db.query(
-        insertEmpSql,
-        [
-          cleanName, cleanEmail, phone, dob || null, joinDate || null, gender, employmentType || 'Full-time', finalExperience, finalExpType, finalTotYrs, finalTotMos, finalRelYrs, finalRelMos, finalShiftType, salary || 0, address, emergencyContact, bankDetails, password_hash,
-          branch, branch, branch,
-          department, department, department,
-          designation, designation, designation, designation,
-          managerName, managerName, managerName,
-          teamName, teamName, teamName
-        ],
-        async (empErr, result) => {
-          if (empErr) {
-            console.error("Employee insert error:", empErr);
-            if (empErr.code === 'ER_DUP_ENTRY') {
-              return res.status(400).json({ message: "This email is already registered. Please use another company email." });
-            }
-            return res.status(500).json({ message: "Employee creation failed", details: empErr });
-          }
-
-          const newEmpId = result.insertId;
-
-          // Insert any previous experience records provided during employee creation
-          if (Array.isArray(previous_experiences) && previous_experiences.length > 0) {
-            try {
-              for (const exp of previous_experiences) {
-                if (exp && exp.company_name) {
-                  await EmployeeExperienceService.create(newEmpId, exp, null);
-                }
-              }
-              await EmployeeExperienceService.recalculateAndUpdateSummary(newEmpId);
-            } catch (prevExpErr) {
-              console.error("Error creating initial previous experiences:", prevExpErr);
-            }
-          }
-
-          // Determine user role for users table based on designation
-          let targetRole = 'EMPLOYEE';
-          const desgLower = (designation || '').toLowerCase();
-          if (desgLower.includes('admin')) {
-            targetRole = 'SUPER_ADMIN';
-          } else if (desgLower.includes('team leader') || desgLower.includes('team lead')) {
-            targetRole = 'TEAM_LEADER';
-          } else if (desgLower.includes('hr') || desgLower.includes('manager') || desgLower.includes('human resources')) {
-            targetRole = 'HR_MANAGER';
-          }
-
-          // 4. Create linked user login account in users table
-          const insertUserSql = `
-            INSERT INTO users (employee_id, full_name, email, password_hash, role, email_verified, email_verified_at, account_status)
-            VALUES (?, ?, ?, ?, ?, 1, NOW(), 'Active')
-          `;
-
-          db.query(
-            insertUserSql,
-            [newEmpId, cleanName, cleanEmail, password_hash, targetRole],
-            (userErr, userResult) => {
-              if (userErr) {
-                console.error("User account creation failed, rolling back employee insert:", userErr);
-                // Rollback: remove created employee record if user login account creation fails
-                db.query("DELETE FROM employees WHERE id = ?", [newEmpId], () => { });
-
-                if (userErr.code === 'ER_DUP_ENTRY') {
-                  return res.status(400).json({ message: "This email is already registered. Please use another company email." });
-                }
-                return res.status(500).json({ message: "Failed to create employee login account", details: userErr });
-              }
-
-              // Log creation history
-              logHistory(newEmpId, "Joining", null, `Joined as ${designation || 'Employee'} in ${department || 'General'}`, joinDate);
-
-              return res.json({
-                message: "Employee created successfully. Login account created successfully.",
-                id: newEmpId
-              });
-            }
-          );
-        }
-      );
-    } catch (error) {
-      console.error("Creation exception:", error);
-      return res.status(500).json({ message: "Server error during creation" });
-    }
+    return res.json({ available: true, message: "Employee ID available" });
   });
+});
+
+/**
+ * IMPORT METADATA (Departments, Designations, Branches, Teams, Existing Employees)
+ */
+router.get("/import-meta", async (req, res) => {
+  try {
+    const meta = await EmployeeCreationService.getImportMeta();
+    res.json(meta);
+  } catch (err) {
+    console.error("Error fetching import meta:", err);
+    res.status(500).json({ error: "Failed to fetch import metadata", details: err.message });
+  }
+});
+
+/**
+ * EXPORT EMPLOYEES DATA (Full Add Employee fields)
+ */
+router.get("/export-data", authenticateJWT, async (req, res) => {
+  try {
+    const data = await EmployeeCreationService.getExportData();
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching export data:", err);
+    res.status(500).json({ error: "Failed to fetch employee export data", details: err.message });
+  }
+});
+
+/**
+ * BULK IMPORT EMPLOYEES (Excel Import)
+ */
+router.post("/bulk-import", authenticateJWT, checkPermission('employees', 'add_employee', 'create'), async (req, res) => {
+  const { employees, updateExisting = false } = req.body;
+  if (!Array.isArray(employees) || employees.length === 0) {
+    return res.status(400).json({ message: "Employees list is required and cannot be empty." });
+  }
+
+  try {
+    const summary = await EmployeeCreationService.bulkImport(employees, { updateExisting: !!updateExisting });
+    res.json(summary);
+  } catch (err) {
+    console.error("Error in bulk import:", err);
+    res.status(500).json({ message: "Bulk import failed", details: err.message });
+  }
+});
+
+/**
+ * CREATE EMPLOYEE & LINKED USER LOGIN ACCOUNT
+ */
+router.post("/", authenticateJWT, checkPermission('employees', 'add_employee', 'create'), async (req, res) => {
+  try {
+    const result = await EmployeeCreationService.createEmployee(req.body);
+    res.json({
+      message: "Employee created successfully. Login account created successfully.",
+      id: result.id,
+      employee_id: result.id,
+      employee_code: result.employee_code,
+      employeeCode: result.employee_code,
+      emp_code: result.employee_code
+    });
+  } catch (err) {
+    console.error("Employee creation error:", err);
+    const msg = err.message || "Employee creation failed";
+    if (msg.includes("already registered") || msg.includes("already in use") || msg.includes("required")) {
+      return res.status(400).json({ message: msg });
+    }
+    return res.status(500).json({ message: "Employee creation failed", details: msg });
+  }
 });
 
 
@@ -562,7 +502,7 @@ router.put("/:id", authenticateJWT, (req, res, next) => {
   const targetId = parseInt(id);
   if (isNaN(targetId)) return next();
 
-  getTeamLeaderContext(req, (errCtx, ctx) => {
+  getTeamLeaderContext(req, async (errCtx, ctx) => {
     if (ctx.isTeamLeader && targetId !== ctx.leaderId) {
       return res.status(403).json({
         error: "Access denied. Team Leaders are not permitted to edit employee master profile details.",
@@ -572,10 +512,18 @@ router.put("/:id", authenticateJWT, (req, res, next) => {
 
     const {
       name,
+      firstName,
+      lastName,
+      employee_code,
+      employee_id,
+      employeeCode,
       email,
       phone,
       dob,
+      joinDate,
       gender,
+      maritalStatus,
+      bloodGroup,
       employmentType,
       experience,
       shiftType,
@@ -583,24 +531,129 @@ router.put("/:id", authenticateJWT, (req, res, next) => {
       address,
       emergencyContact,
       bankDetails,
+      bankName,
+      accountNumber,
+      ifscCode,
       branch,
+      branchId,
       department,
+      departmentId,
       designation,
+      designationId,
       managerName,
-      teamName
+      managerId,
+      teamName,
+      teamId,
+      experienceType,
+      totalExperienceYears,
+      totalExperienceMonths,
+      relevantExperienceYears,
+      relevantExperienceMonths,
+      password,
+      loginPassword
     } = req.body;
 
-    const finalExperience = experience !== undefined ? experience : (req.body.total_experience !== undefined ? req.body.total_experience : null);
+    let finalName = name;
+    if (!finalName && (firstName || lastName)) {
+      finalName = `${firstName || ''} ${lastName || ''}`.trim();
+    }
+
+    const finalCode = (employee_code || employee_id || employeeCode || '').trim();
+    if (finalCode) {
+      try {
+        const dupCode = await new Promise((resolve) => {
+          db.query(
+            "SELECT id FROM employees WHERE (employee_code = ? OR employee_id = ?) AND id != ?",
+            [finalCode, finalCode, targetId],
+            (err, rows) => resolve(rows || [])
+          );
+        });
+        if (dupCode.length > 0) {
+          return res.status(400).json({ error: `Employee ID "${finalCode}" already exists.` });
+        }
+      } catch (codeErr) {
+        console.error("Code duplicate check error:", codeErr);
+      }
+    }
+
+    // Duplicate email check
+    if (email) {
+      const cleanEmail = String(email).trim().toLowerCase();
+      try {
+        const dupes = await new Promise((resolve, reject) => {
+          const checkSql = `
+            SELECT id FROM employees WHERE LOWER(email) = ? AND id != ?
+            UNION
+            SELECT id FROM users WHERE LOWER(email) = ? AND employee_id != ?
+          `;
+          db.query(checkSql, [cleanEmail, targetId, cleanEmail, targetId], (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows || []);
+          });
+        });
+        if (dupes.length > 0) {
+          return res.status(400).json({ error: `Email "${cleanEmail}" is already registered by another employee.` });
+        }
+      } catch (checkErr) {
+        console.error("Email duplicate check error:", checkErr);
+      }
+    }
+
+    // Resolve bank details
+    let finalBankDetails = bankDetails;
+    if (!finalBankDetails && (bankName !== undefined || accountNumber !== undefined || ifscCode !== undefined)) {
+      finalBankDetails = JSON.stringify({
+        bankName: bankName || '',
+        accountNumber: accountNumber || '',
+        ifscCode: ifscCode || ''
+      });
+    } else if (typeof finalBankDetails === 'object' && finalBankDetails !== null) {
+      finalBankDetails = JSON.stringify(finalBankDetails);
+    }
+
+    const safeInt = (val) => {
+      if (val === null || val === undefined || val === '') return null;
+      const num = parseInt(val, 10);
+      return isNaN(num) ? null : num;
+    };
+
+    const safeFloat = (val) => {
+      if (val === null || val === undefined || val === '') return null;
+      const num = parseFloat(val);
+      return isNaN(num) ? null : num;
+    };
+
     const finalShiftType = shiftType !== undefined ? shiftType : (req.body.shift_type !== undefined ? req.body.shift_type : 'Regular Shift');
+    const finalExperience = experience !== undefined ? experience : (req.body.total_experience !== undefined ? req.body.total_experience : null);
+    const finalJoinDate = joinDate !== undefined ? (joinDate || null) : (req.body.join_date !== undefined ? (req.body.join_date || null) : null);
+    const finalDob = dob !== undefined ? (dob || null) : null;
+    const finalSalary = salary !== undefined ? (safeFloat(salary) ?? 0) : 0;
+
+    const bId = safeInt(branchId);
+    const dId = safeInt(departmentId);
+    const desgId = safeInt(designationId);
+    const mId = safeInt(managerId);
+    const tId = safeInt(teamId);
+
+    const bName = (branch && typeof branch === 'string' && branch.trim()) ? branch.trim() : null;
+    const dName = (department && typeof department === 'string' && department.trim()) ? department.trim() : null;
+    const desgName = (designation && typeof designation === 'string' && designation.trim()) ? designation.trim() : null;
+    const mName = (managerName && typeof managerName === 'string' && managerName.trim()) ? managerName.trim() : null;
+    const tName = (teamName && typeof teamName === 'string' && teamName.trim()) ? teamName.trim() : null;
 
     const sql = `
       UPDATE employees
       SET 
-        name = ?, 
-        email = ?, 
-        phone = ?, 
+        name = COALESCE(NULLIF(?, ''), name), 
+        employee_code = COALESCE(NULLIF(?, ''), employee_code),
+        employee_id = COALESCE(NULLIF(?, ''), employee_id),
+        email = COALESCE(NULLIF(?, ''), email), 
+        phone = COALESCE(NULLIF(?, ''), phone), 
         dob = ?, 
+        join_date = ?,
         gender = ?, 
+        marital_status = ?,
+        blood_group = ?,
         employment_type = ?, 
         experience = ?,
         shift_type = ?,
@@ -608,32 +661,119 @@ router.put("/:id", authenticateJWT, (req, res, next) => {
         address = ?, 
         emergency_contact = ?, 
         bank_details = ?,
-        branch_id = (SELECT id FROM branches WHERE branch_name = ? LIMIT 1),
-        department_id = (SELECT id FROM departments WHERE dept_name = ? LIMIT 1),
-        designation_id = (SELECT id FROM designations WHERE role_name = ? LIMIT 1),
-        manager_id = (SELECT id FROM (SELECT id FROM employees WHERE name = ? LIMIT 1) as temp),
-        team_id = (SELECT id FROM teams WHERE name = ? LIMIT 1)
+        branch_id = COALESCE(
+          (SELECT id FROM branches WHERE id = ? OR branch_name = ? LIMIT 1),
+          branch_id
+        ),
+        department_id = COALESCE(
+          (SELECT id FROM departments WHERE id = ? OR dept_name = ? LIMIT 1),
+          department_id
+        ),
+        designation_id = COALESCE(
+          (SELECT id FROM designations WHERE id = ? OR role_name = ? OR role_code = ? LIMIT 1),
+          designation_id
+        ),
+        manager_id = COALESCE(
+          (SELECT id FROM (SELECT id FROM employees WHERE id = ? OR name = ? LIMIT 1) as temp),
+          manager_id
+        ),
+        team_id = COALESCE(
+          (SELECT id FROM teams WHERE id = ? OR name = ? LIMIT 1),
+          team_id
+        ),
+        experience_type = COALESCE(?, experience_type),
+        total_experience_years = COALESCE(?, total_experience_years),
+        total_experience_months = COALESCE(?, total_experience_months),
+        relevant_experience_years = COALESCE(?, relevant_experience_years),
+        relevant_experience_months = COALESCE(?, relevant_experience_months)
       WHERE id = ?
     `;
 
     db.query(sql, [
-      name, email, phone, dob, gender, employmentType, finalExperience, finalShiftType, salary, address, emergencyContact, bankDetails,
-      branch, department, designation, managerName, teamName, id
-    ], (err, result) => {
+      finalName !== undefined ? finalName : null,
+      finalCode || null,
+      finalCode || null,
+      email !== undefined ? email : null,
+      phone !== undefined ? phone : null,
+      finalDob,
+      finalJoinDate,
+      gender !== undefined ? gender : null,
+      maritalStatus !== undefined ? maritalStatus : null,
+      bloodGroup !== undefined ? bloodGroup : null,
+      employmentType !== undefined ? employmentType : null,
+      finalExperience !== undefined ? finalExperience : null,
+      finalShiftType !== undefined ? finalShiftType : null,
+      finalSalary !== undefined ? finalSalary : null,
+      address !== undefined ? address : null,
+      emergencyContact !== undefined ? emergencyContact : null,
+      finalBankDetails !== undefined ? finalBankDetails : null,
+      bId, bName,
+      dId, dName,
+      desgId, desgName, desgName,
+      mId, mName,
+      tId, tName,
+      experienceType !== undefined ? experienceType : null,
+      safeInt(totalExperienceYears),
+      safeInt(totalExperienceMonths),
+      safeInt(relevantExperienceYears),
+      safeInt(relevantExperienceMonths),
+      targetId
+    ], async (err, result) => {
       if (err) {
-        console.error(err);
+        console.error("Employee update error:", err);
         return res.status(500).json({ error: "Failed to update employee details", details: err });
       }
 
-      logHistory(id, "Profile Update", "Previous values", `Updated profile fields for ${name}`, new Date());
+      // Update users table linked record
+      if (finalName || email) {
+        await new Promise(res => {
+          db.query(
+            "UPDATE users SET full_name = COALESCE(NULLIF(?, ''), full_name), email = COALESCE(NULLIF(?, ''), email) WHERE employee_id = ? OR email = ?",
+            [finalName || null, email || null, targetId, email || ''],
+            (uErr) => {
+              if (uErr) console.error("Error updating users record:", uErr);
+              res();
+            }
+          );
+        });
+      }
+
+      // Update password if provided
+      const passToSet = password || loginPassword;
+      if (passToSet && typeof passToSet === 'string' && passToSet.trim().length >= 4) {
+        try {
+          const password_hash = bcrypt.hashSync(passToSet.trim(), 10);
+          await new Promise(res => db.query("UPDATE employees SET password_hash = ? WHERE id = ?", [password_hash, targetId], res));
+
+          const existingUser = await new Promise(res => {
+            db.query("SELECT id FROM users WHERE employee_id = ? OR email = ?", [targetId, email || ''], (e, r) => res(r && r[0]));
+          });
+
+          if (existingUser) {
+            await new Promise(res => db.query("UPDATE users SET password_hash = ? WHERE id = ?", [password_hash, existingUser.id], res));
+          } else if (email) {
+            await new Promise(res => {
+              db.query(
+                "INSERT INTO users (employee_id, full_name, email, password_hash, role, email_verified, email_verified_at, account_status) VALUES (?, ?, ?, ?, 'EMPLOYEE', 1, NOW(), 'Active')",
+                [targetId, finalName || 'Employee', email, password_hash],
+                (e) => res()
+              );
+            });
+          }
+        } catch (passErr) {
+          console.error("Error updating password in PUT /:id:", passErr);
+        }
+      }
+
+      logHistory(targetId, "Profile Update", "Previous values", `Updated profile fields for ${finalName || 'employee'}`, new Date());
 
       // Trigger Notification
       const NotificationService = require("../services/NotificationService");
       const updaterName = req.user?.name || "System";
-      NotificationService.triggerEmployeeProfileUpdate(id, updaterName)
+      NotificationService.triggerEmployeeProfileUpdate(targetId, updaterName)
         .catch(e => console.error("Error triggering employee profile update notification:", e));
 
-      res.json({ message: "Employee updated successfully" });
+      res.json({ message: "Employee profile updated successfully" });
     });
   });
 });
@@ -693,7 +833,7 @@ router.get("/:id/profile", authenticateJWT, (req, res) => {
       });
     }
 
-    renderEmployeeProfileResponse(isSelf ? leaderId : targetId, false, res);
+    renderEmployeeProfileResponse(targetId, false, res);
   });
 });
 
@@ -703,7 +843,7 @@ router.get("/:id/profile", authenticateJWT, (req, res) => {
 router.get("/:id", authenticateJWT, (req, res, next) => {
   if (req.params.id === 'me') {
     return getTeamLeaderContext(req, (errCtx, ctx) => {
-      renderEmployeeProfileResponse(ctx.leaderId, false, res);
+      renderEmployeeProfileResponse((ctx && ctx.leaderId) || (req.user && req.user.id), false, res);
     });
   }
 
@@ -713,6 +853,9 @@ router.get("/:id", authenticateJWT, (req, res, next) => {
   }
 
   getTeamLeaderContext(req, (errCtx, ctx) => {
+    if (!ctx) {
+      return renderEmployeeProfileResponse(targetId, false, res);
+    }
     const leaderId = ctx.leaderId;
     const reqUserId = req.user ? req.user.id : null;
     const isSelf = targetId === leaderId || targetId === reqUserId || targetId === ctx.leaderId;
@@ -738,11 +881,16 @@ router.get("/:id", authenticateJWT, (req, res, next) => {
       });
     }
 
-    renderEmployeeProfileResponse(isSelf ? leaderId : targetId, false, res);
+    renderEmployeeProfileResponse(targetId, false, res);
   });
 });
 
 function renderEmployeeProfileResponse(targetId, isTeamMemberView, res) {
+  if (!targetId || isNaN(parseInt(targetId, 10))) {
+    return res.status(400).json({ error: "Invalid employee ID specified" });
+  }
+  const cleanTargetId = parseInt(targetId, 10);
+
   const sql = `
     SELECT 
       e.*,
@@ -763,8 +911,11 @@ function renderEmployeeProfileResponse(targetId, isTeamMemberView, res) {
     LIMIT 1
   `;
 
-  db.query(sql, [targetId, targetId, targetId, targetId], (err, results) => {
-    if (err) return res.status(500).json({ error: "Failed to fetch profile", details: err });
+  db.query(sql, [cleanTargetId, cleanTargetId, cleanTargetId, cleanTargetId], (err, results) => {
+    if (err) {
+      console.error("renderEmployeeProfileResponse DB error:", err);
+      return res.status(500).json({ error: "Failed to fetch profile", details: err.message });
+    }
 
     if (results.length === 0) {
       const fallbackSql = `
@@ -795,17 +946,39 @@ function renderEmployeeProfileResponse(targetId, isTeamMemberView, res) {
     sendProfileObj(results[0]);
 
     function sendProfileObj(emp) {
+      const empCode = emp.employee_id || emp.employee_code || '';
+      let parsedBank = {};
+      try {
+        if (emp.bank_details) {
+          if (typeof emp.bank_details === 'string' && emp.bank_details.trim().startsWith('{')) {
+            parsedBank = JSON.parse(emp.bank_details);
+          } else {
+            parsedBank = { bankName: emp.bank_details };
+          }
+        }
+      } catch (e) {
+        parsedBank = { bankName: emp.bank_details };
+      }
+
       const profile = {
         id: emp.id,
-        employeeId: emp.employee_id || `EMP${String(emp.id).padStart(4, '0')}`,
-        empId: emp.employee_id || `EMP${String(emp.id).padStart(4, '0')}`,
+        employee_id: empCode,
+        employee_code: empCode,
+        employeeCode: empCode,
+        employeeId: empCode,
+        empId: empCode,
+        emp_code: empCode,
         name: emp.name,
+        firstName: emp.first_name || (emp.name ? emp.name.split(' ')[0] : ''),
+        lastName: emp.last_name || (emp.name ? emp.name.split(' ').slice(1).join(' ') : ''),
         email: emp.email,
         phone: emp.phone,
         dob: emp.dob,
         joinDate: emp.join_date,
         status: emp.status,
         gender: emp.gender,
+        maritalStatus: emp.marital_status || '',
+        bloodGroup: emp.blood_group || '',
         employmentType: emp.employment_type,
         experience: emp.experience || '',
         shiftType: emp.shift_type || 'Regular Shift',
@@ -817,12 +990,20 @@ function renderEmployeeProfileResponse(targetId, isTeamMemberView, res) {
         relevantExperienceMonths: emp.relevant_experience_months || 0,
         salary: isTeamMemberView ? null : emp.salary,
         bankDetails: isTeamMemberView ? null : emp.bank_details,
+        bankName: parsedBank.bankName || parsedBank.bank_name || '',
+        accountNumber: parsedBank.accountNumber || parsedBank.account_number || '',
+        ifscCode: parsedBank.ifscCode || parsedBank.ifsc_code || '',
         emergencyContact: emp.emergency_contact,
         address: emp.address,
+        branchId: emp.branch_id || null,
         branchName: emp.branch_name,
+        departmentId: emp.department_id || null,
         deptName: emp.dept_name,
+        designationId: emp.designation_id || null,
         roleName: emp.role_name,
+        managerId: emp.manager_id || null,
         managerName: emp.manager_name,
+        teamId: emp.team_id || null,
         teamName: emp.team_name,
         profilePhoto: emp.profile_photo || null,
         attendanceSummary: {
@@ -868,6 +1049,8 @@ router.get("/promotions", (req, res) => {
       p.*,
       e.name as employee_name,
       e.profile_photo as profile_photo,
+      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employeeId,
       COALESCE(d1.role_name, p.current_designation) as old_designation,
       COALESCE(d2.role_name, p.promoted_designation) as new_designation,
       approver.name as approved_by_name
@@ -1021,6 +1204,8 @@ router.get("/transfers", (req, res) => {
       t.*,
       e.name as employee_name,
       e.profile_photo as profile_photo,
+      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employeeId,
       approver.name as approved_by_name
     FROM transfers t
     JOIN employees e ON t.employee_id = e.id
@@ -1166,7 +1351,9 @@ router.get("/exits", (req, res) => {
     SELECT 
       ex.*,
       e.name as employee_name,
-      e.profile_photo as profile_photo
+      e.profile_photo as profile_photo,
+      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employeeId
     FROM exit_management ex
     JOIN employees e ON ex.employee_id = e.id
     ORDER BY ex.created_at DESC

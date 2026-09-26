@@ -3871,9 +3871,38 @@ html, body, #root {
   background-color: #0a1128;
   border-right: 1px solid rgba(17, 30, 54, 0.4);
   color: #ffffff;
-  position: static !important;
-  transform: none !important;
   box-sizing: border-box;
+}
+
+/* Desktop Sidebar: remains static, exactly preserving desktop design */
+@media (min-width: 1024px) {
+  .sidebar {
+    position: static !important;
+    transform: none !important;
+    width: 250px !important;
+    min-width: 250px !important;
+  }
+}
+
+/* Mobile & Tablet Drawer (< 1024px) */
+@media (max-width: 1023px) {
+  .sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    z-index: 50 !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    height: 100vh !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
 }
 
 .app-main {
@@ -3975,4 +4004,263 @@ textarea[class]:focus {
 .otp-input-box:focus {
   border-color: #2563eb !important;
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* ====================================================================
+   COMPREHENSIVE GLOBAL RESPONSIVE HRMS SUITE (Mobile, Tablet, Desktop)
+   ==================================================================== */
+
+/* 1. ROOT & BODY OVERFLOW PROTECTION */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* 2. TABLE RESPONSIVENESS (Horizontal scroll container) */
+.table-responsive-container,
+.hrms-table-container,
+.overflow-x-auto {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+.table-responsive-container > table,
+.hrms-table-container > table,
+.hrms-table {
+  min-width: 640px;
+}
+
+/* 3. RECHARTS & DATA VISUALIZATIONS */
+.recharts-responsive-container {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.recharts-wrapper {
+  max-width: 100% !important;
+}
+
+.recharts-surface {
+  max-width: 100% !important;
+}
+
+/* 4. POPOVERS ON MOBILE (Search & Notifications) */
+@media (max-width: 640px) {
+  .search-popover,
+  .notification-popover {
+    position: fixed !important;
+    top: 68px !important;
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 84px) !important;
+    z-index: 9999 !important;
+    border-radius: 16px !important;
+  }
+}
+
+/* 5. UNIVERSAL RESPONSIVE MODAL & DIALOG SYSTEM */
+@media (max-width: 767px) {
+  /* Modals inside radix/dialog portal */
+  [data-slot="dialog-content"],
+  div[role="dialog"] > div:not(.sidebar-backdrop) {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    border-radius: 16px !important;
+    padding: 16px !important;
+  }
+
+  /* Inline fixed modals across HRMS components */
+  div[style*="position: fixed"][style*="translate(-50%"]:not(.sidebar),
+  div[style*="position: 'fixed'"][style*="translate(-50%"]:not(.sidebar),
+  div[style*="position: fixed"][style*="translate(-50%,-50%)"]:not(.sidebar),
+  div[style*="position: 'fixed'"][style*="translate(-50%,-50%)"]:not(.sidebar) {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    border-radius: 16px !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    padding: 16px !important;
+  }
+
+  /* Modal footer buttons wrap on small screens */
+  .modal-footer,
+  [data-slot="dialog-footer"],
+  div[style*="display: flex"][style*="justify-content: flex-end"] {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+}
+
+/* 6. UNIVERSAL MOBILE FORMS & GRIDS (< 768px) */
+@media (max-width: 767px) {
+  /* Grid inputs collapse to 1 column */
+  .hrms-grid-4,
+  .hrms-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Automatically convert inline multi-col grids into 1 column on mobile */
+  div[style*="gridTemplateColumns: '1fr 1fr'"],
+  div[style*="grid-template-columns: 1fr 1fr"],
+  div[style*="gridTemplateColumns: '1fr 310px'"],
+  div[style*="grid-template-columns: 1fr 310px"],
+  div[style*="gridTemplateColumns: 'repeat(4, 1fr)'"],
+  div[style*="grid-template-columns: repeat(4, 1fr)"],
+  div[style*="gridTemplateColumns: 'repeat(3, 1fr)'"],
+  div[style*="grid-template-columns: repeat(3, 1fr)"],
+  div[style*="gridTemplateColumns: 'repeat(4,1fr)'"],
+  div[style*="gridTemplateColumns: 'repeat(3,1fr)'"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Inputs, selects, and textareas occupy full available width */
+  .hrms-input-group,
+  .hrms-input,
+  .hrms-select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Page content padding comfortably reduced on mobile */
+  .page-content {
+    padding: 12px 14px !important;
+  }
+
+  /* Stat cards */
+  .hrms-stat-card {
+    padding: 16px !important;
+  }
+
+  .hrms-stat-value {
+    font-size: 24px !important;
+  }
+}
+
+/* 7. TABLET BREAKPOINT (768px – 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .page-content {
+    padding: 16px 20px !important;
+  }
+
+  .hrms-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .hrms-layout {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+}
+
+/* 8. DESKTOP BREAKPOINT (>= 1024px) */
+@media (min-width: 1024px) {
+  /* Sidebar backdrop never active on desktop */
+  .sidebar-backdrop {
+    display: none !important;
+  }
+}
+
+/* 9. EXPLICIT DESKTOP VS MOBILE DISPLAY CONTROLS */
+/* Mobile/Tablet specific toggles - strictly hidden on Desktop (>= 1024px) */
+.mobile-nav-toggle,
+.mobile-close-btn {
+  display: none !important;
+}
+
+.mobile-search-btn,
+.mobile-title-only {
+  display: none !important;
+}
+
+@media (max-width: 1023px) {
+  .mobile-nav-toggle {
+    display: flex !important;
+  }
+  .mobile-close-btn {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobile-search-btn {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .mobile-title-only {
+    display: block !important;
+  }
+}
+
+/* Desktop specific controls - visible on Desktop, conditionally hidden on smaller screens */
+.desktop-breadcrumbs {
+  display: flex !important;
+}
+
+.desktop-search-bar {
+  display: block !important;
+}
+
+.desktop-user-details {
+  display: block !important;
+}
+
+@media (max-width: 640px) {
+  .desktop-breadcrumbs {
+    display: none !important;
+  }
+  .desktop-user-details {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .desktop-search-bar {
+    display: none !important;
+  }
+}
+
+/* 10. DASHBOARD RESPONSIVE ADAPTATIONS (Desktop preserved 100% via inline styles) */
+@media (max-width: 1023px) {
+  .dashboard-row-2 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+  .attendance-status-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 601px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-kpi-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
 }

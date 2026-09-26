@@ -205,7 +205,7 @@ exports.downloadPayslipPdf = async (req, res) => {
       }
     }
 
-    const empCode = payslip.emp_code || (payslip.employee_id ? `EMP${payslip.employee_id}` : 'EMP');
+    const empCode = payslip.employee_code || payslip.emp_code || (payslip.employee_id ? `EMP${String(payslip.employee_id).padStart(4, '0')}` : 'EMP');
     const safeMonth = (payslip.month || 'Month').replace(/[^a-zA-Z0-9]/g, '');
     const safeYear = payslip.year || new Date().getFullYear();
     const filename = `Payslip_${empCode}_${safeMonth}_${safeYear}.pdf`;

@@ -8,7 +8,7 @@ export default function InterviewSchedule() {
   const { addToast } = useToast();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  
+
   const [scheduleList, setScheduleList] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -57,7 +57,7 @@ export default function InterviewSchedule() {
   const fetchDropdownData = async () => {
     try {
       const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
-      
+
       // Fetch candidates
       const candRes = await fetch('/app/candidates/dropdown', { headers });
       const candData = await candRes.json();
@@ -84,7 +84,7 @@ export default function InterviewSchedule() {
       if (!groups[dateStr]) {
         groups[dateStr] = [];
       }
-      
+
       // Format time: "10:00:00" -> "10:00 AM"
       const [hours, minutes] = item.interview_time.split(':');
       let displayTime = item.interview_time;
@@ -215,7 +215,7 @@ export default function InterviewSchedule() {
     e.preventDefault();
     if (!checkActionPermission('interview_schedule', 'EDIT')) return;
     if (!feedbackForm.schedule_id) return;
-    
+
     setSubmitting(true);
     try {
       const res = await fetch(`/app/interviews/${feedbackForm.schedule_id}/status`, {
@@ -250,7 +250,7 @@ export default function InterviewSchedule() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontFamily: '"Inter", sans-serif' }}>
-      
+
       {/* Header Area */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -279,18 +279,18 @@ export default function InterviewSchedule() {
                 if (!checkActionPermission('interview_schedule', 'CREATE')) return;
                 setShowScheduleModal(true);
               }}
-              style={{ 
-                padding: '10px 16px', 
-                borderRadius: '8px', 
-                border: 'none', 
-                background: '#2952E3', 
-                color: '#FFF', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                cursor: 'pointer', 
-                fontSize: '14px', 
-                fontWeight: '500' 
+              style={{
+                padding: '10px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                background: '#2952E3',
+                color: '#FFF',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
               }}
             >
               <Plus size={16} /> Schedule Interview
@@ -300,7 +300,7 @@ export default function InterviewSchedule() {
       </div>
 
       <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
-        
+
         {/* Toolbar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #F1F5F9' }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -345,24 +345,24 @@ export default function InterviewSchedule() {
                       </div>
                       <div style={{ width: '220px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                         {canEdit('interview_schedule') && (
-                          <button 
-                            onClick={() => { 
-                              setFeedbackForm({ 
-                                ...feedbackForm, 
+                          <button
+                            onClick={() => {
+                              setFeedbackForm({
+                                ...feedbackForm,
                                 schedule_id: intv.id,
-                                candidate: intv.name, 
-                                interviewer: intv.interviewer, 
-                                interviewRound: intv.round 
-                              }); 
-                              setShowFeedbackModal(true); 
-                            }} 
+                                candidate: intv.name,
+                                interviewer: intv.interviewer,
+                                interviewRound: intv.round
+                              });
+                              setShowFeedbackModal(true);
+                            }}
                             style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #E2E8F0', background: '#FFF', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
                           >
                             <MessageSquare size={14} /> Feedback
                           </button>
                         )}
                         {intv.meetingLink && (
-                          <a 
+                          <a
                             href={intv.meetingLink}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -378,7 +378,7 @@ export default function InterviewSchedule() {
               </div>
             ))
           )}
-          
+
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: '16px' }}>
             <button style={{ background: 'none', border: 'none', color: '#2952E3', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>View Full Schedule</button>
           </div>
@@ -437,7 +437,7 @@ export default function InterviewSchedule() {
                   <AppDropdown
                     value={scheduleForm.interviewType}
                     onChange={v => setScheduleForm({ ...scheduleForm, interviewType: v })}
-                    options={[{value:'Online',label:'Online Video Call'},{value:'Offline',label:'In-person Office Visit'},{value:'Telephonic',label:'Phone Screening'}]}
+                    options={[{ value: 'Online', label: 'Online Video Call' }, { value: 'Offline', label: 'In-person Office Visit' }, { value: 'Telephonic', label: 'Phone Screening' }]}
                     size="sm"
                   />
                 </div>
@@ -446,7 +446,7 @@ export default function InterviewSchedule() {
                   <AppDropdown
                     value={scheduleForm.interviewRound}
                     onChange={v => setScheduleForm({ ...scheduleForm, interviewRound: v })}
-                    options={[{value:'Technical Round',label:'Technical Round'},{value:'HR Round',label:'HR Round'},{value:'Manager Round',label:'Manager Round'},{value:'Final Round',label:'Final Round'}]}
+                    options={[{ value: 'Technical Round', label: 'Technical Round' }, { value: 'HR Round', label: 'HR Round' }, { value: 'Manager Round', label: 'Manager Round' }, { value: 'Final Round', label: 'Final Round' }]}
                     size="sm"
                   />
                 </div>
@@ -467,7 +467,7 @@ export default function InterviewSchedule() {
                   <AppDropdown
                     value={scheduleForm.status}
                     onChange={v => setScheduleForm({ ...scheduleForm, status: v })}
-                    options={[{value:'Scheduled',label:'Scheduled'},{value:'Completed',label:'Completed'},{value:'Cancelled',label:'Cancelled'},{value:'Rescheduled',label:'Rescheduled'}]}
+                    options={[{ value: 'Scheduled', label: 'Scheduled' }, { value: 'Completed', label: 'Completed' }, { value: 'Cancelled', label: 'Cancelled' }, { value: 'Rescheduled', label: 'Rescheduled' }]}
                     size="sm"
                   />
                 </div>
@@ -542,7 +542,7 @@ export default function InterviewSchedule() {
                   <AppDropdown
                     value={feedbackForm.rating}
                     onChange={v => setFeedbackForm({ ...feedbackForm, rating: v })}
-                    options={[{value:'5',label:'5 - Excellent (Strong Hire)'},{value:'4',label:'4 - Good (Hire)'},{value:'3',label:'3 - Average (Hold)'},{value:'2',label:'2 - Below Average'},{value:'1',label:'1 - Poor (Reject)'}]}
+                    options={[{ value: '5', label: '5 - Excellent (Strong Hire)' }, { value: '4', label: '4 - Good (Hire)' }, { value: '3', label: '3 - Average (Hold)' }, { value: '2', label: '2 - Below Average' }, { value: '1', label: '1 - Poor (Reject)' }]}
                     size="sm"
                   />
                 </div>
@@ -551,7 +551,7 @@ export default function InterviewSchedule() {
                   <AppDropdown
                     value={feedbackForm.recommendation}
                     onChange={v => setFeedbackForm({ ...feedbackForm, recommendation: v })}
-                    options={[{value:'Strong Hire',label:'Strong Hire'},{value:'Hire',label:'Hire'},{value:'Hold',label:'Hold'},{value:'Reject',label:'Reject'}]}
+                    options={[{ value: 'Strong Hire', label: 'Strong Hire' }, { value: 'Hire', label: 'Hire' }, { value: 'Hold', label: 'Hold' }, { value: 'Reject', label: 'Reject' }]}
                     size="sm"
                   />
                 </div>
@@ -560,7 +560,7 @@ export default function InterviewSchedule() {
                   <AppDropdown
                     value={feedbackForm.status}
                     onChange={v => setFeedbackForm({ ...feedbackForm, status: v })}
-                    options={[{value:'Completed',label:'Completed'},{value:'Draft',label:'Draft'}]}
+                    options={[{ value: 'Completed', label: 'Completed' }, { value: 'Draft', label: 'Draft' }]}
                     size="sm"
                   />
                 </div>

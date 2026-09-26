@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Bell, Search, ChevronRight, X, Calendar, CheckSquare, Folder,
+  Bell, Search, ChevronRight, X, Calendar, CheckSquare, Folder, Menu, ArrowLeft,
   Settings, FileText, HelpCircle,
   CheckCircle2, XCircle, User, Clock, Wallet, AlignJustify,
   Sparkles, Building, Briefcase, Award, Shield, UserPlus, BookOpen,
@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 
-export function Header({ title, userRole, currentView }) {
+export function Header({ title, userRole, currentView, onOpenMobileMenu }) {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -22,6 +22,7 @@ export function Header({ title, userRole, currentView }) {
   const [searchEmployees, setSearchEmployees] = useState([]);
   const [searchTickets, setSearchTickets] = useState([]);
   const searchContainerRef = useRef(null);
+  const [isMobileSearchActive, setIsMobileSearchActive] = useState(false);
 
   // App Routes / Modules navigation list
   const APP_PAGES = [
@@ -557,25 +558,129 @@ export function Header({ title, userRole, currentView }) {
   const breadcrumbs = getBreadcrumbs();
 
   return (
-    <header className="header h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10">
-      {/* Left: Breadcrumb */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 text-sm">
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={index}>
-              {index > 0 && <ChevronRight size={14} className="text-slate-400" />}
-              <span className={index === breadcrumbs.length - 1 ? 'font-semibold text-slate-800' : 'text-slate-500'}>
-                {crumb}
-              </span>
-            </React.Fragment>
-          ))}
+    <header className="header h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-6 sticky top-0 z-20">
+      {isMobileSearchActive ? (
+        <div className="flex items-center gap-2 w-full h-full md:hidden py-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileSearchActive(false);
+              setIsSearchOpen(false);
+            }}
+            className="p-2 -ml-1 text-slate-500 hover:text-slate-800 rounded-lg"
+            aria-label="Back"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div className="relative flex-1" ref={searchContainerRef}>
+            <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            <input
+              type="text"
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                if (!isSearchOpen) setIsSearchOpen(true);
+              }}
+              onFocus={() => setIsSearchOpen(true)}
+              placeholder="Search anything..."
+              style={{
+                width: '100%',
+                height: 38,
+                paddingLeft: 36,
+                paddingRight: searchQuery || isSearching ? 34 : 12,
+                background: '#F1F5F9',
+                border: '1.5px solid #2563EB',
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#0F172A',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchEmployees([]);
+                  setSearchTickets([]);
+                }}
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: '#E2E8F0',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: 18,
+                  height: 18,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#64748B',
+                  padding: 0,
+                }}
+              >
+                <X size={11} strokeWidth={2.5} />
+              </button>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Left: Hamburger & Breadcrumb */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
+            <button
+              type="button"
+              onClick={onOpenMobileMenu}
+              className="mobile-nav-toggle p-2 -ml-1 sm:-ml-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors items-center justify-center flex-shrink-0"
+              aria-label="Open sidebar menu"
+            >
+              <Menu size={22} />
+            </button>
 
-      {/* Right: Search, Notifications, User */}
-      <div className="flex items-center gap-6">
-        {/* Dynamic Global Search */}
-        <div className="relative" ref={searchContainerRef} style={{ width: 280 }}>
+            <div className="flex items-center gap-1.5 sm:gap-2 text-sm min-w-0">
+              {/* Mobile: current page title */}
+              <span className="mobile-title-only font-semibold text-slate-800 text-sm truncate max-w-[150px]">
+                {breadcrumbs[breadcrumbs.length - 1]}
+              </span>
+
+              {/* Tablet/Desktop: full breadcrumbs trail */}
+              <div className="desktop-breadcrumbs items-center gap-2">
+                {breadcrumbs.map((crumb, index) => (
+                  <React.Fragment key={index}>
+                    {index > 0 && <ChevronRight size={14} className="text-slate-400 flex-shrink-0" />}
+                    <span className={index === breadcrumbs.length - 1 ? 'font-semibold text-slate-800' : 'text-slate-500'}>
+                      {crumb}
+                    </span>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Search, Notifications, User */}
+          <div className="flex items-center gap-2 sm:gap-4 md:gap-6 flex-shrink-0">
+            {/* Mobile search icon trigger */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileSearchActive(true);
+                setIsSearchOpen(true);
+              }}
+              className="mobile-search-btn p-2 rounded-full text-slate-500 hover:bg-slate-100 transition-colors flex-shrink-0"
+              title="Search"
+              aria-label="Search"
+            >
+              <Search size={19} />
+            </button>
+
+            {/* Dynamic Global Search (Desktop/Tablet) */}
+            <div className="desktop-search-bar relative" ref={searchContainerRef} style={{ width: 280 }}>
           <style>{`
             .clean-search-scroll::-webkit-scrollbar {
               width: 5px;
@@ -671,6 +776,7 @@ export function Header({ title, userRole, currentView }) {
           {/* Search Dropdown Popup */}
           {isSearchOpen && (
             <div
+              className="search-popover"
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
@@ -1066,6 +1172,7 @@ export function Header({ title, userRole, currentView }) {
 
               {/* Card */}
               <div
+                className="notification-popover"
                 style={{
                   position: 'absolute',
                   right: 0,
@@ -1327,14 +1434,14 @@ export function Header({ title, userRole, currentView }) {
         <div
           onClick={handleProfileClick}
           style={{ cursor: 'pointer' }}
-          className="flex items-center gap-3 hover:opacity-85 transition-opacity"
+          className="flex items-center gap-2 sm:gap-3 hover:opacity-85 transition-opacity flex-shrink-0"
         >
-          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-sm">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-sm flex-shrink-0">
             {((authData.name || localStorage.getItem('userName')) || 'User').split(' ').map(n => n[0]).join('')}
           </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-800">{(authData.name || localStorage.getItem('userName')) || 'User'}</p>
-            <p className="text-xs font-medium text-slate-500">
+          <div className="desktop-user-details">
+            <p className="text-sm font-semibold text-slate-800 truncate max-w-[130px] lg:max-w-[180px]">{(authData.name || localStorage.getItem('userName')) || 'User'}</p>
+            <p className="text-xs font-medium text-slate-500 truncate max-w-[130px] lg:max-w-[180px]">
               {authData.user?.emp_id || authData.user?.employeeCode || (authData.user?.employee_id ? `EMP${String(authData.user.employee_id).padStart(4, '0')}` : '')}
               {(authData.user?.emp_id || authData.user?.employeeCode || authData.user?.employee_id) ? ' • ' : ''}
               {authData.user?.designation || (userRole ? userRole.replace(/_/g, ' ') : (authData.role ? authData.role.replace(/_/g, ' ') : 'User'))}
@@ -1342,6 +1449,8 @@ export function Header({ title, userRole, currentView }) {
           </div>
         </div>
       </div>
+      </>
+      )}
     </header>
   );
 }

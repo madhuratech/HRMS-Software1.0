@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AppDropdown from '../ui/AppDropdown';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud, Check, ChevronRight, ChevronLeft, Plus, Trash2, Building, Calendar, DollarSign, MapPin, Briefcase, Award, ShieldCheck, UserCheck, AlertCircle, FileText } from 'lucide-react';
+import { UploadCloud, Check, ChevronRight, ChevronLeft, Plus, Trash2, Building, Calendar, DollarSign, MapPin, Briefcase, Award, ShieldCheck, UserCheck, AlertCircle, FileText, FileSpreadsheet, Upload } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import EmployeeAvatar from './EmployeeAvatar';
+import EmployeeImportModal from './EmployeeImportModal';
+import { downloadEmployeeExcelTemplate } from '../../utils/employeeExcel';
 import './employee-module.css';
 import { apiFetch } from '../../lib/api';
 
@@ -21,6 +23,7 @@ export default function AddEmployeeForm() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [activeStep, setActiveStep] = useState(1);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -161,6 +164,40 @@ export default function AddEmployeeForm() {
 
     return () => clearTimeout(timer);
   }, [formData.email]);
+
+  const [codeStatus, setCodeStatus] = useState('idle'); // 'idle' | 'checking' | 'available' | 'taken'
+  const [codeError, setCodeError] = useState(null);
+
+  // Real-time Employee ID / Code Duplicate Check
+  useEffect(() => {
+    if (!formData.employeeCode || !formData.employeeCode.trim()) {
+      setCodeStatus('idle');
+      setCodeError(null);
+      return;
+    }
+
+    const cleanCode = formData.employeeCode.trim();
+    setCodeStatus('checking');
+    setCodeError(null);
+
+    const timer = setTimeout(() => {
+      apiFetch(`/employees/check-code?code=${encodeURIComponent(cleanCode)}`)
+        .then(data => {
+          if (data && data.available === false) {
+            setCodeStatus('taken');
+            setCodeError(data.message || 'Employee ID already exists');
+          } else {
+            setCodeStatus('available');
+            setCodeError(null);
+          }
+        })
+        .catch(() => {
+          setCodeStatus('idle');
+        });
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [formData.employeeCode]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -311,6 +348,14 @@ export default function AddEmployeeForm() {
       }
     }
     if (activeStep === 2) {
+      if (!formData.employeeCode || !formData.employeeCode.trim()) {
+        addToast("Employee ID is required.", "error");
+        return;
+      }
+      if (codeStatus === 'taken' || codeError) {
+        addToast("Employee ID already exists", "error");
+        return;
+      }
       if (!formData.shiftType || !formData.shiftType.trim()) {
         addToast("Shift Type is required.", "error");
         return;
@@ -356,6 +401,18 @@ export default function AddEmployeeForm() {
   };
 
   const handleSubmit = async () => {
+    if (!formData.employeeCode || !formData.employeeCode.trim()) {
+      addToast("Employee ID is required.", "error");
+      setActiveStep(2);
+      return;
+    }
+
+    if (codeStatus === 'taken' || codeError) {
+      addToast("Employee ID already exists", "error");
+      setActiveStep(2);
+      return;
+    }
+
     if (!formData.shiftType || !formData.shiftType.trim()) {
       addToast("Shift Type is required.", "error");
       setActiveStep(2);
@@ -455,19 +512,50 @@ export default function AddEmployeeForm() {
   return (
     <div className="hrms-content">
       {/* Header */}
-      <div className="hrms-header" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="hrms-header" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#0F172A', margin: 0, letterSpacing: '-0.3px' }}>
           Add New Employee Profile
         </h1>
 
-        <button
-          type="button"
-          className="hrms-secondary-btn"
-          onClick={() => navigate('/employees/list')}
-          style={{ borderRadius: '10px', padding: '9px 16px', fontSize: '13px' }}
-        >
-          Cancel & Exit
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            type="button"
+            className="hrms-secondary-btn"
+            onClick={async () => {
+              try {
+                const meta = await apiFetch('/employees/import-meta');
+                downloadEmployeeExcelTemplate(meta || {});
+                addToast("Excel template downloaded.", "success");
+              } catch (e) {
+                downloadEmployeeExcelTemplate({ departments, designations, branches, teams });
+                addToast("Excel template downloaded.", "success");
+              }
+            }}
+            style={{ borderRadius: '10px', padding: '9px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            title="Download Excel Template corresponding to this Add Employee form"
+          >
+            <FileSpreadsheet size={15} color="#2563EB" /> Download Excel Template
+          </button>
+
+          <button
+            type="button"
+            className="hrms-secondary-btn"
+            onClick={() => setIsImportModalOpen(true)}
+            style={{ borderRadius: '10px', padding: '9px 14px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', background: '#EFF6FF', color: '#2563EB', borderColor: '#BFDBFE' }}
+            title="Upload and preview Excel file with automatic field mapping"
+          >
+            <Upload size={15} /> Import via Excel
+          </button>
+
+          <button
+            type="button"
+            className="hrms-secondary-btn"
+            onClick={() => navigate('/employees/list')}
+            style={{ borderRadius: '10px', padding: '9px 16px', fontSize: '13px' }}
+          >
+            Cancel & Exit
+          </button>
+        </div>
       </div>
 
       {/* Main Container Card */}
@@ -576,6 +664,35 @@ export default function AddEmployeeForm() {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div className="hrms-input-group" style={{ gridColumn: 'span 2' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label className="hrms-label">Employee ID / Code <span style={{ color: '#EF4444' }}>*</span></label>
+                      {codeStatus === 'checking' && (
+                        <span style={{ fontSize: '11px', color: '#64748B' }}>Checking availability...</span>
+                      )}
+                      {codeStatus === 'available' && (
+                        <span style={{ fontSize: '11px', color: '#16A34A', fontWeight: '600' }}>✓ Available</span>
+                      )}
+                      {codeStatus === 'taken' && (
+                        <span style={{ fontSize: '11px', color: '#DC2626', fontWeight: '600' }}>✕ {codeError || 'Employee ID already exists'}</span>
+                      )}
+                    </div>
+                    <input 
+                      type="text" 
+                      name="employeeCode" 
+                      value={formData.employeeCode} 
+                      onChange={handleChange} 
+                      className="hrms-input" 
+                      placeholder="e.g. MT/0305" 
+                      style={{
+                        borderColor: codeStatus === 'taken' ? '#ef4444' : codeStatus === 'available' ? '#10b981' : undefined
+                      }}
+                      required
+                    />
+                    <span style={{ fontSize: '11px', color: '#64748B', marginTop: '4px', display: 'block' }}>
+                      Manually enter HRMS employee code (e.g. MT/0305, MT/0307). Must be unique.
+                    </span>
+                  </div>
                   <div className="hrms-input-group">
                     <label className="hrms-label">Department</label>
                     <AppDropdown value={formData.department} onChange={(val) => setDropdownField('department', val)} options={[{ value: '', label: 'Select Department' }, ...(departments || [])]} size="sm" />
@@ -1456,6 +1573,15 @@ export default function AddEmployeeForm() {
           </div>
         </div>
       </div>
+
+      {/* Excel Import Modal */}
+      <EmployeeImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={() => {
+          navigate('/employees/list');
+        }}
+      />
     </div>
   );
 }

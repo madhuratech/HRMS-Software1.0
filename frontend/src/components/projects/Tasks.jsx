@@ -187,20 +187,20 @@ export default function Tasks() {
             style={{ width: 150 }}
           />
           {hasPermission(null, null, 'projects', 'tasks', 'create') && (
-            <button 
-              onClick={openAdd} 
-              style={{ 
-                height: 38, 
-                padding: '0 18px', 
-                background: '#2563EB', 
-                border: 'none', 
-                borderRadius: 8, 
-                fontSize: 13, 
-                fontWeight: 600, 
-                color: '#fff', 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center', 
+            <button
+              onClick={openAdd}
+              style={{
+                height: 38,
+                padding: '0 18px',
+                background: '#2563EB',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#fff',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
                 gap: 6,
                 whiteSpace: 'nowrap',
                 flexShrink: 0
@@ -309,8 +309,8 @@ export default function Tasks() {
       {/* Modal */}
       {showAddModal && (editingId ? hasPermission(null, null, 'projects', 'tasks', 'edit') : hasPermission(null, null, 'projects', 'tasks', 'create')) && (
         <>
-          <div 
-            onClick={() => setShowAddModal(false)} 
+          <div
+            onClick={() => setShowAddModal(false)}
             style={{
               position: 'fixed',
               inset: 0,
@@ -319,18 +319,18 @@ export default function Tasks() {
               WebkitBackdropFilter: 'blur(6px)',
               zIndex: 1000,
               animation: 'fadeIn 0.2s ease-out'
-            }} 
+            }}
           />
-          <div 
-            className="modal-centered-content" 
-            style={{ 
+          <div
+            className="modal-centered-content"
+            style={{
               position: 'fixed',
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: '880px', 
-              maxWidth: '94vw', 
-              maxHeight: '90vh', 
+              width: '880px',
+              maxWidth: '94vw',
+              maxHeight: '90vh',
               background: '#ffffff',
               borderRadius: '22px',
               boxShadow: '0 32px 80px rgba(15, 23, 42, 0.28)',
@@ -370,9 +370,9 @@ export default function Tasks() {
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 type="button"
-                onClick={() => setShowAddModal(false)} 
+                onClick={() => setShowAddModal(false)}
                 style={{
                   background: 'rgba(255, 255, 255, 0.15)',
                   border: '1px solid rgba(255, 255, 255, 0.25)',
@@ -397,7 +397,7 @@ export default function Tasks() {
 
             <form onSubmit={handleSave} noValidate style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', flex: 1, padding: '28px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-                
+
                 {/* SECTION 1: Task Assignment */}
                 <div style={{ background: '#F8FAFC', padding: '20px', borderRadius: '16px', border: '1px solid #E2E8F0' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '16px' }}>
@@ -447,7 +447,7 @@ export default function Tasks() {
                         required
                         options={meta.employees.map(emp => ({
                           value: emp.id,
-                          label: `${emp.name} (EMP${String(emp.id).padStart(3, '0')})`,
+                          label: `${emp.name} (${emp.employee_code || emp.employeeId || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')})`,
                           sublabel: emp.department_name
                         }))}
                         value={formData.assignee_id}
@@ -553,9 +553,9 @@ export default function Tasks() {
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '12px', marginTop: '24px', borderTop: '1px solid #F1F5F9', paddingTop: '20px' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setShowAddModal(false)} 
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
                   style={{
                     height: '44px',
                     padding: '0 24px',
@@ -573,9 +573,9 @@ export default function Tasks() {
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={submitting} 
+                <button
+                  type="submit"
+                  disabled={submitting}
                   style={{
                     height: '44px',
                     padding: '0 28px',
@@ -592,8 +592,8 @@ export default function Tasks() {
                     alignItems: 'center',
                     gap: '8px'
                   }}
-                  onMouseEnter={e => { if(!submitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.45)'; } }}
-                  onMouseLeave={e => { if(!submitting) { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(37, 99, 235, 0.35)'; } }}
+                  onMouseEnter={e => { if (!submitting) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.45)'; } }}
+                  onMouseLeave={e => { if (!submitting) { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(37, 99, 235, 0.35)'; } }}
                 >
                   <Plus size={15} /> {submitting ? 'Saving Task...' : (editingId ? 'Save Changes' : 'Create Task')}
                 </button>

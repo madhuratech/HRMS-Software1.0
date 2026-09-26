@@ -54,6 +54,7 @@ class TeamMemberService {
     const rows = await ProjectTeamMember.query(`
       SELECT ptm.id, ptm.project_id, ptm.employee_id, ptm.role, ptm.status,
              e.name as employee_name,
+             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
              d.dept_name as department_name,
              des.role_name as designation_name,
              b.branch_name as branch_name,
@@ -66,7 +67,7 @@ class TeamMemberService {
       LEFT JOIN branches b ON e.branch_id = b.id
       LEFT JOIN project_team_members ptm2 ON ptm2.employee_id = ptm.employee_id
       ${whereClause}
-      GROUP BY ptm.id, ptm.project_id, ptm.employee_id, ptm.role, ptm.status, e.name, d.dept_name, des.role_name, b.branch_name
+      GROUP BY ptm.id, ptm.project_id, ptm.employee_id, ptm.role, ptm.status, e.name, e.employee_code, e.employee_id, d.dept_name, des.role_name, b.branch_name
       ORDER BY ptm.employee_id, ptm.created_at DESC
     `, params);
 
@@ -78,6 +79,8 @@ class TeamMemberService {
         aggregated.push({
           id: r.id,
           employee_id: r.employee_id,
+          employee_code: r.employee_code,
+          employeeId: r.employee_code,
           name: r.employee_name,
           role: r.role,
           department: r.department_name,
@@ -108,6 +111,7 @@ class TeamMemberService {
 
     const employees = await ProjectTeamMember.query(`
       SELECT e.id, e.name,
+             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
              d.dept_name as department_name,
              des.role_name as designation_name
       FROM employees e

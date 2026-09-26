@@ -49,7 +49,7 @@ export function TeamLeaderDashboard() {
   const [teamAttendance, setTeamAttendance] = useState([]);
   const [teamTasks, setTeamTasks] = useState([]);
   const [nextHoliday, setNextHoliday] = useState(null);
-  
+
   // Sales Tracking States
   const [liveVisits, setLiveVisits] = useState([]);
   const [completedVisits, setCompletedVisits] = useState([]);
@@ -92,7 +92,7 @@ export function TeamLeaderDashboard() {
             ...prev,
             id: userId,
             name: userObj.name || 'Dhilipan P',
-            empId: userObj.emp_id || `EMP${String(userId).padStart(4, '0')}`,
+            empId: userObj.employee_code || userObj.employeeCode || userObj.emp_id || (userObj.employee_id ? `EMP${String(userObj.employee_id).padStart(4, '0')}` : (userId ? `EMP${String(userId).padStart(4, '0')}` : '')),
             department: userObj.department || userObj.dept_name || 'Engineering'
           }));
         } catch (e) { }
@@ -105,7 +105,7 @@ export function TeamLeaderDashboard() {
           setLeader(prev => ({
             ...prev,
             name: empProfile.name || prev.name,
-            empId: `EMP${String(empProfile.id).padStart(4, '0')}`,
+            empId: empProfile.employee_code || empProfile.employeeCode || empProfile.employee_id || empProfile.emp_code || (empProfile.id ? `EMP${String(empProfile.id).padStart(4, '0')}` : ''),
             department: empProfile.dept_name || empProfile.department || prev.department
           }));
         }
@@ -180,10 +180,10 @@ export function TeamLeaderDashboard() {
       }
 
       // Fetch Sales Tracking Data if TL is in Sales/Marketing
-      const isSalesOrMarketing = (userObj?.department_name || userObj?.department || userObj?.dept_name || 'Engineering').toLowerCase().includes('sales') || 
-                                 (userObj?.department_name || userObj?.department || userObj?.dept_name || 'Engineering').toLowerCase().includes('marketing') || 
-                                 (userObj?.role === 'SALES_MANAGER');
-      
+      const isSalesOrMarketing = (userObj?.department_name || userObj?.department || userObj?.dept_name || 'Engineering').toLowerCase().includes('sales') ||
+        (userObj?.department_name || userObj?.department || userObj?.dept_name || 'Engineering').toLowerCase().includes('marketing') ||
+        (userObj?.role === 'SALES_MANAGER');
+
       if (isSalesOrMarketing || true) { // Displaying for demo
         try {
           const visitsRes = await apiFetch('/client-visits/live');
@@ -191,7 +191,7 @@ export function TeamLeaderDashboard() {
             setLiveVisits(visitsRes.data.activeVisits || []);
             setCompletedVisits(visitsRes.data.completedVisits || []);
           }
-        } catch(e) {}
+        } catch (e) { }
       }
 
       // 6. Fetch Team Attendance Logs from Database
@@ -494,7 +494,7 @@ export function TeamLeaderDashboard() {
                         <td className="py-3 px-4">
                           <div>
                             <strong className="text-slate-900 block font-bold">{row.name || row.employee_name}</strong>
-                            <span className="text-[11px] text-slate-400 font-mono">{row.employee_id || row.empId || `EMP00${row.id}`}</span>
+                            <span className="text-[11px] text-slate-400 font-mono">{row.employee_code || (typeof row.employee_id === 'string' && row.employee_id.startsWith('EMP') ? row.employee_id : null) || row.empId || (row.id ? `EMP${String(row.id).padStart(4, '0')}` : '')}</span>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-slate-600 font-medium">{row.shift || 'Morning Shift'}</td>
@@ -594,7 +594,7 @@ export function TeamLeaderDashboard() {
           <div style={cardStyle}>
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
               <div>
-                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2"><Navigation size={16} className="text-blue-600"/> Live Sales Tracking</h3>
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2"><Navigation size={16} className="text-blue-600" /> Live Sales Tracking</h3>
                 <p className="text-xs text-slate-500 font-medium mt-0.5">Active client visits in field</p>
               </div>
             </div>
@@ -616,7 +616,7 @@ export function TeamLeaderDashboard() {
                 ))}
               </div>
             )}
-            
+
             {completedVisits.length > 0 && (
               <div className="mt-4 pt-3 border-t border-slate-100">
                 <h4 className="text-xs font-bold text-slate-700 mb-2">Today's Completed Visits</h4>
@@ -671,7 +671,7 @@ export function TeamLeaderDashboard() {
                         </div>
                         <div>
                           <strong className="text-sm font-bold text-slate-900 block leading-tight">{m.name}</strong>
-                          <span className="text-[11px] text-slate-400 font-mono font-medium">{`EMP${String(m.id).padStart(4, '0')}`}</span>
+                          <span className="text-[11px] text-slate-400 font-mono font-medium">{m.employee_code || m.employeeId || m.emp_code || (m.id ? `EMP${String(m.id).padStart(4, '0')}` : '')}</span>
                         </div>
                       </div>
                       <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 text-[11px] font-extrabold rounded-lg shrink-0">
@@ -737,11 +737,11 @@ export function TeamLeaderDashboard() {
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Priority</label>
                   <AppDropdown
-                value={newTask.priority}
-                onChange={v => setNewTask({ ...newTask, priority: v })}
-                options={[{value:'High',label:'High'},{value:'Medium',label:'Medium'},{value:'Low',label:'Low'}]}
-                size="sm"
-              />
+                    value={newTask.priority}
+                    onChange={v => setNewTask({ ...newTask, priority: v })}
+                    options={[{ value: 'High', label: 'High' }, { value: 'Medium', label: 'Medium' }, { value: 'Low', label: 'Low' }]}
+                    size="sm"
+                  />
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Due Date</label>

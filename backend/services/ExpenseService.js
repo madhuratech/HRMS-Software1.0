@@ -169,7 +169,7 @@ class ExpenseService {
 
   // ─── META / DROPDOWNS ───
   static async getMeta() {
-    const employees = await query('SELECT id, name FROM employees WHERE status="Active" ORDER BY name');
+    const employees = await query('SELECT id, employee_code, name FROM employees WHERE status="Active" ORDER BY name');
     const categories = await query('SELECT id, name FROM expense_categories WHERE status="Active" ORDER BY name');
     const departments = await query('SELECT id, dept_name as name FROM departments ORDER BY dept_name');
     return { employees, categories, departments };

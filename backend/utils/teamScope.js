@@ -96,6 +96,7 @@ function getTeamScope(req, callback) {
 
         const sqlLeader = `
           SELECT e.id, e.name, e.email, e.phone, e.status, e.profile_photo,
+                 COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
                  dept.dept_name, desg.role_name
           FROM employees e
           LEFT JOIN departments dept ON e.department_id = dept.id
@@ -109,7 +110,8 @@ function getTeamScope(req, callback) {
           const l = leaderRows[0];
           cb(null, {
             id: l.id,
-            employeeId: `EMP${String(l.id).padStart(4, '0')}`,
+            employeeId: l.employee_code || `EMP${String(l.id).padStart(4, '0')}`,
+            employee_code: l.employee_code || `EMP${String(l.id).padStart(4, '0')}`,
             name: l.name,
             email: l.email,
             phone: l.phone,
@@ -127,6 +129,7 @@ function getTeamScope(req, callback) {
         // Step 4: Get Team Members matching teamId AND departmentId, excluding teamLeaderId
         const sqlMembers = `
           SELECT e.id, e.name, e.email, e.phone, e.status, e.join_date,
+                 COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
                  dept.dept_name, desg.role_name, e.profile_photo
           FROM employees e
           LEFT JOIN departments dept ON e.department_id = dept.id
@@ -140,7 +143,8 @@ function getTeamScope(req, callback) {
         db.query(sqlMembers, [activeTeamId, activeDeptId, leaderIdToExclude], (errM, memberRows) => {
           const membersList = (memberRows || []).map(m => ({
             id: m.id,
-            employeeId: `EMP${String(m.id).padStart(4, '0')}`,
+            employeeId: m.employee_code || `EMP${String(m.id).padStart(4, '0')}`,
+            employee_code: m.employee_code || `EMP${String(m.id).padStart(4, '0')}`,
             name: m.name,
             email: m.email,
             phone: m.phone,

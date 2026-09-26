@@ -44,7 +44,10 @@ class DocumentService {
 
   static async listEmployeeDocs(filters = {}) {
     let sql = `
-      SELECT ed.*, e.name as employee_name, des.role_name as employee_role
+      SELECT ed.*, e.name as employee_name, 
+             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employeeId,
+             des.role_name as employee_role
       FROM employee_documents ed
       JOIN employees e ON ed.employee_id = e.id
       LEFT JOIN designations des ON e.designation_id = des.id
@@ -276,7 +279,7 @@ class DocumentService {
 
   // ─── META & DASHBOARD ───
   static async getMeta() {
-    const employees = await query('SELECT id, name FROM employees WHERE status="Active" ORDER BY name');
+    const employees = await query('SELECT id, employee_code, name FROM employees WHERE status="Active" ORDER BY name');
     const departments = await query('SELECT id, dept_name as name FROM departments ORDER BY dept_name');
     const companies = await query('SELECT id, company_name as name FROM company_profile ORDER BY company_name');
     return { employees, departments, companies };

@@ -133,9 +133,9 @@ export function EmployeeDocuments() {
 
   const statusStyle = (s) => ({
     Verified: { bg: '#DCFCE7', color: '#15803D', border: '#BBF7D0' },
-    Pending:  { bg: '#FEF9C3', color: '#A16207', border: '#FDE68A' },
+    Pending: { bg: '#FEF9C3', color: '#A16207', border: '#FDE68A' },
     Rejected: { bg: '#FEE2E2', color: '#B91C1C', border: '#FECACA' },
-    Expired:  { bg: '#F1F5F9', color: '#475569', border: '#CBD5E1' },
+    Expired: { bg: '#F1F5F9', color: '#475569', border: '#CBD5E1' },
   }[s] || { bg: '#F1F5F9', color: '#475569', border: '#CBD5E1' });
 
   const labelStyle = {
@@ -171,7 +171,7 @@ export function EmployeeDocuments() {
               onFocus={e => { e.target.style.borderColor = '#2563EB'; }}
               onBlur={e => { e.target.style.borderColor = '#E2E8F0'; }}
             />
-            <svg style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <svg style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
           </div>
           {hasPermission('documents', 'doc_employee', 'create') && (
             <button
@@ -324,11 +324,11 @@ export function EmployeeDocuments() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={labelStyle}>Employee <span style={{ color: '#EF4444' }}>*</span></label>
-                  <AppDropdown value={formData.employee_id} onChange={v => setFormData({ ...formData, employee_id: v })} options={[{ value: '', label: 'Select Employee' }, ...(meta.employees || []).map(emp => ({ value: emp.id, label: emp.name }))]} size="sm" />
+                  <AppDropdown value={formData.employee_id} onChange={v => setFormData({ ...formData, employee_id: v })} options={[{ value: '', label: 'Select Employee' }, ...(meta.employees || []).map(emp => ({ value: emp.id, label: emp.employee_code ? `${emp.name} (${emp.employee_code})` : emp.name }))]} size="sm" />
                 </div>
                 <div>
                   <label style={labelStyle}>Document Type <span style={{ color: '#EF4444' }}>*</span></label>
-                  <AppDropdown value={formData.document_type} onChange={v => setFormData({ ...formData, document_type: v })} options={[{value:'Identity Proof',label:'Identity Proof'},{value:'Address Proof',label:'Address Proof'},{value:'Educational',label:'Educational Proof'},{value:'Experience',label:'Experience Proof'},{value:'Other Documents',label:'Other Documents'}]} size="sm" />
+                  <AppDropdown value={formData.document_type} onChange={v => setFormData({ ...formData, document_type: v })} options={[{ value: 'Identity Proof', label: 'Identity Proof' }, { value: 'Address Proof', label: 'Address Proof' }, { value: 'Educational', label: 'Educational Proof' }, { value: 'Experience', label: 'Experience Proof' }, { value: 'Other Documents', label: 'Other Documents' }]} size="sm" />
                 </div>
               </div>
 
@@ -376,7 +376,7 @@ export function EmployeeDocuments() {
                 </div>
                 <div>
                   <label style={labelStyle}>Status</label>
-                  <AppDropdown value={formData.status} onChange={v => setFormData({ ...formData, status: v })} options={[{value:'Pending',label:'Pending'},{value:'Verified',label:'Verified'},{value:'Rejected',label:'Rejected'}]} size="sm" />
+                  <AppDropdown value={formData.status} onChange={v => setFormData({ ...formData, status: v })} options={[{ value: 'Pending', label: 'Pending' }, { value: 'Verified', label: 'Verified' }, { value: 'Rejected', label: 'Rejected' }]} size="sm" />
                 </div>
               </div>
 

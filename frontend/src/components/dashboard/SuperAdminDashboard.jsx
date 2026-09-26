@@ -215,6 +215,7 @@ export function SuperAdminDashboard() {
 
       {/* ── FIRST ROW: 5 KPI Cards in a Single Line ── */}
       <div
+        className="dashboard-kpi-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
@@ -235,6 +236,7 @@ export function SuperAdminDashboard() {
 
       {/* ── SECOND ROW: TEAM PERFORMANCE (LEFT ~64%) + ATTENDANCE STATUS (RIGHT ~36%) ── */}
       <div 
+        className="dashboard-row-2"
         style={{ 
           display: 'grid', 
           gridTemplateColumns: 'minmax(0, 1.7fr) minmax(380px, 0.9fr)', 
@@ -322,14 +324,16 @@ export function SuperAdminDashboard() {
             <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6B7280' }}>Today's overview</p>
           </div>
 
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: '1.1fr 1fr', 
-            alignItems: 'center', 
-            gap: 16, 
-            flex: 1, 
-            marginTop: 10 
-          }}>
+          <div 
+            className="attendance-status-grid"
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: '1.1fr 1fr', 
+              alignItems: 'center', 
+              gap: 16, 
+              flex: 1, 
+              marginTop: 10 
+            }}>
             {/* Left Side: Red Donut Chart */}
             <div style={{ width: '100%', height: 160, position: 'relative' }}>
               <ResponsiveContainer width="100%" height="100%">

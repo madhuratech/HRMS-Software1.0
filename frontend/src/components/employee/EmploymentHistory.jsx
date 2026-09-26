@@ -98,7 +98,7 @@ export default function EmploymentHistory() {
 
   const dropdownOptions = allEmployees.map(emp => ({
     value: String(emp.id),
-    label: `${emp.name} (EMP${String(emp.id).padStart(4, '0')})`
+    label: `${emp.name} (${emp.employee_code || emp.employeeId || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')})`
   }));
 
   if (loading) {
@@ -189,7 +189,7 @@ export default function EmploymentHistory() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
                 <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0F172A' }}>{profile.name}</h2>
                 <span style={{ fontSize: '11px', fontWeight: '700', color: '#2563EB', background: '#EFF6FF', padding: '2px 8px', borderRadius: '6px' }}>
-                  {`EMP${String(profile.id).padStart(4, '0')}`}
+                  {profile.employee_code || profile.employee_id || profile.employeeId || profile.emp_code || '—'}
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>

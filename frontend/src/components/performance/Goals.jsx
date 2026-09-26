@@ -423,19 +423,19 @@ export default function Goals() {
             />
           </div>
           {canCreate('performance', 'goals') && (
-            <button 
-              onClick={() => setShowAddModal(true)} 
-              style={{ 
-                padding: '10px 20px', 
-                borderRadius: '8px', 
-                border: 'none', 
-                background: '#2952E3', 
-                color: '#FFF', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                cursor: 'pointer', 
-                fontSize: '14px', 
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                background: '#2952E3',
+                color: '#FFF',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
                 fontWeight: '500',
                 whiteSpace: 'nowrap',
                 flexShrink: 0

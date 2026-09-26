@@ -794,9 +794,10 @@ class CandidateService {
         const empResult = await exec(insertEmpSql, empParams);
         employeeId = empResult.insertId;
 
-        // Assign employee_id string like EMP0015
-        const empCode = `EMP${String(employeeId).padStart(4, '0')}`;
-        await exec('UPDATE employees SET employee_id = ? WHERE id = ?', [empCode, employeeId]);
+        // Safely determine next employee code without using primary key
+        const { getNextEmployeeCode } = require('../utils/employeeCodeGenerator');
+        const empCode = await getNextEmployeeCode();
+        await exec('UPDATE employees SET employee_code = ?, employee_id = ? WHERE id = ?', [empCode, empCode, employeeId]);
       } else {
         // Update experience summary on existing employee if not already set
         await exec(`

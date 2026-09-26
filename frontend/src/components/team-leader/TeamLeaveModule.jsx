@@ -14,10 +14,10 @@ export function TeamLeaveModule() {
     try {
       const res = await apiFetch('/leaves/applications');
       const dataArr = Array.isArray(res) ? res : (res && res.success && Array.isArray(res.data) ? res.data : []);
-      
+
       const formatted = dataArr.map((l, idx) => ({
         id: l.id || idx + 1,
-        empId: l.employee_id ? `EMP${String(l.employee_id).padStart(4, '0')}` : `EMP00${19 + idx}`,
+        empId: l.employee_code || (typeof l.employee_id === 'string' && l.employee_id.startsWith('EMP') ? l.employee_id : null) || (l.employee_id ? `EMP${String(l.employee_id).padStart(4, '0')}` : `EMP${String(idx + 1).padStart(4, '0')}`),
         name: l.employee_name || l.applicant_name || 'Team Member',
         role: l.department || 'Software Development',
         type: l.leave_name || l.leave_type || 'Casual Leave',
@@ -135,11 +135,11 @@ export function TeamLeaveModule() {
 
             {/* Status Filter */}
             <AppDropdown
-                value={statusFilter}
-                onChange={v => setStatusFilter(v)}
-                options={[{value:'All',label:'All Statuses'},{value:'Pending',label:'Pending'},{value:'Approved',label:'Approved'},{value:'Rejected',label:'Rejected'}]}
-                size="sm"
-              />
+              value={statusFilter}
+              onChange={v => setStatusFilter(v)}
+              options={[{ value: 'All', label: 'All Statuses' }, { value: 'Pending', label: 'Pending' }, { value: 'Approved', label: 'Approved' }, { value: 'Rejected', label: 'Rejected' }]}
+              size="sm"
+            />
           </div>
         </div>
 
@@ -173,10 +173,9 @@ export function TeamLeaveModule() {
                     <td className="py-3 px-4 font-bold text-slate-800">{l.days} Day(s)</td>
                     <td className="py-3 px-4 text-slate-500 max-w-xs truncate">{l.reason}</td>
                     <td className="py-3 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                        l.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' :
-                        l.status === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
-                      }`}>
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${l.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' :
+                          l.status === 'Pending' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                        }`}>
                         {l.status}
                       </span>
                     </td>

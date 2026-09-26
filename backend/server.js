@@ -179,6 +179,7 @@ app.use("/api/auth/admin-register", require("./routes/adminRegister"));
 app.use("/app/auth/admin-register", require("./routes/adminRegister"));
 app.use("/app/dashboard", require("./routes/dashboard"));
 app.use("/app/employees", require("./routes/employee"));
+app.use("/api/employees", require("./routes/employee"));
 app.use("/app/requirements", require("./routes/requirements"));
 app.use("/app/candidates", require("./routes/candidates"));
 app.use("/app/interviews", require("./routes/interviews"));

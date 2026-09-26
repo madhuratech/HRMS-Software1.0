@@ -45,7 +45,7 @@ export default function ShiftRoster() {
   const getWeekRangeText = () => {
     const baseDate = new Date();
     baseDate.setDate(baseDate.getDate() + currentWeekOffset * 7);
-    
+
     // Find Monday of the current week
     const day = baseDate.getDay();
     const diffToMon = baseDate.getDate() - day + (day === 0 ? -6 : 1);
@@ -83,7 +83,7 @@ export default function ShiftRoster() {
         empList = employeesData.map((e, idx) => ({
           id: e.id || idx + 1,
           employee: e.name || `${e.first_name || ''} ${e.last_name || ''}`.trim() || `Employee ${idx + 1}`,
-          empId: e.employee_code || e.employeeId || `EMP00${e.id || idx + 1}`,
+          empId: e.employee_code || e.employeeId || e.emp_code || (e.id ? `EMP${String(e.id).padStart(4, '0')}` : `EMP${String(idx + 1).padStart(4, '0')}`),
           department: e.department || (idx % 2 === 0 ? 'Engineering' : 'Human Resources'),
           location: e.location || (idx % 3 === 0 ? 'Chennai' : 'Bangalore'),
           avatar: e.profile_photo || e.avatar || null
@@ -148,7 +148,7 @@ export default function ShiftRoster() {
         return {
           id: emp.id,
           employee: emp.employee || emp.name,
-          empId: emp.empId || `EMP00${emp.id}`,
+          empId: emp.empId || emp.employee_code || emp.employeeId || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : ''),
           department: emp.department || 'Engineering',
           location: emp.location || 'Chennai',
           avatar: emp.avatar,
@@ -179,15 +179,15 @@ export default function ShiftRoster() {
 
   return (
     <div className="hrms-content" style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%', minHeight: 'calc(100vh - 120px)' }}>
-      
+
       {/* Header Toolbar (Filters & Week Navigator) - NO Add Shift Button */}
       <div className="hrms-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          
+
           {/* Week Selector */}
           <div style={{ display: 'flex', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-            <button 
-              onClick={() => setCurrentWeekOffset(prev => prev - 1)} 
+            <button
+              onClick={() => setCurrentWeekOffset(prev => prev - 1)}
               style={{ padding: '8px 12px', background: '#fff', border: 'none', borderRight: '1px solid #e2e8f0', cursor: 'pointer' }}
               title="Previous Week"
             >
@@ -196,8 +196,8 @@ export default function ShiftRoster() {
             <span className="hrms-text-sm hrms-font-semibold" style={{ padding: '8px 16px', color: '#1e293b', whiteSpace: 'nowrap' }}>
               {getWeekRangeText()}
             </span>
-            <button 
-              onClick={() => setCurrentWeekOffset(prev => prev + 1)} 
+            <button
+              onClick={() => setCurrentWeekOffset(prev => prev + 1)}
               style={{ padding: '8px 12px', background: '#fff', border: 'none', borderLeft: '1px solid #e2e8f0', cursor: 'pointer' }}
               title="Next Week"
             >
@@ -207,7 +207,7 @@ export default function ShiftRoster() {
 
           {/* Department Filter */}
           <div style={{ position: 'relative' }}>
-            <div 
+            <div
               onClick={() => { setShowDeptDropdown(!showDeptDropdown); setShowLocDropdown(false); }}
               style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '180px', justifyContent: 'space-between', cursor: 'pointer' }}
             >
@@ -217,8 +217,8 @@ export default function ShiftRoster() {
             {showDeptDropdown && (
               <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, width: '100%', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
                 {departments.map(dept => (
-                  <div 
-                    key={dept} 
+                  <div
+                    key={dept}
                     onClick={() => { setSelectedDepartment(dept); setShowDeptDropdown(false); }}
                     style={{ padding: '8px 14px', fontSize: 13, color: '#334155', cursor: 'pointer', background: selectedDepartment === dept ? '#eff6ff' : '#fff' }}
                   >
@@ -231,7 +231,7 @@ export default function ShiftRoster() {
 
           {/* Location Filter */}
           <div style={{ position: 'relative' }}>
-            <div 
+            <div
               onClick={() => { setShowLocDropdown(!showLocDropdown); setShowDeptDropdown(false); }}
               style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '180px', justifyContent: 'space-between', cursor: 'pointer' }}
             >
@@ -241,8 +241,8 @@ export default function ShiftRoster() {
             {showLocDropdown && (
               <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, width: '100%', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', zIndex: 50, overflow: 'hidden' }}>
                 {locations.map(loc => (
-                  <div 
-                    key={loc} 
+                  <div
+                    key={loc}
                     onClick={() => { setSelectedLocation(loc); setShowLocDropdown(false); }}
                     style={{ padding: '8px 14px', fontSize: 13, color: '#334155', cursor: 'pointer', background: selectedLocation === loc ? '#eff6ff' : '#fff' }}
                   >

@@ -118,7 +118,8 @@ export default function LeaveApproval() {
   // Only show pending for approval actions
   const pendingRequests = applications.filter(app => {
     const matchName = (app.employee_name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                      `EMP${String(app.employee_id).padStart(3,'0')}`.toLowerCase().includes(searchTerm.toLowerCase());
+                      (app.employee_code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      `EMP${String(app.employee_id).padStart(4,'0')}`.toLowerCase().includes(searchTerm.toLowerCase());
     return matchName && app.status === 'Pending';
   });
 
@@ -202,7 +203,7 @@ export default function LeaveApproval() {
                             <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(app.employee_name || 'User')}&background=f1f5f9&color=64748b`} alt={app.employee_name} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
                             <div>
                               <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>{app.employee_name}</div>
-                              <div style={{ fontSize: '11px', color: '#94a3b8' }}>EMP{String(app.employee_id).padStart(3,'0')}</div>
+                              <div style={{ fontSize: '11px', color: '#94a3b8' }}>{app.employee_code || (app.employee_id ? `EMP${String(app.employee_id).padStart(4,'0')}` : '')}</div>
                             </div>
                           </div>
                         </td>

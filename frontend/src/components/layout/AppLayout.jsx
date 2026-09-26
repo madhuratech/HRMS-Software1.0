@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 export function AppLayout({ userRole, onLogout }) {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -16,18 +17,29 @@ export function AppLayout({ userRole, onLogout }) {
     }
   }, [location.pathname, navigate]);
 
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="app-shell font-sans bg-slate-50 text-slate-900">
-      <Sidebar userRole={userRole} onLogout={onLogout} />
+      <Sidebar 
+        userRole={userRole} 
+        onLogout={onLogout} 
+        isOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
+      />
 
       <div className="app-main">
         <Header
           title={currentView}
           userRole={userRole}
           currentView={currentView}
+          onOpenMobileMenu={() => setIsMobileSidebarOpen(true)}
         />
 
-        <main className={`page-content bg-slate-50 ${isAIAssistant ? 'p-0 overflow-hidden' : 'p-4 md:p-6'}`}>
+        <main className={`page-content bg-slate-50 ${isAIAssistant ? 'p-0 overflow-hidden' : 'p-3 sm:p-4 md:p-6'}`}>
           <Outlet />
         </main>
       </div>

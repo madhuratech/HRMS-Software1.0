@@ -1,41 +1,78 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Search, Filter, Download, Upload, MoreVertical, 
-  ChevronLeft, ChevronRight, CheckSquare, Square
+import {
+  Search, Filter, Download, Upload, MoreVertical,
+  ChevronLeft, ChevronRight, CheckSquare, Square, FileSpreadsheet
 } from 'lucide-react';
 import EmployeeAvatar from './EmployeeAvatar';
+import EmployeeImportModal from './EmployeeImportModal';
 import { canCreate, canEdit, canExport, canImport } from '../../lib/permissions';
+import { exportEmployeesToExcel, downloadEmployeeExcelTemplate } from '../../utils/employeeExcel';
+import { useToast } from '../ui/Toast';
+import { apiFetch } from '../../lib/api';
 import './employee-module.css';
 
 export default function EmployeeListContent() {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAll, setSelectedAll] = useState(false);
   const [employeeList, setEmployeeList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  const fetchEmployees = useCallback(() => {
+    setLoading(true);
+    apiFetch(`/employees?search=${encodeURIComponent(searchTerm)}&sortBy=id&sortOrder=asc&_t=${Date.now()}`)
+      .then(data => {
+        if (Array.isArray(data)) {
+          setEmployeeList(data);
+        } else {
+          setEmployeeList([]);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to load employees", err);
+        setEmployeeList([]);
+        setLoading(false);
+      });
+  }, [searchTerm]);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      setLoading(true);
-      fetch(`/app/employees?search=${searchTerm}`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            setEmployeeList(data);
-          } else {
-            setEmployeeList([]);
-          }
-          setLoading(false);
-        })
-        .catch(err => {
-          console.error("Failed to load employees", err);
-          setLoading(false);
-        });
+      fetchEmployees();
     }, 300);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
+  }, [fetchEmployees]);
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const meta = await apiFetch('/employees/import-meta');
+      downloadEmployeeExcelTemplate(meta || {});
+      addToast("Excel template downloaded successfully.", "success");
+    } catch (err) {
+      downloadEmployeeExcelTemplate({});
+      addToast("Excel template downloaded.", "success");
+    }
+  };
+
+  const handleExportList = async () => {
+    try {
+      const data = await apiFetch('/employees/export-data');
+      if (Array.isArray(data) && data.length > 0) {
+        exportEmployeesToExcel(data);
+      } else {
+        exportEmployeesToExcel(employeeList);
+      }
+      addToast("Employees exported to Excel successfully.", "success");
+    } catch (err) {
+      console.error("Export error, falling back to loaded rows:", err);
+      exportEmployeesToExcel(employeeList);
+      addToast("Exported currently loaded employees to Excel.", "info");
+    }
+  };
 
   return (
     <div className="hrms-content">
@@ -45,9 +82,9 @@ export default function EmployeeListContent() {
           <div className="hrms-search-bar" style={{ marginBottom: 0 }}>
             <div className="hrms-search-input" style={{ width: '300px' }}>
               <Search className="hrms-search-icon" size={18} />
-              <input 
-                type="text" 
-                placeholder="Search employee..." 
+              <input
+                type="text"
+                placeholder="Search employee..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -58,12 +95,37 @@ export default function EmployeeListContent() {
             <button className="hrms-secondary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}><CheckSquare size={16} /> Bulk Actions</button>
           )}
         </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+          <button
+            type="button"
+            className="hrms-secondary-btn"
+            onClick={handleDownloadTemplate}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+            title="Download Excel Template corresponding to Add Employee form"
+          >
+            <FileSpreadsheet size={16} color="#2563EB" /> Download Template
+          </button>
+
           {(canCreate('employees', 'add_employee') || canImport('employees', 'employee_list')) && (
-            <button className="hrms-secondary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}><Upload size={16} /> Import</button>
+            <button
+              type="button"
+              className="hrms-secondary-btn"
+              onClick={() => setIsImportModalOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', background: '#EFF6FF', color: '#2563EB', borderColor: '#BFDBFE' }}
+            >
+              <Upload size={16} /> Import Excel
+            </button>
           )}
+
           {canExport('employees', 'employee_list') && (
-            <button className="hrms-primary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}><Download size={16} /> Export List</button>
+            <button
+              type="button"
+              className="hrms-primary-btn"
+              onClick={handleExportList}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}
+            >
+              <Download size={16} /> Export List
+            </button>
           )}
         </div>
       </div>
@@ -79,7 +141,7 @@ export default function EmployeeListContent() {
                   </div>
                 </th>
                 <th>Employee</th>
-                <th>ID</th>
+                <th>Employee ID</th>
                 <th>Department</th>
                 <th>Designation</th>
                 <th>Branch</th>
@@ -97,12 +159,26 @@ export default function EmployeeListContent() {
                     </div>
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
-                    <div className="hrms-user-info" style={{cursor: 'pointer'}} onClick={() => { localStorage.setItem('selectedEmployeeId', emp.id); navigate('/employees/profile'); }}>
+                    <div className="hrms-user-info" style={{ cursor: 'pointer' }} onClick={() => { localStorage.setItem('selectedEmployeeId', emp.id); navigate('/employees/profile'); }}>
                       <EmployeeAvatar name={emp.name} photoUrl={emp.profile_photo} size={32} className="hrms-avatar" />
                       <span className="hrms-font-medium hrms-text-primary">{emp.name}</span>
                     </div>
                   </td>
-                  <td style={{ whiteSpace: 'nowrap' }}><span className="hrms-text-muted">EMP00{emp.id}</span></td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <span style={{
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      color: '#1D4ED8',
+                      backgroundColor: '#EFF6FF',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid #BFDBFE',
+                      display: 'inline-block'
+                    }}>
+                      {emp.employee_code || emp.employee_id || emp.employeeId || emp.emp_code || emp.empId || '—'}
+                    </span>
+                  </td>
                   <td style={{ whiteSpace: 'nowrap' }}>{emp.dept_name || 'HR'}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{emp.role_name || 'Staff'}</td>
                   <td>{emp.branch_name || 'Head Office'}</td>
@@ -113,7 +189,7 @@ export default function EmployeeListContent() {
                   </td>
                   <td>{emp.join_date ? new Date(emp.join_date).toLocaleDateString() : 'N/A'}</td>
                   <td>
-                    <button onClick={() => { localStorage.setItem('selectedEmployeeId', emp.id); navigate('/employees/profile'); }} style={{background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8'}}>
+                    <button onClick={() => { localStorage.setItem('selectedEmployeeId', emp.id); navigate('/employees/profile'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                       <MoreVertical size={18} />
                     </button>
                   </td>
@@ -139,6 +215,15 @@ export default function EmployeeListContent() {
           </div>
         </div>
       </div>
+
+      {/* Excel Import Modal */}
+      <EmployeeImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImportSuccess={() => {
+          fetchEmployees();
+        }}
+      />
     </div>
   );
 }

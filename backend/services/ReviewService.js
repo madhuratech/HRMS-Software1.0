@@ -261,6 +261,7 @@ class ReviewService {
     const rows = await Performance.query(
       `SELECT r.id,
               r.employee_id,
+              COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
               COALESCE(e.name, 'Employee') as employee_name,
               COALESCE(desg.role_name, 'Staff') as designation,
               COALESCE(d.dept_name, 'General') as department_name,
@@ -335,7 +336,7 @@ class ReviewService {
       SELECT r.id,
              r.employee_id,
              e.name as employee_name,
-             COALESCE(e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
              e.department_id,
              COALESCE(d.dept_name, 'General') as department_name,
              r.goal_id,

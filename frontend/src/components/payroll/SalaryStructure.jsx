@@ -798,7 +798,7 @@ export default function SalaryStructure() {
                       ...activeEmployees.map(emp => ({
                         value: String(emp.id),
                         label: emp.name,
-                        sublabel: `${emp.emp_code || `EMP${String(emp.id).padStart(4, '0')}`}${emp.designation ? ` • ${emp.designation}` : ''}`
+                        sublabel: `${emp.employee_code || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')}${emp.designation ? ` • ${emp.designation}` : ''}`
                       }))
                     ]}
                     placeholder="Search or select employee..."
@@ -812,7 +812,7 @@ export default function SalaryStructure() {
                     Employee ID
                   </label>
                   <div style={{ width: '100%', height: '46px', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', fontSize: '13.5px', color: selectedEmployee ? '#1E293B' : '#94A3B8', fontWeight: selectedEmployee ? '700' : '500', boxSizing: 'border-box' }}>
-                    {selectedEmployee ? (selectedEmployee.emp_code || `EMP${String(selectedEmployee.id).padStart(4, '0')}`) : 'Select an employee...'}
+                    {selectedEmployee ? (selectedEmployee.employee_code || selectedEmployee.emp_code || (selectedEmployee.id ? `EMP${String(selectedEmployee.id).padStart(4, '0')}` : '')) : 'Select an employee...'}
                   </div>
                 </div>
 

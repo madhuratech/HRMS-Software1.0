@@ -15,7 +15,7 @@ const trendData = [
   { name: 'May', used: 14, earned: 22 },
   { name: 'Jun', used: 16, earned: 18 },
   { name: 'Jul', used: 12, earned: 20 },
-  { name: 'Aug', used: 8,  earned: 16 }
+  { name: 'Aug', used: 8, earned: 16 }
 ];
 
 export default function CompOff() {
@@ -49,7 +49,7 @@ export default function CompOff() {
           return { role, empId: empId ? Number(empId) : null, name, code, raw: parsed };
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return { role: 'EMPLOYEE', empId: null, name: 'Employee', code: null, raw: null };
   };
 
@@ -80,7 +80,7 @@ export default function CompOff() {
     department: 'Engineering',
     workedDate: new Date().toISOString().split('T')[0],
     earnedDate: new Date().toISOString().split('T')[0],
-    expiryDate: new Date(Date.now() + 90*24*60*60*1000).toISOString().split('T')[0],
+    expiryDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     totalDays: '1',
     reason: '',
     reportingManager: 'Management',
@@ -143,7 +143,7 @@ export default function CompOff() {
       department: initDept,
       workedDate: new Date().toISOString().split('T')[0],
       earnedDate: new Date().toISOString().split('T')[0],
-      expiryDate: new Date(Date.now() + 90*24*60*60*1000).toISOString().split('T')[0],
+      expiryDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       totalDays: '1',
       reason: '',
       reportingManager: 'Management',
@@ -260,7 +260,7 @@ export default function CompOff() {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
-      
+
       {/* Header Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
@@ -268,12 +268,12 @@ export default function CompOff() {
           <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Track overtime credits, compensatory leave accruals, and approvals</p>
         </div>
         {canCreate('leave', 'comp_off') && (
-          <button 
-            onClick={handleOpenModal} 
-            style={{ 
-              background: '#2563EB', color: '#fff', border: 'none', 
-              padding: '10px 18px', borderRadius: '8px', fontSize: '13px', 
-              fontWeight: '600', display: 'flex', alignItems: 'center', 
+          <button
+            onClick={handleOpenModal}
+            style={{
+              background: '#2563EB', color: '#fff', border: 'none',
+              padding: '10px 18px', borderRadius: '8px', fontSize: '13px',
+              fontWeight: '600', display: 'flex', alignItems: 'center',
               gap: '8px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37,99,235,0.2)',
               whiteSpace: 'nowrap'
             }}
@@ -305,10 +305,10 @@ export default function CompOff() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '24px' }}>
-        
+
         {/* Main Left Section */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
+
           {/* Table */}
           <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
@@ -316,16 +316,16 @@ export default function CompOff() {
                 {isEmployee ? 'My Comp Off Requests' : 'Recent Comp Off Requests'}
               </h3>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <AppDropdown value={deptFilter} options={[{value:'All Departments',label:'All Departments'},{value:'Human Resources',label:'Human Resources'},{value:'Engineering',label:'Engineering'}]} size="sm" />
-                <AppDropdown value={statusFilter} options={[{value:'All Status',label:'All Status'},{value:'Pending',label:'Pending'},{value:'Approved',label:'Approved'},{value:'Rejected',label:'Rejected'}]} size="sm" />
+                <AppDropdown value={deptFilter} options={[{ value: 'All Departments', label: 'All Departments' }, { value: 'Human Resources', label: 'Human Resources' }, { value: 'Engineering', label: 'Engineering' }]} size="sm" />
+                <AppDropdown value={statusFilter} options={[{ value: 'All Status', label: 'All Status' }, { value: 'Pending', label: 'Pending' }, { value: 'Approved', label: 'Approved' }, { value: 'Rejected', label: 'Rejected' }]} size="sm" />
                 <div style={{ position: 'relative', width: '200px' }}>
                   <Search size={16} style={{ position: 'absolute', left: '12px', top: '10px', color: '#94a3b8' }} />
-                  <input 
-                    type="text" 
-                    placeholder="Search employee..." 
+                  <input
+                    type="text"
+                    placeholder="Search employee..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px 9px 36px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none' }} 
+                    style={{ width: '100%', padding: '9px 12px 9px 36px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none' }}
                   />
                 </div>
               </div>
@@ -361,10 +361,10 @@ export default function CompOff() {
                         <tr key={req.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '16px 24px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <img 
-                                src={getAvatarUrl(req.avatar, req.employee_name, req.employee_id || req.id)} 
-                                alt={req.employee_name} 
-                                style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} 
+                              <img
+                                src={getAvatarUrl(req.avatar, req.employee_name, req.employee_id || req.id)}
+                                alt={req.employee_name}
+                                style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
                               />
                               <div>
                                 <span style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', display: 'block' }}>{req.employee_name}</span>
@@ -390,14 +390,14 @@ export default function CompOff() {
                                 <>
                                   {req.status === 'Pending' && (
                                     <>
-                                      <button 
+                                      <button
                                         title="Approve"
                                         onClick={() => handleUpdateStatus(req.id, 'Approved')}
                                         style={{ background: '#ecfdf5', border: '1px solid #bbf7d0', cursor: 'pointer', color: '#10b981', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
                                       >
                                         <Check size={14} /> Approve
                                       </button>
-                                      <button 
+                                      <button
                                         title="Reject"
                                         onClick={() => handleUpdateStatus(req.id, 'Rejected')}
                                         style={{ background: '#fef2f2', border: '1px solid #fecaca', cursor: 'pointer', color: '#ef4444', padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -407,7 +407,7 @@ export default function CompOff() {
                                     </>
                                   )}
                                   {req.status !== 'Pending' && (
-                                    <button 
+                                    <button
                                       title="Reset Status"
                                       onClick={() => handleUpdateStatus(req.id, 'Pending')}
                                       style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', cursor: 'pointer', color: '#64748b', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}
@@ -479,7 +479,7 @@ export default function CompOff() {
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(6px)' }}>
           <div style={{ width: '560px', maxWidth: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#FFFFFF', borderRadius: '22px', boxShadow: '0 32px 80px rgba(15, 23, 42, 0.28)', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.8)' }}>
-            
+
             {/* Modal Header */}
             <div style={{ position: 'relative', padding: '20px 24px', background: 'linear-gradient(135deg, #1E40AF 0%, #1D4ED8 50%, #2563EB 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden', flexShrink: 0 }}>
               <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '130px', height: '130px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.08)', pointerEvents: 'none' }} />
@@ -499,9 +499,9 @@ export default function CompOff() {
                 </div>
               </div>
 
-              <button 
-                type="button" 
-                onClick={() => setShowModal(false)} 
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
                 style={{ width: '34px', height: '34px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.25)', background: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(4px)', display: 'grid', placeItems: 'center', placeContent: 'center', cursor: 'pointer', zIndex: 1, transition: 'all 0.2s', flexShrink: 0, marginLeft: 'auto', lineHeight: 0, padding: 0 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
@@ -517,36 +517,36 @@ export default function CompOff() {
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
                       Employee <span style={{ color: '#64748B', fontWeight: '400' }}>[Read Only]</span>
                     </label>
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={formData.employee_name || authUser.name} 
-                      style={{ width: '100%', padding: '10px 12px', border: '1px solid #CBD5E1', borderRadius: 8, fontSize: 14, background: '#F8FAFC', color: '#1E293B', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
+                    <input
+                      type="text"
+                      readOnly
+                      value={formData.employee_name || authUser.name}
+                      style={{ width: '100%', padding: '10px 12px', border: '1px solid #CBD5E1', borderRadius: 8, fontSize: 14, background: '#F8FAFC', color: '#1E293B', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>
                       Employee ID <span style={{ color: '#64748B', fontWeight: '400' }}>[Read Only]</span>
                     </label>
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={authUser.code || (formData.employee_id ? `EMP${String(formData.employee_id).padStart(4, '0')}` : '')} 
-                      style={{ width: '100%', padding: '10px 12px', border: '1px solid #CBD5E1', borderRadius: 8, fontSize: 14, background: '#F8FAFC', color: '#64748B', outline: 'none', boxSizing: 'border-box' }} 
+                    <input
+                      type="text"
+                      readOnly
+                      value={authUser.employee_code || authUser.code || (formData.employee_id ? `EMP${String(formData.employee_id).padStart(4, '0')}` : '')}
+                      style={{ width: '100%', padding: '10px 12px', border: '1px solid #CBD5E1', borderRadius: 8, fontSize: 14, background: '#F8FAFC', color: '#64748B', outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
               ) : (
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#334155', marginBottom: '6px' }}>Employee *</label>
-                  <AppDropdown 
-                    value={formData.employee_id} 
+                  <AppDropdown
+                    value={formData.employee_id}
                     onChange={val => {
                       const sel = employees.find(e => e.id === val);
                       setFormData(prev => ({ ...prev, employee_id: val, employee_name: sel ? sel.name : '' }));
                     }}
-                    options={employees.map(e => ({ value: e.id, label: `${e.name} (EMP${String(e.id).padStart(4, '0')})` }))} 
-                    size="sm" 
+                    options={employees.map(e => ({ value: e.id, label: `${e.name} (${e.employee_code || e.emp_code || (e.id ? `EMP${String(e.id).padStart(4, '0')}` : '')})` }))}
+                    size="sm"
                   />
                 </div>
               )}

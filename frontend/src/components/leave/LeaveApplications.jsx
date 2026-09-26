@@ -22,9 +22,9 @@ const CustomSelect = ({ label, required, value, onChange, options = [], placehol
       <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>
         {label}{required && <span style={{ color: '#EF4444', marginLeft: '2px' }}>*</span>}
       </label>
-      <button 
-        type="button" 
-        onClick={() => setOpen(!open)} 
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
         style={{ width: '100%', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', border: '1.5px solid #E2E8F0', borderRadius: '11px', fontSize: '13.5px', background: '#FAFBFC', cursor: 'pointer', transition: 'all 0.2s', boxSizing: 'border-box' }}
       >
         <span style={{ color: value ? '#1E293B' : '#94A3B8', fontWeight: value ? '500' : '400' }}>
@@ -39,10 +39,10 @@ const CustomSelect = ({ label, required, value, onChange, options = [], placehol
             const optLabel = typeof opt === 'object' && opt !== null ? opt.label : opt;
             const isSelected = value === optVal;
             return (
-              <button 
-                key={idx} 
-                type="button" 
-                onClick={() => { onChange(optVal); setOpen(false); }} 
+              <button
+                key={idx}
+                type="button"
+                onClick={() => { onChange(optVal); setOpen(false); }}
                 style={{ width: '100%', textAlign: 'left', padding: '10px 14px', fontSize: '13px', border: 'none', background: isSelected ? '#EFF6FF' : 'transparent', color: isSelected ? '#2563EB' : '#334155', fontWeight: isSelected ? '600' : '400', cursor: 'pointer' }}
               >
                 {optLabel}
@@ -87,7 +87,7 @@ export default function LeaveApplications() {
           return { role, empId: empId ? Number(empId) : null, name, code, raw: parsed };
         }
       }
-    } catch (e) {}
+    } catch (e) { }
     return { role: 'EMPLOYEE', empId: null, name: 'Employee', code: null, raw: null };
   };
 
@@ -184,7 +184,7 @@ export default function LeaveApplications() {
     if (isEmployee) {
       initEmpName = authUser.name;
       initEmpId = authUser.empId;
-      initEmpCode = authUser.code || (initEmpId ? `EMP${String(initEmpId).padStart(4, '0')}` : '');
+      initEmpCode = authUser.employee_code || authUser.code || (initEmpId ? `EMP${String(initEmpId).padStart(4, '0')}` : '');
       const foundEmp = employees.find(e => e.id === authUser.empId || e.name === authUser.name);
       if (foundEmp) {
         initDept = foundEmp.dept_name || 'General';
@@ -192,7 +192,7 @@ export default function LeaveApplications() {
     } else if (employees.length > 0) {
       initEmpName = employees[0].name;
       initEmpId = employees[0].id;
-      initEmpCode = employees[0].employee_code || `EMP${String(employees[0].id).padStart(4, '0')}`;
+      initEmpCode = employees[0].employee_code || employees[0].employeeId || (employees[0].id ? `EMP${String(employees[0].id).padStart(4, '0')}` : '');
       initDept = employees[0].dept_name || 'General';
     }
 
@@ -236,7 +236,7 @@ export default function LeaveApplications() {
     const emp = employees.find(e => e.name === name);
     if (!emp) return;
 
-    const empCode = emp.employee_code || `EMP${String(emp.id).padStart(4, '0')}`;
+    const empCode = emp.employee_code || emp.employeeId || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '');
     setFormData(prev => ({
       ...prev,
       employeeName: name,
@@ -436,6 +436,7 @@ export default function LeaveApplications() {
   // Filter local rows
   const filtered = applications.filter(app => {
     const nameMatch = (app.employee_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (app.employee_code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       `EMP${String(app.employee_id).padStart(4, '0')}`.toLowerCase().includes(searchTerm.toLowerCase());
     const statusMatch = statusFilter === 'All Status' || app.status === statusFilter;
     const deptMatch = deptFilter === 'All Departments' || (app.department || '') === deptFilter;
@@ -538,7 +539,7 @@ export default function LeaveApplications() {
                           <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(app.employee_name)}&background=f1f5f9&color=64748b`} alt={app.employee_name} style={{ width: '32px', height: '32px', borderRadius: '50%' }} />
                           <div>
                             <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>{app.employee_name}</div>
-                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>EMP{String(app.employee_id).padStart(4, '0')}</div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{app.employee_code || (app.employee_id ? `EMP${String(app.employee_id).padStart(4, '0')}` : '')}</div>
                           </div>
                         </div>
                       </td>
@@ -581,9 +582,9 @@ export default function LeaveApplications() {
                 </div>
               </div>
 
-              <button 
-                type="button" 
-                onClick={() => setShowModal(false)} 
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
                 style={{ width: '34px', height: '34px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.25)', background: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(4px)', display: 'grid', placeItems: 'center', placeContent: 'center', cursor: 'pointer', zIndex: 1, transition: 'all 0.2s', flexShrink: 0, marginLeft: 'auto', lineHeight: 0, padding: 0 }}
                 onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)'}
                 onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'}
@@ -602,11 +603,11 @@ export default function LeaveApplications() {
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>
                       Employee <span style={{ color: '#64748B', fontWeight: '400' }}>[Read Only]</span>
                     </label>
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={formData.employeeName} 
-                      style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#1E293B', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
+                    <input
+                      type="text"
+                      readOnly
+                      value={formData.employeeName}
+                      style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#1E293B', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                 ) : (
@@ -622,11 +623,11 @@ export default function LeaveApplications() {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>Employee ID</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={formData.employeeCode || (formData.employeeId ? `EMP${String(formData.employeeId).padStart(4, '0')}` : '')} 
-                    style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#64748B', outline: 'none', boxSizing: 'border-box' }} 
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.employeeCode || (formData.employeeId ? `EMP${String(formData.employeeId).padStart(4, '0')}` : '')}
+                    style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#64748B', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
 
@@ -635,20 +636,20 @@ export default function LeaveApplications() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>Department</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={formData.department} 
-                    style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#64748B', outline: 'none', boxSizing: 'border-box' }} 
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.department}
+                    style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#64748B', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>Available Balance</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={formData.leaveBalance} 
-                    style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#2563EB', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }} 
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.leaveBalance}
+                    style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#2563EB', fontWeight: '600', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
@@ -671,11 +672,11 @@ export default function LeaveApplications() {
                 />
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>Total Days</label>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={formData.totalDays} 
-                    style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#10B981', fontWeight: '700', outline: 'none', boxSizing: 'border-box' }} 
+                  <input
+                    type="text"
+                    readOnly
+                    value={formData.totalDays}
+                    style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', background: '#F8FAFC', color: '#10B981', fontWeight: '700', outline: 'none', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
@@ -685,11 +686,11 @@ export default function LeaveApplications() {
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>
                     Start Date <span style={{ color: '#EF4444' }}>*</span>
                   </label>
-                  <input 
-                    type="date" 
-                    required 
-                    value={formData.startDate} 
-                    onChange={(e) => handleDateChange('startDate', e.target.value)} 
+                  <input
+                    type="date"
+                    required
+                    value={formData.startDate}
+                    onChange={(e) => handleDateChange('startDate', e.target.value)}
                     style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', color: '#1E293B', background: '#FAFBFC', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
                     onFocus={e => { e.target.style.borderColor = '#2563EB'; e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.12)'; e.target.style.background = '#FFF'; }}
                     onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; e.target.style.background = '#FAFBFC'; }}
@@ -699,11 +700,11 @@ export default function LeaveApplications() {
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>
                     End Date <span style={{ color: '#EF4444' }}>*</span>
                   </label>
-                  <input 
-                    type="date" 
-                    required 
-                    value={formData.endDate} 
-                    onChange={(e) => handleDateChange('endDate', e.target.value)} 
+                  <input
+                    type="date"
+                    required
+                    value={formData.endDate}
+                    onChange={(e) => handleDateChange('endDate', e.target.value)}
                     style={{ width: '100%', height: '44px', padding: '0 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', color: '#1E293B', background: '#FAFBFC', outline: 'none', transition: 'all 0.2s', boxSizing: 'border-box' }}
                     onFocus={e => { e.target.style.borderColor = '#2563EB'; e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.12)'; e.target.style.background = '#FFF'; }}
                     onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; e.target.style.background = '#FAFBFC'; }}
@@ -727,13 +728,13 @@ export default function LeaveApplications() {
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '7px' }}>
                   Reason for Leave <span style={{ color: '#EF4444' }}>*</span>
                 </label>
-                <textarea 
-                  required 
-                  value={formData.reason} 
-                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })} 
-                  style={{ width: '100%', padding: '12px 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', color: '#1E293B', background: '#FAFBFC', outline: 'none', transition: 'all 0.2s', resize: 'none', boxSizing: 'border-box' }} 
+                <textarea
+                  required
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  style={{ width: '100%', padding: '12px 14px', borderRadius: '11px', border: '1.5px solid #E2E8F0', fontSize: '13.5px', color: '#1E293B', background: '#FAFBFC', outline: 'none', transition: 'all 0.2s', resize: 'none', boxSizing: 'border-box' }}
                   rows={2}
-                  placeholder="Enter detailed reason here..." 
+                  placeholder="Enter detailed reason here..."
                   onFocus={e => { e.target.style.borderColor = '#2563EB'; e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.12)'; e.target.style.background = '#FFF'; }}
                   onBlur={e => { e.target.style.borderColor = '#E2E8F0'; e.target.style.boxShadow = 'none'; e.target.style.background = '#FAFBFC'; }}
                 />
@@ -749,17 +750,17 @@ export default function LeaveApplications() {
 
               {/* Actions */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '4px', paddingTop: '16px', borderTop: '1px solid #F1F5F9', flexShrink: 0 }}>
-                <button 
-                  type="button" 
-                  onClick={() => setShowModal(false)} 
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
                   style={{ height: '44px', padding: '0 20px', borderRadius: '11px', border: '1.5px solid #E2E8F0', background: '#FFFFFF', color: '#475569', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }}
                   onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   disabled={isSubmitting}
                   style={{ height: '44px', padding: '0 26px', borderRadius: '11px', border: 'none', background: isSubmitting ? '#94A3B8' : 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)', color: '#FFFFFF', fontSize: '13.5px', fontWeight: '700', cursor: isSubmitting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)', transition: 'all 0.2s' }}
                   onMouseEnter={e => { if (!isSubmitting) e.currentTarget.style.boxShadow = '0 6px 18px rgba(37, 99, 235, 0.45)'; }}

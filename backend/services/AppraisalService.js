@@ -62,7 +62,7 @@ class AppraisalService {
 
   static async getById(id) {
     const rows = await Performance.query(
-      `SELECT a.*, e.name as employee_name, d.dept_name as department_name
+      `SELECT a.*, e.name as employee_name, COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code, d.dept_name as department_name
        FROM appraisals a
        LEFT JOIN employees e ON a.employee_id = e.id
        LEFT JOIN departments d ON e.department_id = d.id
@@ -74,7 +74,7 @@ class AppraisalService {
 
   static async list(filters, pagination, scope = null) {
     let sql = `
-      SELECT a.*, e.name as employee_name, d.dept_name as department_name
+      SELECT a.*, e.name as employee_name, COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code, d.dept_name as department_name
       FROM appraisals a
       LEFT JOIN employees e ON a.employee_id = e.id
       LEFT JOIN departments d ON e.department_id = d.id

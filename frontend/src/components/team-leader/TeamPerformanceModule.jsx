@@ -27,7 +27,7 @@ export function TeamPerformanceModule() {
               return {
                 id: g.id || idx + 1,
                 name: g.employee_name || 'Team Member',
-                empId: g.employee_id ? `EMP${String(g.employee_id).padStart(4, '0')}` : `GOAL-${g.id}`,
+                empId: g.employee_code || (g.employee_id ? `EMP${String(g.employee_id).padStart(4, '0')}` : `GOAL-${g.id}`),
                 role: g.goal_title || g.title || 'Goal Target',
                 score: `${ratingVal} / 5.0`,
                 goalPct: pct,

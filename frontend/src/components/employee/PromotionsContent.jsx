@@ -14,7 +14,7 @@ export default function PromotionsContent() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [employees, setEmployees] = useState([]);
   const [designations, setDesignations] = useState([]);
-  
+
   // Form State
   const [employeeId, setEmployeeId] = useState('');
   const [newDesignationId, setNewDesignationId] = useState('');
@@ -113,8 +113,8 @@ export default function PromotionsContent() {
       <div className="hrms-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Promotions</h1>
         {canCreate('employees', 'promotions') && (
-          <button 
-            className="hrms-primary-btn" 
+          <button
+            className="hrms-primary-btn"
             onClick={() => setShowAddForm(!showAddForm)}
             style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
@@ -236,7 +236,7 @@ export default function PromotionsContent() {
                       { value: '', label: 'Choose Employee...' },
                       ...employees.map(emp => ({
                         value: String(emp.id),
-                        label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (EMP${String(emp.id).padStart(4, '0')})`
+                        label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (${emp.employee_code || emp.employeeId || emp.emp_code || `EMP${String(emp.id).padStart(4, '0')}`})`
                       }))
                     ]}
                     size="sm"

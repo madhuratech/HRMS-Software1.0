@@ -393,11 +393,11 @@ export default function DailyAttendance() {
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Status</label>
                   <AppDropdown
-                value={editForm.status}
-                onChange={v => setEditForm({ ...editForm, status: v })}
-                options={[{value:'Present',label:'Present'},{value:'Late',label:'Late'},{value:'Early Exit',label:'Early Exit'},{value:'Completed',label:'Completed'},{value:'Absent',label:'Absent'},{value:'On Leave',label:'On Leave'}]}
-                size="sm"
-              />
+                    value={editForm.status}
+                    onChange={v => setEditForm({ ...editForm, status: v })}
+                    options={[{ value: 'Present', label: 'Present' }, { value: 'Late', label: 'Late' }, { value: 'Early Exit', label: 'Early Exit' }, { value: 'Completed', label: 'Completed' }, { value: 'Absent', label: 'Absent' }, { value: 'On Leave', label: 'On Leave' }]}
+                    size="sm"
+                  />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Working Hours</label>

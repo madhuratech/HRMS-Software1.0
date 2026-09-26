@@ -220,7 +220,7 @@ export default function Promotions() {
       case 'Approved': return { bg: '#DCFCE7', color: '#15803D' };
       case 'Pending': return { bg: '#FEF3C7', color: '#D97706' };
       case 'Rejected': return { bg: '#FEE2E2', color: '#DC2626' };
-    default: return { bg: '#F3F4F6', color: '#6B7280' };
+      default: return { bg: '#F3F4F6', color: '#6B7280' };
     }
   };
 
@@ -398,19 +398,19 @@ export default function Promotions() {
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
           {canCreate('performance', 'performance_promotions') && (
-            <button 
-              onClick={() => setShowAddModal(true)} 
-              style={{ 
-                padding: '10px 20px', 
-                borderRadius: '8px', 
-                border: 'none', 
-                background: '#2952E3', 
-                color: '#FFF', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                cursor: 'pointer', 
-                fontSize: '14px', 
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                background: '#2952E3',
+                color: '#FFF',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
                 fontWeight: '500',
                 whiteSpace: 'nowrap',
                 flexShrink: 0

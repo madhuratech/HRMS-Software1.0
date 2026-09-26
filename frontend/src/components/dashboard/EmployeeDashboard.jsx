@@ -118,7 +118,7 @@ export function EmployeeDashboard() {
         // Set baseline user state
         setEmployee({
           name: empName || 'Employee',
-          id: empId ? `EMP${String(empId).padStart(4, '0')}` : 'EMP--',
+          id: (userObj && (userObj.employee_code || userObj.employeeCode || userObj.emp_id)) || (empId ? `EMP${String(empId).padStart(4, '0')}` : 'EMP--'),
           email: empEmail || 'N/A',
           department: empDept || 'General',
           designation: empDesg || 'Staff',
@@ -133,7 +133,7 @@ export function EmployeeDashboard() {
             if (empRes && !empRes.error && empRes.id) {
               setEmployee({
                 name: empRes.name || empName || 'Employee',
-                id: `EMP${String(empRes.id || empId).padStart(4, '0')}`,
+                id: empRes.employee_code || empRes.employeeCode || empRes.employee_id || empRes.emp_code || (empRes.id ? `EMP${String(empRes.id).padStart(4, '0')}` : (empId ? `EMP${String(empId).padStart(4, '0')}` : 'EMP--')),
                 designation: empRes.role_name || empRes.designation || empDesg || 'Staff',
                 department: empRes.dept_name || empRes.department || empDept || 'General',
                 joined: empRes.join_date ? new Date(empRes.join_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',

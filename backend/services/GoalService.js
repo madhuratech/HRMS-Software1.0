@@ -66,7 +66,7 @@ class GoalService {
 
   static async getById(id) {
     const rows = await Performance.query(
-      `SELECT g.*, e.name as employee_name, COALESCE(dept.dept_name, b.branch_name, 'General') as department_name
+      `SELECT g.*, e.name as employee_name, COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code, COALESCE(dept.dept_name, b.branch_name, 'General') as department_name
        FROM goals g
        LEFT JOIN employees e ON g.employee_id = e.id
        LEFT JOIN departments dept ON (COALESCE(g.department_id, e.department_id) = dept.id)
@@ -79,7 +79,7 @@ class GoalService {
 
   static async list(filters, pagination, scope = null) {
     let sql = `
-      SELECT g.*, e.name as employee_name, COALESCE(dept.dept_name, b.branch_name, 'General') as department_name
+      SELECT g.*, e.name as employee_name, COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code, COALESCE(dept.dept_name, b.branch_name, 'General') as department_name
       FROM goals g
       LEFT JOIN employees e ON g.employee_id = e.id
       LEFT JOIN departments dept ON (COALESCE(g.department_id, e.department_id) = dept.id)

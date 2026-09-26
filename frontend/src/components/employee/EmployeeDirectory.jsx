@@ -6,6 +6,7 @@ import {
   MoreVertical, Calendar, UserPlus, Zap
 } from 'lucide-react';
 import EmployeeAvatar from './EmployeeAvatar';
+import { apiFetch } from '../../lib/api';
 import './employee-module.css';
 
 export default function EmployeeDirectory() {
@@ -27,8 +28,7 @@ export default function EmployeeDirectory() {
       status: statusFilter
     }).toString();
 
-    fetch(`/app/employees?${query}`)
-      .then(res => res.json())
+    apiFetch(`/employees?${query}`)
       .then(data => {
         if (Array.isArray(data)) {
           setEmployees(data);
@@ -39,6 +39,7 @@ export default function EmployeeDirectory() {
       })
       .catch(err => {
         console.error("Failed to load directory", err);
+        setEmployees([]);
         setLoading(false);
       });
   }, [searchTerm, departmentFilter, designationFilter, statusFilter]);
@@ -48,7 +49,7 @@ export default function EmployeeDirectory() {
   const activeEmployees = employees.filter(e => e.status === 'Active').length;
   // New joiners (e.g., joined in last 6 months or 2024/2026 depending on seeded data)
   const newJoinersCount = employees.filter(e => e.join_date && new Date(e.join_date).getFullYear() >= 2024).length;
-  
+
   // Extract unique departments and designations for filter options
   const uniqueDepts = ["Engineering", "Sales", "Marketing", "Customer Support", "Human Resources"];
   const uniqueDesgs = ["Super Admin", "Branch Manager", "Sales Manager", "Service Staff", "Software Engineer", "HR Executive", "UI/UX Designer"];
@@ -80,23 +81,23 @@ export default function EmployeeDirectory() {
             </div>
           </div>
           <AppDropdown
-                value={departmentFilter}
-                onChange={v => setDepartmentFilter(v)}
-                options={[{value:'',label:'Department'}]}
-                size="sm"
-              />
+            value={departmentFilter}
+            onChange={v => setDepartmentFilter(v)}
+            options={[{ value: '', label: 'Department' }]}
+            size="sm"
+          />
           <AppDropdown
-                value={designationFilter}
-                onChange={v => setDesignationFilter(v)}
-                options={[{value:'',label:'Designation'}]}
-                size="sm"
-              />
+            value={designationFilter}
+            onChange={v => setDesignationFilter(v)}
+            options={[{ value: '', label: 'Designation' }]}
+            size="sm"
+          />
           <AppDropdown
-                value={statusFilter}
-                onChange={v => setStatusFilter(v)}
-                options={[{value:'',label:'Status'},{value:'Active',label:'Active'},{value:'Inactive',label:'Inactive'},{value:'Terminated',label:'Terminated'}]}
-                size="sm"
-              />
+            value={statusFilter}
+            onChange={v => setStatusFilter(v)}
+            options={[{ value: '', label: 'Status' }, { value: 'Active', label: 'Active' }, { value: 'Inactive', label: 'Inactive' }, { value: 'Terminated', label: 'Terminated' }]}
+            size="sm"
+          />
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
           <button className="hrms-secondary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Download size={16} /> Export</button>
@@ -152,7 +153,7 @@ export default function EmployeeDirectory() {
                       <EmployeeAvatar name={emp.name} photoUrl={emp.profile_photo} size={40} className="hrms-avatar" />
                       <div className="hrms-user-details">
                         <h4>{emp.name}</h4>
-                        <p>EMP00{emp.id}</p>
+                        <p>{emp.employee_code || emp.employeeId || emp.employee_id || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')}</p>
                       </div>
                     </div>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>

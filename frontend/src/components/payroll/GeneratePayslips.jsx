@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import AppDropdown from '../ui/AppDropdown';
-import { 
-  Search, Eye, Download, ChevronDown, ChevronLeft, ChevronRight, 
-  Plus, CheckCircle2, DollarSign, Calendar, Filter, X, 
+import {
+  Search, Eye, Download, ChevronDown, ChevronLeft, ChevronRight,
+  Plus, CheckCircle2, DollarSign, Calendar, Filter, X,
   Building2, Users, AlertCircle, Printer, FileText, ArrowRight, ShieldCheck, Loader2
 } from 'lucide-react';
 import { apiFetch, getAuthToken } from '../../lib/api';
@@ -61,14 +61,14 @@ export default function GeneratePayslips() {
         if (Array.isArray(res)) setDepartments(res);
         else if (res && Array.isArray(res.data)) setDepartments(res.data);
       })
-      .catch(() => {});
+      .catch(() => { });
 
     apiFetch('/employees?status=Active')
       .then(res => {
         if (Array.isArray(res)) setActiveEmployees(res);
         else if (res && Array.isArray(res.data)) setActiveEmployees(res.data);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   // Fetch Payroll Records from Real Database
@@ -223,7 +223,7 @@ export default function GeneratePayslips() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const empCode = record.emp_code || `EMP${record.employee_id}`;
+      const empCode = record.employee_code || record.emp_code || (record.employee_id ? `EMP${String(record.employee_id).padStart(4, '0')}` : '');
       a.download = `Payslip_${empCode}_${record.month}_${record.year}.pdf`;
       document.body.appendChild(a);
       a.click();
@@ -338,7 +338,7 @@ export default function GeneratePayslips() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box', fontFamily: '"Inter", sans-serif', paddingBottom: '32px' }}>
-      
+
       {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
         <div>
@@ -346,7 +346,7 @@ export default function GeneratePayslips() {
             {isManagement ? 'Payroll Management & Payslips' : 'My Payslip Records'}
           </h1>
           <p style={{ margin: 0, fontSize: '13px', color: '#64748B' }}>
-            {isManagement 
+            {isManagement
               ? 'Generate, approve, and disburse employee monthly salaries with automated statutory calculations.'
               : 'View and download your monthly salary slips, deductions, and payment details.'
             }
@@ -354,7 +354,7 @@ export default function GeneratePayslips() {
         </div>
         {isManagement && (
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button 
+            <button
               onClick={() => {
                 setGenerateError('');
                 setShowGenerateModal(true);
@@ -421,68 +421,68 @@ export default function GeneratePayslips() {
 
       {/* Main Table Container */}
       <div style={{ background: '#FFFFFF', borderRadius: '16px', border: '1px solid #F1F5F9', boxShadow: '0 4px 20px rgba(15,23,42,0.06)', overflow: 'hidden', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
-        
+
         {/* Filter Toolbar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid #F1F5F9', flexWrap: 'wrap', gap: '12px', background: '#FAFBFF' }}>
-          
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, flexWrap: 'wrap' }}>
             {/* Month Filter */}
             <div style={{ minWidth: '140px' }}>
-              <AppDropdown 
-                value={selectedMonth} 
-                onChange={v => setSelectedMonth(v)} 
+              <AppDropdown
+                value={selectedMonth}
+                onChange={v => setSelectedMonth(v)}
                 options={[
                   { value: 'All Months', label: 'All Months' },
                   ...MONTHS.map(m => ({ value: m, label: m }))
-                ]} 
-                size="sm" 
+                ]}
+                size="sm"
               />
             </div>
 
             {/* Year Filter */}
             <div style={{ minWidth: '110px' }}>
-              <AppDropdown 
-                value={selectedYear} 
-                onChange={v => setSelectedYear(v)} 
+              <AppDropdown
+                value={selectedYear}
+                onChange={v => setSelectedYear(v)}
                 options={[
                   { value: 'All', label: 'All Years' },
                   ...YEARS.map(y => ({ value: String(y), label: String(y) }))
-                ]} 
-                size="sm" 
+                ]}
+                size="sm"
               />
             </div>
 
             {/* Department Filter (Management only) */}
             {isManagement && (
               <div style={{ minWidth: '160px' }}>
-                <AppDropdown 
-                  value={deptFilter} 
-                  onChange={v => setDeptFilter(v)} 
+                <AppDropdown
+                  value={deptFilter}
+                  onChange={v => setDeptFilter(v)}
                   options={[
                     { value: 'All Departments', label: 'All Departments' },
                     ...departments.map(d => ({
                       value: String(d.id || d.dept_name || d.name || d.branch_name),
                       label: d.dept_name || d.name || d.branch_name
                     }))
-                  ]} 
-                  size="sm" 
+                  ]}
+                  size="sm"
                 />
               </div>
             )}
 
             {/* Status Filter */}
             <div style={{ minWidth: '130px' }}>
-              <AppDropdown 
-                value={statusFilter} 
-                onChange={v => setStatusFilter(v)} 
+              <AppDropdown
+                value={statusFilter}
+                onChange={v => setStatusFilter(v)}
                 options={[
                   { value: 'All', label: 'All Statuses' },
                   { value: 'Generated', label: 'Generated' },
                   { value: 'Approved', label: 'Approved' },
                   { value: 'Paid', label: 'Paid' },
                   { value: 'Draft', label: 'Draft' }
-                ]} 
-                size="sm" 
+                ]}
+                size="sm"
               />
             </div>
 
@@ -531,7 +531,7 @@ export default function GeneratePayslips() {
               <FileText size={40} color="#CBD5E1" style={{ margin: '0 auto 12px' }} />
               <div style={{ fontSize: '15px', fontWeight: '700', color: '#334155' }}>No payroll records found</div>
               <p style={{ fontSize: '13px', color: '#94A3B8', marginTop: '4px' }}>
-                {selectedMonth !== 'All Months' 
+                {selectedMonth !== 'All Months'
                   ? `No payslip records found for ${selectedMonth} ${selectedYear}.`
                   : 'No payslip records available yet.'
                 }
@@ -568,8 +568,8 @@ export default function GeneratePayslips() {
                   const isActionBusy = actionLoadingId === row.id;
 
                   return (
-                    <tr 
-                      key={row.id} 
+                    <tr
+                      key={row.id}
                       style={{ borderBottom: index === paginatedList.length - 1 ? 'none' : '1px solid #F1F5F9', transition: 'background 0.15s' }}
                       className="hover:bg-slate-50/70"
                     >
@@ -588,7 +588,7 @@ export default function GeneratePayslips() {
 
                       {/* Employee Code */}
                       <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', fontSize: '12px', fontWeight: '600', color: '#475569' }}>
-                        {row.emp_code || `EMP${row.employee_id}`}
+                        {row.employee_code || row.emp_code || (row.employee_id ? `EMP${String(row.employee_id).padStart(4, '0')}` : '')}
                       </td>
 
                       {/* Department */}
@@ -635,7 +635,7 @@ export default function GeneratePayslips() {
                       {/* Contextual Actions */}
                       <td style={{ padding: '14px 20px', whiteSpace: 'nowrap', textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                          
+
                           {/* View Payslip Button */}
                           <button
                             onClick={() => handleViewPayslip(row)}
@@ -694,7 +694,7 @@ export default function GeneratePayslips() {
               Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, payrollList.length)} of {payrollList.length} records
             </div>
             <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <button 
+              <button
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
                 style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF', border: '1px solid #E2E8F0', borderRadius: '6px', cursor: page <= 1 ? 'not-allowed' : 'pointer', color: '#64748B' }}
@@ -704,7 +704,7 @@ export default function GeneratePayslips() {
               <button style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#2563EB', border: 'none', borderRadius: '6px', color: '#FFF', fontSize: '13px', fontWeight: '600' }}>
                 {page}
               </button>
-              <button 
+              <button
                 disabled={page * limit >= payrollList.length}
                 onClick={() => setPage(page + 1)}
                 style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF', border: '1px solid #E2E8F0', borderRadius: '6px', cursor: page * limit >= payrollList.length ? 'not-allowed' : 'pointer', color: '#64748B' }}
@@ -723,7 +723,7 @@ export default function GeneratePayslips() {
       {showGenerateModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)' }}>
           <div style={{ width: '520px', maxWidth: '95vw', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 25px 60px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
-            
+
             {/* Modal Header */}
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #F1F5F9', background: 'linear-gradient(135deg, #FAFBFF 0%, #EFF6FF 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -735,7 +735,7 @@ export default function GeneratePayslips() {
                   <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>Calculate salaries based on attendance, leaves, and statutory deductions</p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setShowGenerateModal(false)}
                 style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
               >
@@ -745,7 +745,7 @@ export default function GeneratePayslips() {
 
             {/* Modal Form */}
             <form onSubmit={handleGenerateSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              
+
               {/* Error Notice (if duplicate or validation failure) */}
               {generateError && (
                 <div style={{ padding: '12px 16px', borderRadius: '10px', background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
@@ -763,11 +763,11 @@ export default function GeneratePayslips() {
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>
                     Pay Month <span style={{ color: '#EF4444' }}>*</span>
                   </label>
-                  <AppDropdown 
-                    value={genMonth} 
-                    onChange={v => setGenMonth(v)} 
-                    options={MONTHS.map(m => ({ value: m, label: m }))} 
-                    size="sm" 
+                  <AppDropdown
+                    value={genMonth}
+                    onChange={v => setGenMonth(v)}
+                    options={MONTHS.map(m => ({ value: m, label: m }))}
+                    size="sm"
                   />
                 </div>
 
@@ -775,11 +775,11 @@ export default function GeneratePayslips() {
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '6px' }}>
                     Pay Year <span style={{ color: '#EF4444' }}>*</span>
                   </label>
-                  <AppDropdown 
-                    value={genYear} 
-                    onChange={v => setGenYear(v)} 
-                    options={YEARS.map(y => ({ value: String(y), label: String(y) }))} 
-                    size="sm" 
+                  <AppDropdown
+                    value={genYear}
+                    onChange={v => setGenYear(v)}
+                    options={YEARS.map(y => ({ value: String(y), label: String(y) }))}
+                    size="sm"
                   />
                 </div>
               </div>
@@ -850,7 +850,7 @@ export default function GeneratePayslips() {
                       { value: '', label: '-- Choose Active Employee --' },
                       ...activeEmployees.map(e => ({
                         value: String(e.id),
-                        label: `${e.name || e.employee_name} (${e.emp_code || `EMP${String(e.id).padStart(4, '0')}`})`
+                        label: `${e.name || e.employee_name} (${e.employee_code || e.emp_code || (e.id ? `EMP${String(e.id).padStart(4, '0')}` : '')})`
                       }))
                     ]}
                     size="sm"
@@ -907,7 +907,7 @@ export default function GeneratePayslips() {
       {showPayslipModal && selectedPayslip && (() => {
         const p = selectedPayslip;
         const company = p.company || {};
-        const empCode = p.emp_code || `EMP${p.employee_id}`;
+        const empCode = p.employee_code || p.emp_code || (p.employee_id ? `EMP${String(p.employee_id).padStart(4, '0')}` : '');
 
         let eb = p.earnings_breakdown || {};
         if (typeof eb === 'string') {
@@ -922,7 +922,7 @@ export default function GeneratePayslips() {
         return (
           <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)' }}>
             <div style={{ width: '820px', maxWidth: '95vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#FFFFFF', borderRadius: '20px', boxShadow: '0 25px 60px -12px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
-              
+
               {/* Modal Top Bar */}
               <div style={{ padding: '16px 24px', borderBottom: '1px solid #F1F5F9', background: '#FAFBFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -954,7 +954,7 @@ export default function GeneratePayslips() {
 
               {/* Scrollable Printable Payslip Content */}
               <div style={{ padding: '32px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                
+
                 {/* Company Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0F172A', paddingBottom: '20px' }}>
                   <div>

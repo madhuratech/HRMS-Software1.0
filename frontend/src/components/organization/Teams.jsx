@@ -160,7 +160,7 @@ function TeamLeadSelect({ selectedDepartment, value, selectedId, onChange, emplo
     if (!search.trim()) return teamLeadersOnly;
     const q = search.toLowerCase();
     return teamLeadersOnly.filter(emp => {
-      const empIdCode = `emp00${emp.id}`.toLowerCase();
+      const empIdCode = (emp.employee_code || emp.employeeId || emp.emp_code || `emp00${emp.id}`).toLowerCase();
       const empName = (emp.name || '').toLowerCase();
       const empRole = (emp.role_name || emp.designation || emp.designation_name || '').toLowerCase();
       return empName.includes(q) || empRole.includes(q) || empIdCode.includes(q) || String(emp.id).includes(q);
@@ -309,7 +309,7 @@ function TeamMembersSelect({ selectedDepartment, selectedMemberIds, onChange, em
     if (!search.trim()) return departmentEmployees;
     const q = search.toLowerCase();
     return departmentEmployees.filter(emp => {
-      const empIdCode = `emp00${emp.id}`.toLowerCase();
+      const empIdCode = (emp.employee_code || emp.employeeId || emp.emp_code || `emp00${emp.id}`).toLowerCase();
       const empName = (emp.name || '').toLowerCase();
       const empRole = (emp.role_name || emp.designation || '').toLowerCase();
       return empName.includes(q) || empRole.includes(q) || empIdCode.includes(q) || String(emp.id).includes(q);

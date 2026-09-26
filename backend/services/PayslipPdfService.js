@@ -58,7 +58,7 @@ class PayslipPdfService {
 
     doc.fontSize(9).fillColor(darkColor).font('Helvetica-Bold')
        .text(payrollData.employee_name || 'Employee', 150, y + 10)
-       .text(payrollData.emp_code || `EMP${payrollData.employee_id}`, 150, y + 26)
+       .text(payrollData.employee_code || payrollData.emp_code || (payrollData.employee_id ? `EMP${String(payrollData.employee_id).padStart(4, '0')}` : 'EMP'), 150, y + 26)
        .font('Helvetica')
        .text(payrollData.designation || 'Staff', 150, y + 42)
        .text(payrollData.department || 'General', 150, y + 58);
@@ -200,7 +200,7 @@ class PayslipPdfService {
   static generatePayslipPdf(payrollData, res) {
     const doc = new PDFDocument({ margin: 40, size: 'A4' });
 
-    const empCode = payrollData.emp_code || (payrollData.employee_id ? `EMP${payrollData.employee_id}` : 'EMP');
+    const empCode = payrollData.employee_code || payrollData.emp_code || (payrollData.employee_id ? `EMP${String(payrollData.employee_id).padStart(4, '0')}` : 'EMP');
     const safeMonth = (payrollData.month || 'Month').replace(/[^a-zA-Z0-9]/g, '');
     const safeYear = payrollData.year || new Date().getFullYear();
     const filename = `Payslip_${empCode}_${safeMonth}_${safeYear}.pdf`;

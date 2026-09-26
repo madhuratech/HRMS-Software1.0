@@ -88,7 +88,7 @@ export const ShiftManagement = () => {
         setEmployeeList(data.map((e, idx) => ({
           id: e.id || idx + 1,
           name: e.name || `${e.first_name || ''} ${e.last_name || ''}`.trim() || `Employee ${idx + 1}`,
-          code: e.employee_code || e.employeeId || `EMP00${e.id || idx + 1}`
+          code: e.employee_code || e.employeeId || e.emp_code || (e.id ? `EMP${String(e.id).padStart(4, '0')}` : `EMP${String(idx + 1).padStart(4, '0')}`)
         })));
       }
     }).catch(() => { });

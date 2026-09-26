@@ -180,12 +180,13 @@ exports.getDailyStats = async (req, res) => {
           WHERE la.employee_id = e.id 
             AND la.status = 'Approved' 
             AND ? BETWEEN la.start_date AND la.end_date
-        ) as on_leave
+        ) as on_leave,
+        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code
       FROM employees e
       LEFT JOIN departments d ON e.department_id = d.id
       LEFT JOIN attendance a ON a.employee_id = e.id AND DATE(a.punch_time) = ?
       WHERE e.status = 'Active'${scopeClause}
-      GROUP BY e.id, e.name, e.profile_photo, d.dept_name
+      GROUP BY e.id, e.name, e.profile_photo, d.dept_name, e.employee_code, e.employee_id
     `;
 
     db.query(sql, queryParams, (err, rows) => {
@@ -228,8 +229,12 @@ exports.getDailyStats = async (req, res) => {
         status = 'On Leave';
       }
 
+      const empCode = row.employee_code || `EMP${String(row.id).padStart(4, '0')}`;
       return {
-        id: `EMP${String(row.id).padStart(3, '0')}`,
+        id: empCode,
+        employee_code: empCode,
+        employee_id: empCode,
+        employeeId: empCode,
         db_id: row.id,
         name: row.name,
         avatar: row.avatar ? `/${row.avatar}` : null,

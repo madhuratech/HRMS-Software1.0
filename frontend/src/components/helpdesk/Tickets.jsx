@@ -3,8 +3,8 @@ import AppDropdown from '../ui/AppDropdown';
 import { useToast } from '../ui/Toast';
 import { apiFetch } from '../../lib/api';
 import { canCreate, canEdit, canDelete } from '../../lib/permissions';
-import { 
-  Search, ChevronDown, Plus, Eye, FileText, Clock, CheckCircle, 
+import {
+  Search, ChevronDown, Plus, Eye, FileText, Clock, CheckCircle,
   AlertCircle, ArrowUpRight, ArrowDownRight, X, Trash2, Edit2, Loader2, RefreshCw, Filter
 } from 'lucide-react';
 
@@ -221,23 +221,23 @@ export default function HelpDeskTickets() {
   const formCategoryOptions = categories.length > 0
     ? categories.map(c => ({ value: c.name, label: c.name }))
     : [
-        { value: 'IT Support', label: 'IT Support' },
-        { value: 'HR Support', label: 'HR Support' },
-        { value: 'Payroll', label: 'Payroll' },
-        { value: 'Facilities & Assets', label: 'Facilities & Assets' }
-      ];
+      { value: 'IT Support', label: 'IT Support' },
+      { value: 'HR Support', label: 'HR Support' },
+      { value: 'Payroll', label: 'Payroll' },
+      { value: 'Facilities & Assets', label: 'Facilities & Assets' }
+    ];
 
   const formPriorityOptions = priorities.length > 0
     ? priorities.map(p => ({ value: p.name, label: p.name }))
     : [
-        { value: 'Low', label: 'Low' },
-        { value: 'Medium', label: 'Medium' },
-        { value: 'High', label: 'High' },
-        { value: 'Urgent', label: 'Urgent' }
-      ];
+      { value: 'Low', label: 'Low' },
+      { value: 'Medium', label: 'Medium' },
+      { value: 'High', label: 'High' },
+      { value: 'Urgent', label: 'Urgent' }
+    ];
 
   const formEmployeeOptions = employees.map(emp => {
-    const code = emp.employee_id || (emp.id ? `EMP${String(emp.id).padStart(3, '0')}` : '');
+    const code = emp.employee_code || emp.employeeId || emp.emp_code || (typeof emp.employee_id === 'string' && emp.employee_id.startsWith('EMP') ? emp.employee_id : null) || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '');
     const dept = emp.dept_name || emp.department || '';
     return {
       value: emp.name,
@@ -257,7 +257,7 @@ export default function HelpDeskTickets() {
 
   return (
     <div style={{ fontFamily: "'Inter', -apple-system, sans-serif", width: '100%', boxSizing: 'border-box', background: '#F8FAFC', minHeight: '100vh', padding: 0 }}>
-      
+
       {/* ── HEADER & TOOLBAR ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
         <div>
@@ -285,7 +285,7 @@ export default function HelpDeskTickets() {
 
           {/* Dynamic Category Dropdown */}
           <div style={{ minWidth: 160 }}>
-            <AppDropdown 
+            <AppDropdown
               value={selectedCategory}
               onChange={v => { setSelectedCategory(v); setCurrentPage(1); }}
               options={categoryOptions.length > 1 ? categoryOptions : [
@@ -293,18 +293,18 @@ export default function HelpDeskTickets() {
                 { value: 'IT Support', label: 'IT Support' },
                 { value: 'HR Support', label: 'HR Support' },
                 { value: 'Payroll', label: 'Payroll' }
-              ]} 
-              size="sm" 
+              ]}
+              size="sm"
             />
           </div>
 
           {/* Status Dropdown */}
           <div style={{ minWidth: 140 }}>
-            <AppDropdown 
+            <AppDropdown
               value={selectedStatus}
               onChange={v => { setSelectedStatus(v); setCurrentPage(1); }}
-              options={statusOptions} 
-              size="sm" 
+              options={statusOptions}
+              size="sm"
             />
           </div>
 
@@ -322,11 +322,11 @@ export default function HelpDeskTickets() {
 
       {/* ── 5 KPI CARDS IN A SINGLE ROW ── */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, width: '100%', flexWrap: 'wrap' }}>
-        <KpiCard label="Total Tickets" value={totalCount} subtext="Active database" isPositive={true}  iconBg="#EFF6FF" iconColor="#2563EB" icon={FileText} />
-        <KpiCard label="Open"          value={openCount}   subtext={openCount > 0 ? "Needs triage" : "Clear"}  isPositive={openCount === 0} iconBg="#FEF2F2" iconColor="#EF4444" icon={Clock} />
-        <KpiCard label="In Progress"   value={inProgressCount}   subtext="In review"  isPositive={true}  iconBg="#FEF3C7" iconColor="#D97706" icon={Clock} />
-        <KpiCard label="Pending"       value={pendingCount}   subtext="Awaiting response"  isPositive={false} iconBg="#EFF6FF" iconColor="#818CF8" icon={AlertCircle} />
-        <KpiCard label="Resolved"      value={resolvedCount}   subtext="Closed tickets" isPositive={true}  iconBg="#ECFDF5" iconColor="#059669" icon={CheckCircle} />
+        <KpiCard label="Total Tickets" value={totalCount} subtext="Active database" isPositive={true} iconBg="#EFF6FF" iconColor="#2563EB" icon={FileText} />
+        <KpiCard label="Open" value={openCount} subtext={openCount > 0 ? "Needs triage" : "Clear"} isPositive={openCount === 0} iconBg="#FEF2F2" iconColor="#EF4444" icon={Clock} />
+        <KpiCard label="In Progress" value={inProgressCount} subtext="In review" isPositive={true} iconBg="#FEF3C7" iconColor="#D97706" icon={Clock} />
+        <KpiCard label="Pending" value={pendingCount} subtext="Awaiting response" isPositive={false} iconBg="#EFF6FF" iconColor="#818CF8" icon={AlertCircle} />
+        <KpiCard label="Resolved" value={resolvedCount} subtext="Closed tickets" isPositive={true} iconBg="#ECFDF5" iconColor="#059669" icon={CheckCircle} />
       </div>
 
       {/* ── MAIN DATA TABLE: Tickets List ── */}
@@ -377,7 +377,7 @@ export default function HelpDeskTickets() {
                     <td style={{ padding: '0 16px', fontSize: 13, color: '#6B7280', whiteSpace: 'nowrap' }}>{r.date}</td>
                     <td style={{ padding: '0 16px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <button 
+                        <button
                           onClick={() => setInspectTicket(r)}
                           title="View Ticket Details"
                           style={{ background: 'none', border: 'none', color: '#2563EB', cursor: 'pointer', padding: 4 }}
@@ -385,7 +385,7 @@ export default function HelpDeskTickets() {
                           <Eye size={16} />
                         </button>
                         {canDelete('helpdesk', 'support_tickets') && (
-                          <button 
+                          <button
                             onClick={() => handleDeleteTicket(r.id)}
                             title="Delete Ticket"
                             style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: 4 }}
@@ -544,7 +544,7 @@ export default function HelpDeskTickets() {
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', margin: 0 }}>
               <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  
+
                   <div className="hrms-input-group" style={{ gridColumn: 'span 2' }}>
                     <label className="hrms-label" style={{ fontWeight: '600', color: '#334155', fontSize: '13px', marginBottom: '6px', display: 'block' }}>
                       Subject / Title <span style={{ color: '#EF4444' }}>*</span>

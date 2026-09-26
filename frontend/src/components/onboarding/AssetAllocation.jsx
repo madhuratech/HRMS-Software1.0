@@ -167,7 +167,7 @@ export default function AssetAllocation() {
 
   const handleReturn = async (allocationId) => {
     if (!window.confirm('Are you sure you want to mark this asset as returned?')) return;
-    
+
     try {
       const resData = await apiFetch(`/assets/${allocationId}/return`, {
         method: 'PUT'
@@ -191,7 +191,7 @@ export default function AssetAllocation() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontFamily: '"Inter", sans-serif', paddingBottom: '24px' }}>
-      
+
       {/* Allocate Asset Modal (1100px Standard) */}
       {showAddModal && (
         <>
@@ -267,7 +267,7 @@ export default function AssetAllocation() {
                   <AppDropdown
                     value={formData.status}
                     onChange={v => setFormData({ ...formData, status: v })}
-                    options={[{value:'Allocated',label:'Allocated'},{value:'Pending',label:'Pending'}]}
+                    options={[{ value: 'Allocated', label: 'Allocated' }, { value: 'Pending', label: 'Pending' }]}
                     size="sm"
                   />
                 </div>
@@ -317,17 +317,17 @@ export default function AssetAllocation() {
 
       {/* Main Content Layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
-        
+
         {/* Left Side: Table */}
         <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
-          
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #F1F5F9' }}>
             <div style={{ display: 'flex', gap: '12px' }}>
               <div style={{ position: 'relative' }}>
                 <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input 
-                  type="text" 
-                  placeholder="Search employee..." 
+                <input
+                  type="text"
+                  placeholder="Search employee..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   style={{ width: '220px', padding: '8px 10px 8px 30px', borderRadius: '6px', border: '1px solid #E2E8F0', outline: 'none', fontSize: '13px' }}
@@ -385,12 +385,12 @@ export default function AssetAllocation() {
                           <td style={{ padding: '16px 24px', fontSize: '13px', color: '#475569', whiteSpace: 'nowrap' }}>{allocDate}</td>
                           <td style={{ padding: '16px 24px', fontSize: '13px', color: '#475569', whiteSpace: 'nowrap' }}>{row.assigned_by}</td>
                           <td style={{ padding: '16px 24px', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                            <span style={{ 
-                              padding: '4px 10px', 
-                              borderRadius: '20px', 
-                              fontSize: '11px', 
-                              fontWeight: '600', 
-                              backgroundColor: getStatusStyle(row.status).bg, 
+                            <span style={{
+                              padding: '4px 10px',
+                              borderRadius: '20px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              backgroundColor: getStatusStyle(row.status).bg,
                               color: getStatusStyle(row.status).text,
                               border: `1px solid ${getStatusStyle(row.status).border}`
                             }}>
@@ -399,7 +399,7 @@ export default function AssetAllocation() {
                           </td>
                           <td style={{ padding: '16px 24px', whiteSpace: 'nowrap', textAlign: 'center' }}>
                             {row.status !== 'Returned' && hasPermission('onboarding', 'asset_allocation', 'edit') && (
-                              <button 
+                              <button
                                 onClick={() => handleReturn(row.id)}
                                 style={{ background: '#EFF6FF', border: '1px solid #2952E3', color: '#2952E3', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
                               >
@@ -415,14 +415,14 @@ export default function AssetAllocation() {
               </table>
             )}
           </div>
-          
+
           {/* Pagination */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderTop: '1px solid #F1F5F9' }}>
             <div style={{ fontSize: '13px', color: '#64748B', fontWeight: '500' }}>
               Showing {total === 0 ? 0 : (page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} entries
             </div>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <button 
+              <button
                 disabled={page === 1}
                 onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                 style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF', border: '1px solid #E2E8F0', borderRadius: '6px', cursor: page === 1 ? 'not-allowed' : 'pointer', color: '#64748B' }}
@@ -430,7 +430,7 @@ export default function AssetAllocation() {
                 <ChevronLeft size={16} />
               </button>
               {[...Array(totalPages)].map((_, i) => (
-                <button 
+                <button
                   key={i + 1}
                   onClick={() => setPage(i + 1)}
                   style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: page === i + 1 ? '#2952E3' : '#FFF', border: page === i + 1 ? 'none' : '1px solid #E2E8F0', borderRadius: '6px', cursor: 'pointer', color: page === i + 1 ? '#FFF' : '#64748B', fontSize: '13px', fontWeight: '500' }}
@@ -438,7 +438,7 @@ export default function AssetAllocation() {
                   {i + 1}
                 </button>
               ))}
-              <button 
+              <button
                 disabled={page === totalPages}
                 onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
                 style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF', border: '1px solid #E2E8F0', borderRadius: '6px', cursor: page === totalPages ? 'not-allowed' : 'pointer', color: '#64748B' }}
@@ -452,7 +452,7 @@ export default function AssetAllocation() {
 
         {/* Right Side: Charts & Summary */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
+
           {/* Asset Summary */}
           <div style={cardStyle}>
             <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: '600', color: '#1E293B' }}>Asset Summary</h3>
@@ -497,7 +497,7 @@ export default function AssetAllocation() {
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <span style={{ fontWeight: '600', color: '#1E293B' }}>{item.value}</span>
-                      <span style={{ color: '#94A3B8' }}>({kpiData.total > 0 ? Math.round((item.value/kpiData.total)*100) : 0}%)</span>
+                      <span style={{ color: '#94A3B8' }}>({kpiData.total > 0 ? Math.round((item.value / kpiData.total) * 100) : 0}%)</span>
                     </div>
                   </div>
                 ))}

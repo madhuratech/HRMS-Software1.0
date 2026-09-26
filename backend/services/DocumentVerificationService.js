@@ -197,17 +197,20 @@ class DocumentVerificationService {
       const empDob = verification.date_of_birth || '1995-01-01';
       const empJoinDate = verification.joining_date;
 
+      const { getNextEmployeeCode } = require('../utils/employeeCodeGenerator');
+      const empCode = await getNextEmployeeCode();
+
       const employeeSql = `
         INSERT INTO employees (
-          name, email, phone, dob, join_date, sales_target, branch_id, designation_id
+          name, email, employee_code, employee_id, phone, dob, join_date, sales_target, branch_id, designation_id
         ) VALUES (
-          ?, ?, ?, ?, ?, 0,
+          ?, ?, ?, ?, ?, ?, ?, 0,
           COALESCE((SELECT id FROM branches LIMIT 1), 1),
           COALESCE((SELECT id FROM designations WHERE role_name LIKE ? OR role_code LIKE ? LIMIT 1), 1)
         )
       `;
       await DocumentVerification.query(employeeSql, [
-        empName, empEmail, empPhone, empDob, empJoinDate,
+        empName, empEmail, empCode, empCode, empPhone, empDob, empJoinDate,
         `%${verification.designation}%`, `%${verification.designation}%`
       ]);
 

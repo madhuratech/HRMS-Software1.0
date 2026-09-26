@@ -444,7 +444,7 @@ class PayrollService {
       employee_id: emp.id,
       employee_name: emp.name,
       employee_email: emp.email,
-      emp_code: emp.employee_id || `EMP${String(emp.id).padStart(4, '0')}`,
+      emp_code: emp.employee_code || emp.employee_id || `EMP${String(emp.id).padStart(4, '0')}`,
       department_id: emp.department_id,
       department: emp.department_name || 'General',
       designation: emp.designation_name || 'Staff',
@@ -735,7 +735,7 @@ class PayrollService {
         p.*,
         e.name as employee_name,
         e.email as employee_email,
-        COALESCE(e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
         e.join_date,
         d.dept_name as department,
         des.role_name as designation
@@ -785,7 +785,7 @@ class PayrollService {
         p.*,
         e.name as employee_name,
         e.email as employee_email,
-        COALESCE(e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
         e.join_date,
         d.dept_name as department,
         des.role_name as designation
@@ -819,9 +819,9 @@ class PayrollService {
       params.push(status);
     }
     if (search && search.trim()) {
-      sql += " AND (e.name LIKE ? OR e.employee_id LIKE ? OR e.email LIKE ?)";
+      sql += " AND (e.name LIKE ? OR e.employee_code LIKE ? OR e.employee_id LIKE ? OR e.email LIKE ?)";
       const q = `%${search.trim()}%`;
-      params.push(q, q, q);
+      params.push(q, q, q, q);
     }
 
     sql += " ORDER BY p.id DESC";
@@ -842,7 +842,7 @@ class PayrollService {
       SELECT 
         p.*,
         e.name as employee_name,
-        COALESCE(e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
         e.join_date,
         d.dept_name as department,
         des.role_name as designation

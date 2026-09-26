@@ -219,7 +219,7 @@ class ProjectService {
     }
 
     const employees = await Project.query(`
-      SELECT e.id, e.name, e.department_id, e.branch_id, e.designation_id, e.team_id,
+      SELECT e.id, e.employee_code, e.name, e.department_id, e.branch_id, e.designation_id, e.team_id,
              d.dept_name as department_name,
              b.branch_name as branch_name,
              des.role_name as designation_name,

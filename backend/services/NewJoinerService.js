@@ -30,13 +30,15 @@ class NewJoinerService {
       }
 
       if (existing.length === 0) {
+        const { getNextEmployeeCode } = require('../utils/employeeCodeGenerator');
+        const empCode = await getNextEmployeeCode();
         const email = `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}@madhuratech.com`;
         const sql = `
-          INSERT INTO employees (name, email, department_id, designation_id, join_date, status, created_at)
-          VALUES (?, ?, ?, ?, ?, 'Active', NOW())
+          INSERT INTO employees (name, email, employee_code, employee_id, department_id, designation_id, join_date, status, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', NOW())
         `;
         await new Promise((resolve) => {
-          db.query(sql, [name, email, data.department_id || null, desgId, data.joining_date || new Date()], () => resolve());
+          db.query(sql, [name, email, empCode, empCode, data.department_id || null, desgId, data.joining_date || new Date()], () => resolve());
         });
       } else {
         const sql = `

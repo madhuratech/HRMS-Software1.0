@@ -68,7 +68,8 @@ router.get("/team-attendance", authenticateJWT, (req, res) => {
         return {
           id: m.id,
           name: m.name,
-          employee_id: m.employeeId || `EMP${String(m.id).padStart(4, '0')}`,
+          employee_code: m.employee_code || m.employeeId || `EMP${String(m.id).padStart(4, '0')}`,
+          employee_id: m.employee_code || m.employeeId || `EMP${String(m.id).padStart(4, '0')}`,
           dept_name: m.department || 'Software Development',
           shift: 'Morning Shift',
           checkIn,
@@ -328,7 +329,8 @@ router.get("/roster", authenticateJWT, (req, res) => {
       e.id,
       e.name as employee,
       e.profile_photo as avatar,
-      COALESCE(e.employee_id, CONCAT('EMP00', e.id)) as empId
+      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as empId,
+      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code
     FROM employees e
     WHERE e.status = 'Active'
     LIMIT 10

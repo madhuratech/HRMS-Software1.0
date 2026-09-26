@@ -104,8 +104,8 @@ export default function ExitManagement() {
       <div className="hrms-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Exit Management</h1>
         {canCreate('employees', 'exit_management') && (
-          <button 
-            className="hrms-primary-btn" 
+          <button
+            className="hrms-primary-btn"
             onClick={() => setShowAddForm(!showAddForm)}
             style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
@@ -228,7 +228,7 @@ export default function ExitManagement() {
                         { value: '', label: 'Choose Employee...' },
                         ...employees.map(emp => ({
                           value: String(emp.id),
-                          label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (EMP${String(emp.id).padStart(4, '0')})`
+                          label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (${emp.employee_code || emp.employeeId || emp.emp_code || `EMP${String(emp.id).padStart(4, '0')}`})`
                         }))
                       ]}
                       size="sm"
@@ -251,10 +251,10 @@ export default function ExitManagement() {
 
                   <div className="hrms-input-group">
                     <label className="hrms-label" style={{ fontWeight: '600', color: '#334155' }}>Notice Date *</label>
-                    <input 
-                      type="date" 
-                      className="hrms-input" 
-                      value={noticeDate} 
+                    <input
+                      type="date"
+                      className="hrms-input"
+                      value={noticeDate}
                       onChange={(e) => setNoticeDate(e.target.value)}
                       style={{ borderRadius: '10px', padding: '10px 14px', borderColor: '#CBD5E1' }}
                     />
@@ -262,10 +262,10 @@ export default function ExitManagement() {
 
                   <div className="hrms-input-group">
                     <label className="hrms-label" style={{ fontWeight: '600', color: '#334155' }}>Last Working Date *</label>
-                    <input 
-                      type="date" 
-                      className="hrms-input" 
-                      value={exitDate} 
+                    <input
+                      type="date"
+                      className="hrms-input"
+                      value={exitDate}
                       onChange={(e) => setExitDate(e.target.value)}
                       style={{ borderRadius: '10px', padding: '10px 14px', borderColor: '#CBD5E1' }}
                     />
@@ -274,13 +274,13 @@ export default function ExitManagement() {
 
                 <div className="hrms-input-group">
                   <label className="hrms-label" style={{ fontWeight: '600', color: '#334155' }}>Reason for Exit *</label>
-                  <textarea 
-                    className="hrms-input" 
-                    rows="3" 
-                    value={reason} 
-                    onChange={(e) => setReason(e.target.value)} 
-                    placeholder="Enter detailed reason for exit or severance notes..." 
-                    style={{ height: 'auto', borderRadius: '10px', padding: '10px 14px', borderColor: '#CBD5E1' }} 
+                  <textarea
+                    className="hrms-input"
+                    rows="3"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Enter detailed reason for exit or severance notes..."
+                    style={{ height: 'auto', borderRadius: '10px', padding: '10px 14px', borderColor: '#CBD5E1' }}
                   />
                 </div>
               </div>
@@ -295,16 +295,16 @@ export default function ExitManagement() {
                 justifyContent: 'flex-end',
                 flexShrink: 0
               }}>
-                <button 
-                  type="button" 
-                  className="hrms-secondary-btn" 
+                <button
+                  type="button"
+                  className="hrms-secondary-btn"
                   onClick={() => setShowAddForm(false)}
                   style={{ borderRadius: '10px', padding: '9px 18px', fontWeight: '600' }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="hrms-primary-btn"
                   style={{
                     borderRadius: '10px',
@@ -335,7 +335,7 @@ export default function ExitManagement() {
         </div>
         <div className="hrms-card hrms-stat-card">
           <span className="hrms-stat-title">Retired</span>
-          <span className="hrms-stat-value" style={{color: '#f59e0b'}}>{retiredCount}</span>
+          <span className="hrms-stat-value" style={{ color: '#f59e0b' }}>{retiredCount}</span>
           <span className="hrms-stat-trend hrms-text-muted">This Year</span>
         </div>
         <div className="hrms-card hrms-stat-card">
@@ -352,7 +352,7 @@ export default function ExitManagement() {
             <h2 className="hrms-font-semibold" style={{ fontSize: '16px', margin: 0, color: '#0f172a' }}>
               Exit Process Overview: <span style={{ color: '#2563eb' }}>{selectedExit.employee_name}</span>
             </h2>
-            <button 
+            <button
               onClick={() => setSelectedExit(null)}
               className="hrms-secondary-btn"
               style={{ padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}
@@ -360,7 +360,7 @@ export default function ExitManagement() {
               ✕ Close Overview
             </button>
           </div>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', alignItems: 'center' }}>
             <div className="hrms-flex-between" style={{ padding: '12px 16px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <div className="hrms-flex-start" style={{ gap: '10px' }}>
@@ -369,7 +369,7 @@ export default function ExitManagement() {
               </div>
               <span className="hrms-badge hrms-badge-active">{new Date(selectedExit.notice_date).toLocaleDateString()}</span>
             </div>
-            
+
             <div className="hrms-flex-between" style={{ padding: '12px 16px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <div className="hrms-flex-start" style={{ gap: '10px' }}>
                 <Briefcase size={16} className="hrms-text-muted" />
@@ -377,7 +377,7 @@ export default function ExitManagement() {
               </div>
               <span className="hrms-badge hrms-badge-active">{selectedExit.exit_type}</span>
             </div>
-            
+
             <div className="hrms-flex-between" style={{ padding: '12px 16px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <div className="hrms-flex-start" style={{ gap: '10px' }}>
                 <CheckCircle2 size={16} className="hrms-text-muted" />
@@ -387,7 +387,7 @@ export default function ExitManagement() {
                 {selectedExit.status === 'Settled' ? 'Cleared' : 'Pending'}
               </span>
             </div>
-            
+
             <div className="hrms-flex-between" style={{ padding: '12px 16px', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <div className="hrms-flex-start" style={{ gap: '10px' }}>
                 <DollarSign size={16} className="hrms-text-muted" />
@@ -399,8 +399,8 @@ export default function ExitManagement() {
             </div>
 
             {selectedExit.status === 'Pending' && canEdit('employees', 'exit_management') && (
-              <button 
-                className="hrms-primary-btn" 
+              <button
+                className="hrms-primary-btn"
                 onClick={() => handleSettle(selectedExit.id)}
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '10px 16px', gridColumn: 'span 1' }}
               >
@@ -442,8 +442,8 @@ export default function ExitManagement() {
                   <tr key={exit.id} onClick={() => setSelectedExit(exit)} style={{ cursor: 'pointer', background: selectedExit?.id === exit.id ? '#f1f5f9' : 'transparent' }}>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       <div className="hrms-user-info">
-                        <img src={getAvatarUrl(exit.profile_photo, exit.employee_name, exit.employee_id)} alt={exit.employee_name} className="hrms-avatar" style={{width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover'}} />
-                        <span className="hrms-font-medium" style={{color: '#0f172a'}}>{exit.employee_name}</span>
+                        <img src={getAvatarUrl(exit.profile_photo, exit.employee_name, exit.employee_id)} alt={exit.employee_name} className="hrms-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                        <span className="hrms-font-medium" style={{ color: '#0f172a' }}>{exit.employee_name}</span>
                       </div>
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>{new Date(exit.exit_date).toLocaleDateString()}</td>

@@ -21,7 +21,7 @@ export function TeamAttendanceModule() {
             const parsed = JSON.parse(auth);
             const userObj = parsed.user || parsed;
             if (userObj && userObj.id) leaderId = userObj.id;
-          } catch (e) {}
+          } catch (e) { }
         }
 
         const data = await apiFetch(`/attendance/team-attendance?leader_id=${leaderId}&date=${selectedDate}`);
@@ -144,11 +144,11 @@ export function TeamAttendanceModule() {
 
             {/* Status Filter */}
             <AppDropdown
-                value={statusFilter}
-                onChange={v => setStatusFilter(v)}
-                options={[{value:'All',label:'All Statuses'},{value:'Present',label:'Present'},{value:'Completed',label:'Completed'},{value:'Late',label:'Late'},{value:'Absent',label:'Absent'}]}
-                size="sm"
-              />
+              value={statusFilter}
+              onChange={v => setStatusFilter(v)}
+              options={[{ value: 'All', label: 'All Statuses' }, { value: 'Present', label: 'Present' }, { value: 'Completed', label: 'Completed' }, { value: 'Late', label: 'Late' }, { value: 'Absent', label: 'Absent' }]}
+              size="sm"
+            />
           </div>
 
           {/* Right: Date Picker */}
@@ -199,7 +199,7 @@ export function TeamAttendanceModule() {
                     <td className="py-3 px-4">
                       <div>
                         <strong className="text-slate-900 block font-bold">{r.name || r.employee_name}</strong>
-                        <span className="text-[11px] text-slate-400 font-mono">{r.employee_id || r.empId || `EMP00${r.id}`}</span>
+                        <span className="text-[11px] text-slate-400 font-mono">{r.employee_code || (typeof r.employee_id === 'string' && r.employee_id.startsWith('EMP') ? r.employee_id : null) || r.empId || (r.id ? `EMP${String(r.id).padStart(4, '0')}` : '')}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4 text-slate-600 font-medium">{r.shift || 'Morning Shift'}</td>
@@ -207,10 +207,9 @@ export function TeamAttendanceModule() {
                     <td className="py-3 px-4 font-bold text-blue-600">{r.checkOut || '--'}</td>
                     <td className="py-3 px-4 font-bold text-slate-800">{r.workingHours || r.hours || '--'}</td>
                     <td className="py-3 px-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                        r.status === 'Present' || r.status === 'Completed' || r.attendanceStatus === 'Present' || r.attendanceStatus === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
-                        r.status === 'Late' || r.attendanceStatus === 'Late' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
-                      }`}>
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${r.status === 'Present' || r.status === 'Completed' || r.attendanceStatus === 'Present' || r.attendanceStatus === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
+                          r.status === 'Late' || r.attendanceStatus === 'Late' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'
+                        }`}>
                         {r.status || r.attendanceStatus || 'Absent'}
                       </span>
                     </td>

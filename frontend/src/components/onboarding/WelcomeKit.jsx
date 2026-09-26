@@ -60,7 +60,7 @@ export default function WelcomeKit() {
     e.preventDefault();
     if (!formData.employee) return;
     const newItem = {
-      id: 'EMP00' + (distributionList.length + 1),
+      id: `EMP${String(distributionList.length + 1).padStart(4, '0')}`,
       name: formData.employee,
       dept: formData.department || 'Engineering',
       date: formData.dispatchDate || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })

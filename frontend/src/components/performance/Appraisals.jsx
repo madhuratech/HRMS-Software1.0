@@ -212,7 +212,7 @@ export default function Appraisals() {
       case 'Approved': return { bg: '#ECFDF5', color: '#10B981' };
       case 'In Progress': return { bg: '#FFFBEB', color: '#F59E0B' };
       case 'Rejected': return { bg: '#FEF2F2', color: '#EF4444' };
-  default: return { bg: '#F1F5F9', color: '#64748B' };
+      default: return { bg: '#F1F5F9', color: '#64748B' };
     }
   };
 
@@ -406,19 +406,19 @@ export default function Appraisals() {
             />
           </div>
           {canCreate('performance', 'appraisals') && (
-            <button 
-              onClick={() => setShowAddModal(true)} 
-              style={{ 
-                padding: '10px 20px', 
-                borderRadius: '8px', 
-                border: 'none', 
-                background: '#2952E3', 
-                color: '#FFF', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
-                cursor: 'pointer', 
-                fontSize: '14px', 
+            <button
+              onClick={() => setShowAddModal(true)}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                background: '#2952E3',
+                color: '#FFF',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
                 fontWeight: '500',
                 whiteSpace: 'nowrap',
                 flexShrink: 0

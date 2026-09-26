@@ -21,6 +21,7 @@ const authenticateJWT = (req, res, next) => {
           employeeId: resolvedId,
           employee_id: resolvedId,
           employeeCode: `EMP${String(resolvedId).padStart(4, '0')}`,
+          employee_code: `EMP${String(resolvedId).padStart(4, '0')}`,
           role: headerRole || 'EMPLOYEE',
           company_id: 1,
           branch_id: 1
@@ -39,6 +40,7 @@ const authenticateJWT = (req, res, next) => {
         employeeId: empId,
         employee_id: empId,
         employeeCode: empCode,
+        employee_code: empCode,
         name: decoded.name || 'User',
         email: decoded.email || '',
         role: role,
@@ -57,6 +59,7 @@ const authenticateJWT = (req, res, next) => {
       employeeId: resolvedId,
       employee_id: resolvedId,
       employeeCode: `EMP${String(resolvedId).padStart(4, '0')}`,
+      employee_code: `EMP${String(resolvedId).padStart(4, '0')}`,
       role: headerRole || 'EMPLOYEE',
       company_id: 1,
       branch_id: 1

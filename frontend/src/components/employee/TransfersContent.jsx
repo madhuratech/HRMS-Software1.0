@@ -130,8 +130,8 @@ export default function TransfersContent() {
       <div className="hrms-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>Transfers</h1>
         {canCreate('employees', 'transfers') && (
-          <button 
-            className="hrms-primary-btn" 
+          <button
+            className="hrms-primary-btn"
             onClick={() => setShowAddForm(!showAddForm)}
             style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
@@ -253,7 +253,7 @@ export default function TransfersContent() {
                       { value: '', label: 'Choose Employee...' },
                       ...employees.map(emp => ({
                         value: String(emp.id),
-                        label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (EMP${String(emp.id).padStart(4, '0')})`
+                        label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (${emp.employee_code || emp.employeeId || emp.emp_code || `EMP${String(emp.id).padStart(4, '0')}`})`
                       }))
                     ]}
                     size="sm"
@@ -332,7 +332,7 @@ export default function TransfersContent() {
                         { value: '', label: 'Choose Reporting Manager...' },
                         ...employees.map(e => ({
                           value: String(e.id),
-                          label: `${e.first_name || e.name || ''} ${e.last_name || ''} (EMP${String(e.id).padStart(4, '0')})`
+                          label: `${e.first_name || e.name || ''} ${e.last_name || ''} (${e.employee_code || e.employeeId || e.emp_code || `EMP${String(e.id).padStart(4, '0')}`})`
                         }))
                       ]}
                       size="sm"
@@ -342,7 +342,7 @@ export default function TransfersContent() {
 
                 <div className="hrms-input-group">
                   <label className="hrms-label" style={{ fontWeight: '600', color: '#334155' }}>Effective Date *</label>
-                  <input 
+                  <input
                     type="date"
                     className="hrms-input"
                     value={effectiveDate}
@@ -362,16 +362,16 @@ export default function TransfersContent() {
                 justifyContent: 'flex-end',
                 flexShrink: 0
               }}>
-                <button 
-                  type="button" 
-                  className="hrms-secondary-btn" 
+                <button
+                  type="button"
+                  className="hrms-secondary-btn"
                   onClick={() => setShowAddForm(false)}
                   style={{ borderRadius: '10px', padding: '9px 18px', fontWeight: '600' }}
                 >
                   Cancel
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="hrms-primary-btn"
                   style={{
                     borderRadius: '10px',
@@ -406,7 +406,7 @@ export default function TransfersContent() {
         {/* Recent Transfers Timeline List */}
         <div className="hrms-card">
           <h2 className="hrms-font-semibold hrms-mb-6" style={{ fontSize: '16px' }}>Recent Transfers</h2>
-          
+
           {loading ? (
             <p className="hrms-text-muted">Loading transfers...</p>
           ) : transfers.length === 0 ? (
@@ -414,8 +414,8 @@ export default function TransfersContent() {
           ) : (
             <div className="hrms-timeline">
               {transfers.map(item => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className={`hrms-timeline-item ${selectedTransfer?.id === item.id ? 'active' : ''}`}
                   onClick={() => setSelectedTransfer(item)}
                   style={{ cursor: 'pointer', paddingBottom: '16px' }}
@@ -424,8 +424,8 @@ export default function TransfersContent() {
                   <div className="hrms-timeline-content" style={{ backgroundColor: 'transparent', padding: '0 0 0 16px' }}>
                     <div className="hrms-flex-between hrms-mb-4">
                       <div className="hrms-user-info">
-                        <img src={getAvatarUrl(item.profile_photo, item.employee_name, item.employee_id)} alt={item.employee_name} className="hrms-avatar" style={{width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover'}} />
-                        <span className="hrms-font-medium hrms-text-sm" style={{color: '#0f172a'}}>{item.employee_name}</span>
+                        <img src={getAvatarUrl(item.profile_photo, item.employee_name, item.employee_id)} alt={item.employee_name} className="hrms-avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                        <span className="hrms-font-medium hrms-text-sm" style={{ color: '#0f172a' }}>{item.employee_name}</span>
                       </div>
                       <span className="hrms-text-xs hrms-text-muted">{new Date(item.effective_date).toLocaleDateString()}</span>
                     </div>
@@ -443,14 +443,14 @@ export default function TransfersContent() {
         {selectedTransfer && (
           <div className="hrms-card" style={{ alignSelf: 'start' }}>
             <h2 className="hrms-font-semibold hrms-mb-6" style={{ fontSize: '16px' }}>Transfer Details</h2>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '16px 24px', alignItems: 'center' }}>
               <span className="hrms-text-sm hrms-text-muted">Employee</span>
               <div className="hrms-user-info">
-                <img src={getAvatarUrl(selectedTransfer.profile_photo, selectedTransfer.employee_name, selectedTransfer.employee_id)} alt={selectedTransfer.employee_name} className="hrms-avatar" style={{width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover'}} />
+                <img src={getAvatarUrl(selectedTransfer.profile_photo, selectedTransfer.employee_name, selectedTransfer.employee_id)} alt={selectedTransfer.employee_name} className="hrms-avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
                 <div>
-                  <span className="hrms-font-medium hrms-text-sm" style={{color: '#0f172a', display: 'block'}}>{selectedTransfer.employee_name}</span>
-                  <span className="hrms-text-xs hrms-text-muted">EMP00{selectedTransfer.employee_id}</span>
+                  <span className="hrms-font-medium hrms-text-sm" style={{ color: '#0f172a', display: 'block' }}>{selectedTransfer.employee_name}</span>
+                  <span className="hrms-text-xs hrms-text-muted">{selectedTransfer.employee_code || selectedTransfer.employeeId || selectedTransfer.emp_code || (selectedTransfer.employee_id ? `EMP${String(selectedTransfer.employee_id).padStart(4, '0')}` : '')}</span>
                 </div>
               </div>
 
@@ -469,11 +469,11 @@ export default function TransfersContent() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className={`hrms-badge ${selectedTransfer.status === 'Approved' ? 'hrms-badge-active' : 'hrms-badge-pending'}`}>{selectedTransfer.status}</span>
               </div>
-              
+
               {selectedTransfer.status === 'Pending' && canEdit('employees', 'transfers') && (
                 <div style={{ gridColumn: '1 / -1', marginTop: '16px' }}>
-                  <button 
-                    className="hrms-primary-btn" 
+                  <button
+                    className="hrms-primary-btn"
                     onClick={() => handleApprove(selectedTransfer.id)}
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >

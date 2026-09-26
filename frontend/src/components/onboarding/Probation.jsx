@@ -209,7 +209,7 @@ export default function Probation() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', fontFamily: '"Inter", sans-serif', paddingBottom: '24px' }}>
-      
+
       {/* Add Probation Modal (1100px Standard) */}
       {showAddModal && (
         <>
@@ -266,7 +266,7 @@ export default function Probation() {
                   <AppDropdown
                     value={formData.status}
                     onChange={v => setFormData({ ...formData, status: v })}
-                    options={[{value:'Due for Review',label:'Due for Review'},{value:'Confirmed',label:'Confirmed'},{value:'Extended',label:'Extended'}]}
+                    options={[{ value: 'Due for Review', label: 'Due for Review' }, { value: 'Confirmed', label: 'Confirmed' }, { value: 'Extended', label: 'Extended' }]}
                     size="sm"
                   />
                 </div>
@@ -275,7 +275,7 @@ export default function Probation() {
                   <AppDropdown
                     value={formData.rating}
                     onChange={v => setFormData({ ...formData, rating: v })}
-                    options={[{value:'5 - Outstanding',label:'5 - Outstanding'},{value:'4 - Exceeds Expectations',label:'4 - Exceeds Expectations'},{value:'3 - Satisfactory',label:'3 - Satisfactory'},{value:'2 - Needs Improvement',label:'2 - Needs Improvement'},{value:'1 - Unsatisfactory',label:'1 - Unsatisfactory'}]}
+                    options={[{ value: '5 - Outstanding', label: '5 - Outstanding' }, { value: '4 - Exceeds Expectations', label: '4 - Exceeds Expectations' }, { value: '3 - Satisfactory', label: '3 - Satisfactory' }, { value: '2 - Needs Improvement', label: '2 - Needs Improvement' }, { value: '1 - Unsatisfactory', label: '1 - Unsatisfactory' }]}
                     size="sm"
                   />
                 </div>
@@ -327,17 +327,17 @@ export default function Probation() {
 
       {/* Main Content Layout */}
       <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr', gap: '24px' }}>
-        
+
         {/* Left Side: Table */}
         <div style={{ ...cardStyle, padding: 0, overflow: 'hidden' }}>
-          
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #F1F5F9' }}>
             <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#1E293B' }}>Probation Tracker</h3>
             <div style={{ position: 'relative' }}>
               <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input 
-                type="text" 
-                placeholder="Search employee..." 
+              <input
+                type="text"
+                placeholder="Search employee..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 style={{ width: '220px', padding: '8px 10px 8px 30px', borderRadius: '6px', border: '1px solid #E2E8F0', outline: 'none', fontSize: '13px' }}
@@ -388,12 +388,12 @@ export default function Probation() {
                           <td style={{ padding: '16px 24px', fontSize: '13px', color: '#1E293B', fontWeight: '500', whiteSpace: 'nowrap' }}>{endDateStr}</td>
                           <td style={{ padding: '16px 24px', fontSize: '13px', color: '#475569', whiteSpace: 'nowrap' }}>{row.reporting_manager}</td>
                           <td style={{ padding: '16px 24px', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                            <span style={{ 
-                              padding: '4px 10px', 
-                              borderRadius: '20px', 
-                              fontSize: '11px', 
-                              fontWeight: '600', 
-                              backgroundColor: getStatusStyle(row.status).bg, 
+                            <span style={{
+                              padding: '4px 10px',
+                              borderRadius: '20px',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              backgroundColor: getStatusStyle(row.status).bg,
                               color: getStatusStyle(row.status).text,
                               border: `1px solid ${getStatusStyle(row.status).border}`
                             }}>
@@ -403,13 +403,13 @@ export default function Probation() {
                           <td style={{ padding: '16px 24px', whiteSpace: 'nowrap', textAlign: 'center' }}>
                             {row.status !== 'Confirmed' && (
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                <button 
+                                <button
                                   onClick={() => handleComplete(row.id)}
                                   style={{ background: '#ECFDF5', border: '1px solid #10B981', color: '#10B981', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
                                 >
                                   Confirm Employee
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => handleExtend(row.id)}
                                   style={{ background: '#FFFBEB', border: '1px solid #F59E0B', color: '#F59E0B', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}
                                 >
@@ -426,14 +426,14 @@ export default function Probation() {
               </table>
             )}
           </div>
-          
+
           {/* Pagination */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderTop: '1px solid #F1F5F9' }}>
             <div style={{ fontSize: '13px', color: '#64748B', fontWeight: '500' }}>
               Showing {total === 0 ? 0 : (page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} entries
             </div>
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <button 
+              <button
                 disabled={page === 1}
                 onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                 style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF', border: '1px solid #E2E8F0', borderRadius: '6px', cursor: page === 1 ? 'not-allowed' : 'pointer', color: '#64748B' }}
@@ -441,7 +441,7 @@ export default function Probation() {
                 <ChevronLeft size={16} />
               </button>
               {[...Array(totalPages)].map((_, i) => (
-                <button 
+                <button
                   key={i + 1}
                   onClick={() => setPage(i + 1)}
                   style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: page === i + 1 ? '#2952E3' : '#FFF', border: page === i + 1 ? 'none' : '1px solid #E2E8F0', borderRadius: '6px', cursor: 'pointer', color: page === i + 1 ? '#FFF' : '#64748B', fontSize: '13px', fontWeight: '500' }}
@@ -449,7 +449,7 @@ export default function Probation() {
                   {i + 1}
                 </button>
               ))}
-              <button 
+              <button
                 disabled={page === totalPages}
                 onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
                 style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#FFF', border: '1px solid #E2E8F0', borderRadius: '6px', cursor: page === totalPages ? 'not-allowed' : 'pointer', color: '#64748B' }}
@@ -463,7 +463,7 @@ export default function Probation() {
 
         {/* Right Side: Charts & Summary */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
+
           {/* Probation Summary Donut Chart */}
           <div style={cardStyle}>
             <h3 style={{ margin: '0 0 20px 0', fontSize: '16px', fontWeight: '600', color: '#1E293B' }}>Probation Summary</h3>
@@ -491,7 +491,7 @@ export default function Probation() {
                     </div>
                     <div style={{ display: 'flex', gap: '6px' }}>
                       <span style={{ fontWeight: '600', color: '#1E293B' }}>{item.value}</span>
-                      <span style={{ color: '#94A3B8' }}>({kpiData.total > 0 ? Math.round((item.value/kpiData.total)*100) : 0}%)</span>
+                      <span style={{ color: '#94A3B8' }}>({kpiData.total > 0 ? Math.round((item.value / kpiData.total) * 100) : 0}%)</span>
                     </div>
                   </div>
                 ))}

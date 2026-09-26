@@ -482,9 +482,11 @@ exports.register = async (req, res) => {
           } else {
             // Create employee record only for regular employees
             try {
-              const createEmpSql = "INSERT INTO employees (name, email, password_hash) VALUES (?, ?, ?)";
+              const { getNextEmployeeCode } = require("../utils/employeeCodeGenerator");
+              const empCode = await getNextEmployeeCode();
+              const createEmpSql = "INSERT INTO employees (name, email, employee_code, employee_id, password_hash) VALUES (?, ?, ?, ?, ?)";
               const newEmp = await new Promise((resolve) => {
-                db.query(createEmpSql, [cleanName, cleanEmail, password_hash], (e, r) => resolve(r || null));
+                db.query(createEmpSql, [cleanName, cleanEmail, empCode, empCode, password_hash], (e, r) => resolve(r || null));
               });
               if (newEmp && newEmp.insertId) {
                 employee_id = newEmp.insertId;
