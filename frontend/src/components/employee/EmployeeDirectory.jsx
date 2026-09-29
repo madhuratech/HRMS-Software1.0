@@ -153,7 +153,13 @@ export default function EmployeeDirectory() {
                       <EmployeeAvatar name={emp.name} photoUrl={emp.profile_photo} size={40} className="hrms-avatar" />
                       <div className="hrms-user-details">
                         <h4>{emp.name}</h4>
-                        <p>{emp.employee_code || emp.employeeId || emp.employee_id || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')}</p>
+                        <p style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '12px' }}>
+                          <span style={{ color: '#64748b', fontWeight: 600 }}>#{emp.id}</span>
+                          <span style={{ color: '#cbd5e1' }}>•</span>
+                          <span style={{ color: '#2563EB', fontWeight: 600, fontFamily: 'monospace' }}>
+                            {emp.employee_code || emp.employee_id || '—'}
+                          </span>
+                        </p>
                       </div>
                     </div>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>

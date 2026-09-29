@@ -6,9 +6,9 @@ export const EMPLOYEE_FIELDS = [
     label: 'Employee Code',
     required: false,
     type: 'string',
-    description: 'Leave empty for auto-generated EMP#### or enter existing code to update',
+    description: 'Company Employee Code (e.g. MT/0305)',
     aliases: ['employee code', 'employee_code', 'employee id', 'employee_id', 'emp code', 'emp_code', 'emp id', 'empid', 'code', 'employee no', 'emp no'],
-    sample: 'EMP0015'
+    sample: 'MT/0305'
   },
   {
     key: 'firstName',
@@ -801,6 +801,7 @@ export function exportEmployeesToExcel(employees = []) {
   }
 
   const exportHeaders = [
+    'Database ID',
     'Employee Code',
     'First Name',
     'Last Name',
@@ -843,6 +844,7 @@ export function exportEmployeesToExcel(employees = []) {
     const lastName = emp.last_name || nameParts.slice(1).join(' ') || '';
 
     return [
+      emp.id !== undefined && emp.id !== null ? emp.id : '',
       emp.employee_code || emp.employeeCode || emp.employee_id || emp.employeeId || '',
       firstName,
       lastName,

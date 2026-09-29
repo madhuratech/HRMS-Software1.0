@@ -578,7 +578,7 @@ export default function EmployeeProfileContent() {
                                 )}
                               </div>
                               <div style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600, marginTop: '1px' }}>
-                                {emp.employee_code || emp.employeeId || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')}
+                                ID: #{emp.id} • {emp.employee_code || emp.employee_id || '—'}
                               </div>
                             </div>
                             {isSelected && <Check size={14} color="#6366F1" style={{ flexShrink: 0 }} />}
@@ -715,11 +715,11 @@ export default function EmployeeProfileContent() {
               </span>
             </div>
 
-            <div className="hrms-profile-hero-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
+            <div className="hrms-profile-hero-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px 32px' }}>
               <div>
-                <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Employee ID</p>
-                <p className="hrms-font-medium hrms-text-sm" style={{ fontWeight: '700', color: '#2563EB' }}>
-                  {profile.employee_code || profile.employee_id || profile.employeeId || profile.emp_code || profile.empId || '—'}
+                <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Employee Code</p>
+                <p className="hrms-font-medium hrms-text-sm" style={{ fontWeight: '700', color: '#2563EB', fontFamily: 'monospace' }}>
+                  {profile.employee_code || profile.employee_id || '—'}
                 </p>
               </div>
               <div>
@@ -730,13 +730,13 @@ export default function EmployeeProfileContent() {
                 <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Department</p>
                 <p className="hrms-font-medium hrms-text-sm">{formatValue(profile.deptName)}</p>
               </div>
-              <div>
+              <div style={{ minWidth: '220px' }}>
                 <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Email</p>
-                <p className="hrms-font-medium hrms-text-sm">{formatValue(profile.email)}</p>
+                <p className="hrms-font-medium hrms-text-sm" style={{ wordBreak: 'break-all' }}>{formatValue(profile.email)}</p>
               </div>
-              <div>
+              <div style={{ minWidth: '140px' }}>
                 <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Phone</p>
-                <p className="hrms-font-medium hrms-text-sm">{formatValue(profile.phone)}</p>
+                <p className="hrms-font-medium hrms-text-sm" style={{ whiteSpace: 'nowrap' }}>{formatValue(profile.phone)}</p>
               </div>
               <div>
                 <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Branch</p>

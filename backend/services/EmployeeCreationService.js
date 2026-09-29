@@ -560,7 +560,7 @@ class EmployeeCreationService {
     const sql = `
       SELECT 
         e.id,
-        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+        COALESCE(e.employee_code, e.employee_id, CONCAT('MT', LPAD(e.id, 4, '0'))) as employee_code,
         e.name,
         e.email,
         e.phone,

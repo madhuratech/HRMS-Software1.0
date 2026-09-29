@@ -90,10 +90,6 @@ export default function EmployeeListContent() {
               />
             </div>
           </div>
-          <button className="hrms-secondary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}><Filter size={16} /> Filters</button>
-          {canEdit('employees', 'employee_list') && (
-            <button className="hrms-secondary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}><CheckSquare size={16} /> Bulk Actions</button>
-          )}
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
           <button
@@ -140,8 +136,9 @@ export default function EmployeeListContent() {
                     {selectedAll ? <CheckSquare size={18} /> : <Square size={18} />}
                   </div>
                 </th>
+                <th style={{ width: '110px', whiteSpace: 'nowrap' }}>SL NO</th>
                 <th>Employee</th>
-                <th>Employee ID</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Employee Code</th>
                 <th>Department</th>
                 <th>Designation</th>
                 <th>Branch</th>
@@ -157,6 +154,21 @@ export default function EmployeeListContent() {
                     <div style={{ cursor: 'pointer', color: selectedAll ? '#2952E3' : '#cbd5e1' }}>
                       {selectedAll ? <CheckSquare size={18} /> : <Square size={18} />}
                     </div>
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    <span style={{
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      color: '#475569',
+                      padding: '3px 10px',
+                      borderRadius: '6px',
+                      backgroundColor: '#F1F5F9',
+                      border: '1px solid #E2E8F0',
+                      display: 'inline-block',
+                      fontFamily: 'monospace'
+                    }}>
+                      {emp.id}
+                    </span>
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <div className="hrms-user-info" style={{ cursor: 'pointer' }} onClick={() => { localStorage.setItem('selectedEmployeeId', emp.id); navigate('/employees/profile'); }}>
@@ -176,7 +188,7 @@ export default function EmployeeListContent() {
                       border: '1px solid #BFDBFE',
                       display: 'inline-block'
                     }}>
-                      {emp.employee_code || emp.employee_id || emp.employeeId || emp.emp_code || emp.empId || '—'}
+                      {emp.employee_code || emp.employee_id || '—'}
                     </span>
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>{emp.dept_name || 'HR'}</td>

@@ -264,7 +264,7 @@ router.get("/", authenticateJWT, (req, res) => {
     }
 
     if (search) {
-      conditions.push("(e.name LIKE ? OR e.email LIKE ? OR e.phone LIKE ? OR e.employee_code LIKE ? OR e.employee_id LIKE ? OR CONCAT('EMP', LPAD(e.id, 4, '0')) = ?)");
+      conditions.push("(e.name LIKE ? OR e.email LIKE ? OR e.phone LIKE ? OR e.employee_code LIKE ? OR e.employee_id LIKE ? OR CAST(e.id AS CHAR) = ?)");
       const searchWildcard = `%${search}%`;
       params.push(searchWildcard, searchWildcard, searchWildcard, searchWildcard, searchWildcard, search);
     }

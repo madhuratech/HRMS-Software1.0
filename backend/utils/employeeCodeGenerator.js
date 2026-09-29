@@ -32,9 +32,10 @@ async function getNextEmployeeCode(connection = null) {
       COALESCE(
         MAX(
           CAST(
-            SUBSTRING(
+            REGEXP_REPLACE(
               COALESCE(NULLIF(employee_code, ''), NULLIF(employee_id, '')), 
-              4
+              '[^0-9]', 
+              ''
             ) AS UNSIGNED
           )
         ), 
@@ -42,15 +43,15 @@ async function getNextEmployeeCode(connection = null) {
       ) as max_code
     FROM employees
     WHERE (
-      employee_code REGEXP '^EMP[0-9]+$' 
-      OR employee_id REGEXP '^EMP[0-9]+$'
+      employee_code REGEXP '^(MT/|MT-|MT|EMP)[0-9]+$' 
+      OR employee_id REGEXP '^(MT/|MT-|MT|EMP)[0-9]+$'
     )
   `;
 
   const rows = await queryFn(sql);
-  const maxCode = (rows && rows[0] && rows[0].max_code) ? parseInt(rows[0].max_code, 10) : 0;
+  const maxCode = (rows && rows[0] && rows[0].max_code) ? parseInt(rows[0].max_code, 10) : 342;
   const nextNumber = maxCode + 1;
-  return `EMP${String(nextNumber).padStart(4, '0')}`;
+  return `MT/${String(nextNumber).padStart(4, '0')}`;
 }
 
 module.exports = {
