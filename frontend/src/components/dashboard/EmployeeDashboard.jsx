@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { apiFetch } from '../../lib/api';
+import EmployeeAvatar from '../employee/EmployeeAvatar';
+import { getAvatarUrl } from '../../lib/utils';
 
 export function EmployeeDashboard() {
   const navigate = useNavigate();
@@ -174,6 +176,18 @@ export function EmployeeDashboard() {
           ? new Date(empJoinDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
           : '';
 
+        let cleanAvatar = '';
+        if (empAvatar && typeof empAvatar === 'string' && empAvatar.trim()) {
+          const t = empAvatar.trim();
+          if (t.startsWith('data:') || t.startsWith('http://') || t.startsWith('https://') || t.startsWith('blob:')) {
+            cleanAvatar = t;
+          } else if (t.startsWith('/9j/') || (t.length > 100 && /^[A-Za-z0-9+/=]+$/.test(t.substring(0, 50)))) {
+            cleanAvatar = `data:image/png;base64,${t.replace(/^\/+/, '')}`;
+          } else {
+            cleanAvatar = t.startsWith('/') ? t : `/${t}`;
+          }
+        }
+
         setEmployee({
           name: empName,
           id: empCode,
@@ -182,7 +196,7 @@ export function EmployeeDashboard() {
           department: empDept,
           designation: empDesg,
           joined: formattedJoin,
-          avatar: empAvatar ? (empAvatar.startsWith('http') || empAvatar.startsWith('/') ? empAvatar : `/${empAvatar}`) : ''
+          avatar: cleanAvatar
         });
 
         // 2. Fetch Active Shift
@@ -783,12 +797,13 @@ export function EmployeeDashboard() {
           {/* My Profile Summary Widget */}
           <div style={cardStyle}>
             <div className="text-center pb-4 border-b border-slate-100">
-              <div className="w-16 h-16 rounded-full bg-blue-600 text-white font-bold text-xl flex items-center justify-center mx-auto mb-3 shadow-md overflow-hidden">
-                {employee.avatar ? (
-                  <img src={employee.avatar} alt={employee.name} className="w-full h-full object-cover" />
-                ) : (
-                  (employee.name ? employee.name.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'EP')
-                )}
+              <div className="flex justify-center mb-3">
+                <EmployeeAvatar
+                  name={employee.name || 'Employee'}
+                  photoUrl={employee.avatar}
+                  size={64}
+                  className="shadow-md"
+                />
               </div>
               <h3 className="text-base font-bold text-slate-900">{employee.name || 'Employee Profile'}</h3>
               {employee.id && (

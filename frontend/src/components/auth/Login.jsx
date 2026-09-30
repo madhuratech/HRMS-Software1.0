@@ -12,13 +12,8 @@ export function Login({ onLogin, onRegisterClick }) {
   // Keep the same visual "selectedRole" state for button active styling
   const selectedRole = loginType === 'admin' ? 'SUPER_ADMIN' : 'EMPLOYEE';
 
-  const handleRoleClick = (type, emailPreset) => {
+  const handleRoleClick = (type) => {
     setLoginType(type);
-    const knownPresets = ['admin@hawkeye.com', 'madhuratechcbe@gmail.com', 'dhilipanmadhuratech@gmail.com', 'muthu@gmail.com'];
-    if (!email || knownPresets.includes(email.trim().toLowerCase())) {
-      setEmail(emailPreset);
-      setPassword('admin@123');
-    }
     setErrorMsg('');
   };
 
@@ -120,7 +115,7 @@ export function Login({ onLogin, onRegisterClick }) {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => handleRoleClick('admin', 'madhuratechcbe@gmail.com')}
+                  onClick={() => handleRoleClick('admin')}
                   className={`w-full py-3 px-4 rounded-xl border-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
                     selectedRole === 'SUPER_ADMIN'
                       ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-200'
@@ -131,7 +126,7 @@ export function Login({ onLogin, onRegisterClick }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleRoleClick('employee', 'dhilipanmadhuratech@gmail.com')}
+                  onClick={() => handleRoleClick('employee')}
                   className={`w-full py-3 px-4 rounded-xl border-2 text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${
                     selectedRole === 'EMPLOYEE'
                       ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-200'
