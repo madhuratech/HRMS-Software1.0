@@ -26,6 +26,7 @@ import {
 import { cn, getAvatarUrl } from '../../lib/utils';
 import { apiFetch } from '../../lib/api';
 import { canView } from '../../lib/permissions';
+import EmployeeAvatar from '../employee/EmployeeAvatar';
 
 export function Sidebar({ userRole, onLogout, isOpen = false, onClose }) {
   const location = useLocation();
@@ -94,6 +95,16 @@ export function Sidebar({ userRole, onLogout, isOpen = false, onClose }) {
     return () => window.removeEventListener('permissionsUpdated', handlePermUpdate);
   }, [userRole]);
 
+  const [photoVersion, setPhotoVersion] = useState(0);
+
+  useEffect(() => {
+    const handlePhotoUpdated = () => {
+      setPhotoVersion(v => v + 1);
+    };
+    window.addEventListener('profile-photo-updated', handlePhotoUpdated);
+    return () => window.removeEventListener('profile-photo-updated', handlePhotoUpdated);
+  }, []);
+
   const getAuthUser = () => {
     try {
       const authRaw = localStorage.getItem('hrms_auth');
@@ -101,19 +112,19 @@ export function Sidebar({ userRole, onLogout, isOpen = false, onClose }) {
         const parsed = JSON.parse(authRaw);
         if (parsed) {
           const userObj = parsed.user || {};
-          const name = parsed.name || userObj.name || localStorage.getItem('userName') || 'Admin User';
+          const empObj = parsed.employee || {};
+          const name = empObj.name || parsed.name || userObj.name || localStorage.getItem('userName') || 'Admin User';
           const role = parsed.role || userObj.role || localStorage.getItem('userRole') || userRole || 'SUPER_ADMIN';
-          const photo = userObj.profile_photo || userObj.avatar || null;
-          const department = userObj.department_name || userObj.department || '';
-          const empCode = userObj.employee_code || userObj.employeeCode || userObj.emp_id || (userObj.employee_id ? `EMP${String(userObj.employee_id).padStart(4, '0')}` : '');
+          const photo = empObj.profile_photo || empObj.profile_image || userObj.profile_photo || userObj.profile_image || userObj.avatar || null;
+          const department = empObj.department || userObj.department_name || userObj.department || '';
+          const empCode = empObj.employee_code || userObj.employee_code || userObj.employeeCode || userObj.emp_id || '';
 
           return {
             name,
             role,
             department,
             empCode,
-            initials: name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase(),
-            photoUrl: photo ? getAvatarUrl(photo) : null
+            photoUrl: photo
           };
         }
       }
@@ -551,17 +562,12 @@ export function Sidebar({ userRole, onLogout, isOpen = false, onClose }) {
               style={{ cursor: 'pointer' }}
               className="flex flex-1 items-center gap-3 min-w-0 hover:opacity-85 transition-opacity"
             >
-              {userInfo.photoUrl ? (
-                <img
-                  src={userInfo.photoUrl}
-                  alt={userInfo.name}
-                  className="w-9 h-9 rounded-full object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full custom-sidebar-profile-avatar-bg flex items-center justify-center text-xs font-bold flex-shrink-0 text-white">
-                  {userInfo.initials}
-                </div>
-              )}
+              <EmployeeAvatar
+                name={userInfo.name || 'User'}
+                photoUrl={userInfo.photoUrl}
+                size={36}
+                className="flex-shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{userInfo.name || 'User'}</p>
                 <p className="text-xs text-slate-400 truncate">{userInfo.role ? userInfo.role.replace(/_/g, ' ') : 'Employee'}{userInfo.empCode ? ` (${userInfo.empCode})` : ''}</p>

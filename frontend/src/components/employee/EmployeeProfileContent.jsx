@@ -154,6 +154,21 @@ export default function EmployeeProfileContent() {
         addToast('Profile photo updated!', 'success');
         if (res.photoUrl) {
           setProfile(prev => ({ ...prev, profilePhoto: res.photoUrl }));
+          window.dispatchEvent(new CustomEvent('profile-photo-updated', {
+            detail: { employeeId: currentEmpId, photoUrl: res.photoUrl }
+          }));
+          try {
+            const authRaw = localStorage.getItem('hrms_auth');
+            if (authRaw) {
+              const parsed = JSON.parse(authRaw);
+              const loggedEmpId = parsed.employee?.id || parsed.user?.employee_id || parsed.user?.employeeId || parsed.user?.id;
+              if (String(loggedEmpId) === String(currentEmpId)) {
+                if (parsed.employee) parsed.employee.profile_photo = res.photoUrl;
+                if (parsed.user) parsed.user.profile_photo = res.photoUrl;
+                localStorage.setItem('hrms_auth', JSON.stringify(parsed));
+              }
+            }
+          } catch (e) {}
         }
         loadProfile();
       })
@@ -165,6 +180,22 @@ export default function EmployeeProfileContent() {
     apiFetch(`/employees/${currentEmpId}/photo`, { method: 'DELETE' })
       .then(() => {
         addToast('Photo removed', 'success');
+        setProfile(prev => ({ ...prev, profilePhoto: null }));
+        window.dispatchEvent(new CustomEvent('profile-photo-updated', {
+          detail: { employeeId: currentEmpId, photoUrl: null }
+        }));
+        try {
+          const authRaw = localStorage.getItem('hrms_auth');
+          if (authRaw) {
+            const parsed = JSON.parse(authRaw);
+            const loggedEmpId = parsed.employee?.id || parsed.user?.employee_id || parsed.user?.employeeId || parsed.user?.id;
+            if (String(loggedEmpId) === String(currentEmpId)) {
+              if (parsed.employee) parsed.employee.profile_photo = null;
+              if (parsed.user) parsed.user.profile_photo = null;
+              localStorage.setItem('hrms_auth', JSON.stringify(parsed));
+            }
+          }
+        } catch (e) {}
         loadProfile();
       })
       .catch(() => addToast('Failed to remove photo', 'error'));

@@ -195,7 +195,8 @@ function App() {
                     employee_id: refreshedEmployee?.id || refreshedUser.employee_id || null,
                     employeeId: refreshedEmployee?.id || refreshedUser.employee_id || null,
                     employee_code: refreshedEmployee?.employee_code || refreshedUser.employee_code || null,
-                    employeeCode: refreshedEmployee?.employee_code || refreshedUser.employee_code || null
+                    employeeCode: refreshedEmployee?.employee_code || refreshedUser.employee_code || null,
+                    profile_photo: refreshedEmployee?.profile_photo || refreshedEmployee?.profile_image || refreshedUser.profile_photo || null
                   },
                   employee: refreshedEmployee
                 }));
@@ -239,6 +240,7 @@ function App() {
     const finalEmpCode = (employeeObj && (employeeObj.employee_code || employeeObj.emp_code)) || (userObj && (userObj.employee_code || userObj.employeeCode || userObj.emp_id)) || null;
     const finalEmail = (employeeObj && employeeObj.email) || (userObj && userObj.email) || '';
     const finalToken = (userObj && userObj.token) || 'mock_jwt_token';
+    const finalPhoto = (employeeObj && (employeeObj.profile_photo || employeeObj.profile_image)) || userObj?.profile_photo || userObj?.profile_image || null;
 
     setUserRole(finalRole);
     setUserName(finalName);
@@ -262,11 +264,12 @@ function App() {
         name: finalName,
         email: finalEmail,
         role: finalRole,
+        profile_photo: finalPhoto,
         department: (employeeObj && (employeeObj.department || employeeObj.dept_name)) || (userObj && userObj.department) || '',
         designation: (employeeObj && (employeeObj.designation || employeeObj.role_name)) || (userObj && userObj.designation) || '',
         joining_date: (employeeObj && (employeeObj.joining_date || employeeObj.join_date)) || (userObj && userObj.joining_date) || ''
       },
-      employee: employeeObj
+      employee: employeeObj ? { ...employeeObj, profile_photo: employeeObj.profile_photo || finalPhoto } : null
     };
     localStorage.setItem('hrms_auth', JSON.stringify(authObj));
 

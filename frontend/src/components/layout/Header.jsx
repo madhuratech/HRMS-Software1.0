@@ -8,6 +8,7 @@ import {
   Layers, ArrowRight, Loader2, Tag, LayoutDashboard, Users, MapPin, CheckCircle
 } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
+import EmployeeAvatar from '../employee/EmployeeAvatar';
 
 export function Header({ title, userRole, currentView, onOpenMobileMenu }) {
   const navigate = useNavigate();
@@ -145,6 +146,60 @@ export function Header({ title, userRole, currentView, onOpenMobileMenu }) {
   const authRaw = localStorage.getItem('hrms_auth');
   let authData = {};
   try { if (authRaw) authData = JSON.parse(authRaw); } catch (e) { }
+
+  const [currentUserPhoto, setCurrentUserPhoto] = useState(() => {
+    try {
+      if (authRaw) {
+        const parsed = JSON.parse(authRaw);
+        return parsed.employee?.profile_photo || parsed.employee?.profile_image || parsed.user?.profile_photo || parsed.user?.profile_image || null;
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  useEffect(() => {
+    const handlePhotoUpdated = (event) => {
+      if (event?.detail && event.detail.photoUrl !== undefined) {
+        let isMe = true;
+        try {
+          const auth = localStorage.getItem('hrms_auth');
+          if (auth && event.detail.employeeId) {
+            const parsed = JSON.parse(auth);
+            const myEmpId = parsed.employee?.id || parsed.user?.employee_id || parsed.user?.employeeId || parsed.user?.id;
+            if (String(myEmpId) !== String(event.detail.employeeId)) {
+              isMe = false;
+            }
+          }
+        } catch (e) {}
+        if (isMe) {
+          setCurrentUserPhoto(event.detail.photoUrl);
+        }
+      }
+    };
+    window.addEventListener('profile-photo-updated', handlePhotoUpdated);
+    return () => window.removeEventListener('profile-photo-updated', handlePhotoUpdated);
+  }, []);
+
+  useEffect(() => {
+    const fetchMyPhoto = async () => {
+      try {
+        const auth = localStorage.getItem('hrms_auth');
+        if (!auth) return;
+        const parsed = JSON.parse(auth);
+        const empId = parsed.employee?.id || parsed.user?.employee_id || parsed.user?.employeeId;
+        if (!empId) return;
+        const res = await apiFetch(`/employees/${empId}/profile`);
+        const photo = res?.profile?.profilePhoto || res?.profile?.profile_photo || res?.profile_photo || res?.photoUrl;
+        if (photo) {
+          setCurrentUserPhoto(photo);
+          if (parsed.employee) parsed.employee.profile_photo = photo;
+          if (parsed.user) parsed.user.profile_photo = photo;
+          localStorage.setItem('hrms_auth', JSON.stringify(parsed));
+        }
+      } catch (e) {}
+    };
+    fetchMyPhoto();
+  }, []);
 
   const handleProfileClick = () => {
     let empId = 1;
@@ -1438,15 +1493,24 @@ export function Header({ title, userRole, currentView, onOpenMobileMenu }) {
           style={{ cursor: 'pointer' }}
           className="flex items-center gap-2 sm:gap-3 hover:opacity-85 transition-opacity flex-shrink-0"
         >
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shadow-sm flex-shrink-0">
-            {((authData.name || localStorage.getItem('userName')) || 'User').split(' ').map(n => n[0]).join('')}
-          </div>
+          <EmployeeAvatar
+            name={(authData.employee?.name || authData.name || localStorage.getItem('userName')) || 'User'}
+            photoUrl={
+              currentUserPhoto ||
+              authData.employee?.profile_photo ||
+              authData.employee?.profile_image ||
+              authData.user?.profile_photo ||
+              authData.user?.profile_image
+            }
+            size={36}
+            className="shadow-sm flex-shrink-0"
+          />
           <div className="desktop-user-details">
-            <p className="text-sm font-semibold text-slate-800 truncate max-w-[130px] lg:max-w-[180px]">{(authData.name || localStorage.getItem('userName')) || 'User'}</p>
+            <p className="text-sm font-semibold text-slate-800 truncate max-w-[130px] lg:max-w-[180px]">{(authData.employee?.name || authData.name || localStorage.getItem('userName')) || 'User'}</p>
             <p className="text-xs font-medium text-slate-500 truncate max-w-[130px] lg:max-w-[180px]">
-              {authData.user?.emp_id || authData.user?.employeeCode || (authData.user?.employee_id ? `EMP${String(authData.user.employee_id).padStart(4, '0')}` : '')}
-              {(authData.user?.emp_id || authData.user?.employeeCode || authData.user?.employee_id) ? ' • ' : ''}
-              {authData.user?.designation || (userRole ? userRole.replace(/_/g, ' ') : (authData.role ? authData.role.replace(/_/g, ' ') : 'User'))}
+              {authData.employee?.employee_code || authData.user?.employee_code || authData.user?.employeeCode || authData.user?.emp_id || ''}
+              {(authData.employee?.employee_code || authData.user?.employee_code || authData.user?.employeeCode || authData.user?.emp_id) ? ' • ' : ''}
+              {authData.employee?.designation || authData.user?.designation || (userRole ? userRole.replace(/_/g, ' ') : (authData.role ? authData.role.replace(/_/g, ' ') : 'User'))}
             </p>
           </div>
         </div>
