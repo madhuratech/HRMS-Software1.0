@@ -329,8 +329,8 @@ router.get("/roster", authenticateJWT, (req, res) => {
       e.id,
       e.name as employee,
       e.profile_photo as avatar,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as empId,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as empId,
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code
     FROM employees e
     WHERE e.status = 'Active'
     LIMIT 10

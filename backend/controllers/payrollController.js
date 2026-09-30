@@ -682,7 +682,7 @@ exports.getBonuses = async (req, res) => {
       SELECT 
         b.*,
         e.name as employeeName,
-        COALESCE(e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as emp_code,
         COALESCE(d.dept_name, 'General') as department,
         b.bonus_type as type,
         DATE_FORMAT(b.created_at, '%d %b %Y') as date
@@ -737,7 +737,7 @@ exports.getReimbursements = async (req, res) => {
       SELECT 
         c.*,
         e.name as employee_name,
-        COALESCE(e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as emp_code,
         d.dept_name as department,
         COALESCE(cat.name, 'General Expense') as category_name
       FROM expense_claims c
@@ -787,7 +787,7 @@ exports.getLoans = async (req, res) => {
       SELECT 
         l.*,
         e.name as employee_name,
-        COALESCE(e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as emp_code,
         d.dept_name as department
       FROM loans_advances l
       JOIN employees e ON l.employee_id = e.id
@@ -837,7 +837,7 @@ exports.getTaxes = async (req, res) => {
       SELECT 
         t.*,
         e.name as employee_name,
-        COALESCE(e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as emp_code,
         e.salary as employee_salary,
         d.dept_name as department
       FROM tax_declarations t

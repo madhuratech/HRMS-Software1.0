@@ -45,8 +45,8 @@ class DocumentService {
   static async listEmployeeDocs(filters = {}) {
     let sql = `
       SELECT ed.*, e.name as employee_name, 
-             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
-             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employeeId,
+             COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
+             COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employeeId,
              des.role_name as employee_role
       FROM employee_documents ed
       JOIN employees e ON ed.employee_id = e.id

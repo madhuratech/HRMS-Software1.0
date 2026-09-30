@@ -805,9 +805,9 @@ router.get("/newsfeed", authenticateJWT, (req, res) => {
 router.get("/welcome-kits", authenticateJWT, (req, res) => {
   const sql = `
     SELECT 
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as id,
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as id,
       e.id as db_id,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
       e.name,
       COALESCE(d.dept_name, e.department, 'Engineering') as dept,
       COALESCE(DATE_FORMAT(e.date_of_joining, '%d %b %Y'), '16 May 2024') as date

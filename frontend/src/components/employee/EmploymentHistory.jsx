@@ -98,7 +98,7 @@ export default function EmploymentHistory() {
 
   const dropdownOptions = allEmployees.map(emp => ({
     value: String(emp.id),
-    label: `${emp.name} (${emp.employee_code || emp.employeeId || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')})`
+    label: `${emp.name} (${emp.employee_code || emp.employeeId || emp.emp_code || (emp.id ? `ID #${emp.id}` : '')})`
   }));
 
   if (loading) {

@@ -735,7 +735,7 @@ class PayrollService {
         p.*,
         e.name as employee_name,
         e.email as employee_email,
-        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as emp_code,
         e.join_date,
         d.dept_name as department,
         des.role_name as designation
@@ -785,7 +785,7 @@ class PayrollService {
         p.*,
         e.name as employee_name,
         e.email as employee_email,
-        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as emp_code,
         e.join_date,
         d.dept_name as department,
         des.role_name as designation
@@ -842,7 +842,7 @@ class PayrollService {
       SELECT 
         p.*,
         e.name as employee_name,
-        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as emp_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as emp_code,
         e.join_date,
         d.dept_name as department,
         des.role_name as designation

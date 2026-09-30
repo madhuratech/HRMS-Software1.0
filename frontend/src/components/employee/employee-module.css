@@ -584,14 +584,27 @@
 
 .hrms-profile-hero-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px 36px;
+}
+
+.hrms-profile-hero-email {
+  grid-column: span 2;
+}
+
+.hrms-profile-hero-phone {
+  grid-column: span 2;
 }
 
 @media (max-width: 1023px) {
   .hrms-profile-hero-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 16px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px 24px !important;
+  }
+
+  .hrms-profile-hero-email,
+  .hrms-profile-hero-phone {
+    grid-column: span 1 !important;
   }
 }
 
@@ -605,7 +618,12 @@
 
   .hrms-profile-hero-grid {
     grid-template-columns: 1fr !important;
-    gap: 12px !important;
+    gap: 14px !important;
     text-align: center !important;
+  }
+
+  .hrms-profile-hero-email,
+  .hrms-profile-hero-phone {
+    grid-column: span 1 !important;
   }
 }

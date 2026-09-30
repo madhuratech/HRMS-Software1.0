@@ -54,7 +54,7 @@ class TeamMemberService {
     const rows = await ProjectTeamMember.query(`
       SELECT ptm.id, ptm.project_id, ptm.employee_id, ptm.role, ptm.status,
              e.name as employee_name,
-             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+             COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
              d.dept_name as department_name,
              des.role_name as designation_name,
              b.branch_name as branch_name,
@@ -111,7 +111,7 @@ class TeamMemberService {
 
     const employees = await ProjectTeamMember.query(`
       SELECT e.id, e.name,
-             COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+             COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
              d.dept_name as department_name,
              des.role_name as designation_name
       FROM employees e

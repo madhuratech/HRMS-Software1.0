@@ -460,10 +460,11 @@ router.post("/", authenticateJWT, checkPermission('employees', 'add_employee', '
     res.json({
       message: "Employee created successfully. Login account created successfully.",
       id: result.id,
-      employee_id: result.id,
       employee_code: result.employee_code,
       employeeCode: result.employee_code,
-      emp_code: result.employee_code
+      employee_id: result.employee_code,
+      emp_code: result.employee_code,
+      name: result.name
     });
   } catch (err) {
     console.error("Employee creation error:", err);
@@ -946,7 +947,7 @@ function renderEmployeeProfileResponse(targetId, isTeamMemberView, res) {
     sendProfileObj(results[0]);
 
     function sendProfileObj(emp) {
-      const empCode = emp.employee_id || emp.employee_code || '';
+      const empCode = emp.employee_code || emp.employee_id || '';
       let parsedBank = {};
       try {
         if (emp.bank_details) {
@@ -1049,8 +1050,8 @@ router.get("/promotions", (req, res) => {
       p.*,
       e.name as employee_name,
       e.profile_photo as profile_photo,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employeeId,
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employeeId,
       COALESCE(d1.role_name, p.current_designation) as old_designation,
       COALESCE(d2.role_name, p.promoted_designation) as new_designation,
       approver.name as approved_by_name
@@ -1204,8 +1205,8 @@ router.get("/transfers", (req, res) => {
       t.*,
       e.name as employee_name,
       e.profile_photo as profile_photo,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employeeId,
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employeeId,
       approver.name as approved_by_name
     FROM transfers t
     JOIN employees e ON t.employee_id = e.id
@@ -1352,8 +1353,8 @@ router.get("/exits", (req, res) => {
       ex.*,
       e.name as employee_name,
       e.profile_photo as profile_photo,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
-      COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employeeId
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
+      COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employeeId
     FROM exit_management ex
     JOIN employees e ON ex.employee_id = e.id
     ORDER BY ex.created_at DESC

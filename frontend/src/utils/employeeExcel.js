@@ -300,6 +300,12 @@ export function matchHeaderToField(rawHeader) {
   const normKey = normalizeHeaderKey(rawHeader);
   if (!normKey) return null;
 
+  // Never map S.No / serial numbers to Employee Code or Database ID
+  if (['sno', 'slno', 'sl', 'srno', 's', 'serialno', 'serialnumber'].includes(normKey) || 
+      ['s no', 'sl no', 'sr no', 's.no', 'sl.no', 'sr.no', 's no.', 'sl no.'].includes(normStr)) {
+    return null;
+  }
+
   // 1. Exact match on normalized string or key
   for (const spec of EMPLOYEE_FIELDS) {
     for (const alias of spec.aliases) {
@@ -803,19 +809,17 @@ export function exportEmployeesToExcel(employees = []) {
   const exportHeaders = [
     'Database ID',
     'Employee Code',
-    'First Name',
-    'Last Name',
-    'Full Name',
-    'Login Email',
-    'Contact No',
-    'Date of Birth',
-    'Gender',
-    'Employee Shift Type',
+    'Employee Name',
     'Department',
     'Designation',
     'Branch',
     'Team',
     'Reporting Manager',
+    'Login Email',
+    'Contact No',
+    'Date of Birth',
+    'Gender',
+    'Employee Shift Type',
     'Joining Date',
     'Employment Type',
     'Experience',
@@ -842,23 +846,22 @@ export function exportEmployeesToExcel(employees = []) {
     const nameParts = (emp.name || '').trim().split(/\s+/);
     const firstName = emp.first_name || nameParts[0] || '';
     const lastName = emp.last_name || nameParts.slice(1).join(' ') || '';
+    const fullName = emp.name || (firstName && lastName ? `${firstName} ${lastName}` : firstName || '');
 
     return [
       emp.id !== undefined && emp.id !== null ? emp.id : '',
       emp.employee_code || emp.employeeCode || emp.employee_id || emp.employeeId || '',
-      firstName,
-      lastName,
-      emp.name || '',
-      emp.email || '',
-      emp.phone || '',
-      emp.dob ? formatToYmd(emp.dob) : '',
-      emp.gender || '',
-      emp.shift_type || emp.shiftType || 'Regular Shift',
+      fullName,
       emp.dept_name || emp.department || '',
       emp.role_name || emp.designation || '',
       emp.branch_name || emp.branch || '',
       emp.team_name || emp.teamName || '',
       emp.manager_name || emp.managerName || '',
+      emp.email || '',
+      emp.phone || '',
+      emp.dob ? formatToYmd(emp.dob) : '',
+      emp.gender || '',
+      emp.shift_type || emp.shiftType || 'Regular Shift',
       emp.join_date || emp.joinDate ? formatToYmd(emp.join_date || emp.joinDate) : '',
       emp.employment_type || emp.employmentType || 'Full-time',
       emp.experience || '',

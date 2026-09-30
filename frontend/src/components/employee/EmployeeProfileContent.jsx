@@ -715,32 +715,36 @@ export default function EmployeeProfileContent() {
               </span>
             </div>
 
-            <div className="hrms-profile-hero-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px 32px' }}>
-              <div>
+            <div className="hrms-profile-hero-grid">
+              <div style={{ minWidth: 0 }}>
                 <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Employee Code</p>
                 <p className="hrms-font-medium hrms-text-sm" style={{ fontWeight: '700', color: '#2563EB', fontFamily: 'monospace' }}>
                   {profile.employee_code || profile.employee_id || '—'}
                 </p>
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Designation</p>
                 <p className="hrms-font-medium hrms-text-sm">{formatValue(profile.roleName)}</p>
               </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Department</p>
                 <p className="hrms-font-medium hrms-text-sm">{formatValue(profile.deptName)}</p>
               </div>
-              <div style={{ minWidth: '220px' }}>
-                <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Email</p>
-                <p className="hrms-font-medium hrms-text-sm" style={{ wordBreak: 'break-all' }}>{formatValue(profile.email)}</p>
-              </div>
-              <div style={{ minWidth: '140px' }}>
-                <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Phone</p>
-                <p className="hrms-font-medium hrms-text-sm" style={{ whiteSpace: 'nowrap' }}>{formatValue(profile.phone)}</p>
-              </div>
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Branch</p>
                 <p className="hrms-font-medium hrms-text-sm">{formatValue(profile.branchName)}</p>
+              </div>
+              <div className="hrms-profile-hero-email" style={{ minWidth: 0 }}>
+                <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Email</p>
+                <p className="hrms-font-medium hrms-text-sm" title={profile.email || ''} style={{ wordBreak: 'break-word' }}>
+                  {formatValue(profile.email)}
+                </p>
+              </div>
+              <div className="hrms-profile-hero-phone" style={{ minWidth: 0 }}>
+                <p className="hrms-text-muted hrms-text-xs" style={{ marginBottom: '4px' }}>Phone</p>
+                <p className="hrms-font-medium hrms-text-sm" style={{ whiteSpace: 'nowrap' }}>
+                  {formatValue(profile.phone)}
+                </p>
               </div>
             </div>
           </div>

@@ -221,7 +221,7 @@ exports.getAllBalances = async (req, res) => {
     const sql = `
       SELECT 
         e.id as employee_id,
-        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
         e.name as employee_name,
         e.profile_photo,
         COALESCE(d.dept_name, 'General') as dept,
@@ -321,7 +321,7 @@ exports.getApplications = async (req, res) => {
 
     const { employee_id } = req.query;
     let sql = `
-      SELECT la.*, e.name as employee_name, COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code, lt.name as leave_name, lt.code as leave_code
+      SELECT la.*, e.name as employee_name, COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code, lt.name as leave_name, lt.code as leave_code
       FROM leave_applications la
       JOIN employees e ON la.employee_id = e.id
       JOIN leave_types lt ON la.leave_type_id = lt.id
@@ -739,7 +739,7 @@ exports.getCompOffRequests = async (req, res) => {
       SELECT 
         co.*,
         COALESCE(e.name, co.employee_name) as employee_name,
-        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
         e.profile_photo as avatar,
         COALESCE(d.dept_name, 'General') as dept
       FROM comp_off_requests co

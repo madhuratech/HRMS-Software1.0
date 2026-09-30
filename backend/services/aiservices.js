@@ -398,12 +398,12 @@ async function executeTool(name, args, userId) {
       const q = `%${args.query}%`;
       const rows = await queryDB(`
         SELECT e.id, 
-               COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code,
+               COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
                e.name, e.email, e.phone, e.status, dept.dept_name as department, desg.role_name as role
         FROM employees e
         LEFT JOIN departments dept ON e.department_id = dept.id
         LEFT JOIN designations desg ON e.designation_id = desg.id
-        WHERE e.name LIKE ? OR e.email LIKE ? OR e.phone LIKE ? OR e.employee_code LIKE ? OR e.employee_id LIKE ? OR CONCAT('EMP', LPAD(e.id, 4, '0')) = ?
+        WHERE e.name LIKE ? OR e.email LIKE ? OR e.phone LIKE ? OR e.employee_code LIKE ? OR e.employee_id LIKE ? OR CAST(e.id AS CHAR) = ?
       `, [q, q, q, q, q, args.query]);
       result = rows;
       summary = `Searched employees with query "${args.query}" (${rows.length} matches)`;

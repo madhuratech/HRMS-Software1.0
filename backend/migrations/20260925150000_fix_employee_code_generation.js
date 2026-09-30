@@ -19,14 +19,16 @@ exports.up = async function(knex) {
 
   for (let i = 0; i < employees.length; i++) {
     const emp = employees[i];
-    // If not already set with a valid sequential EMP code
-    const targetCode = `EMP${String(i + 1).padStart(4, '0')}`;
-    await knex('employees')
-      .where('id', emp.id)
-      .update({
-        employee_code: targetCode,
-        employee_id: targetCode
-      });
+    // Only set default if employee_code is null or empty
+    if (!emp.employee_code || emp.employee_code.trim() === '') {
+      const targetCode = `MT/${String(i + 305).padStart(4, '0')}`;
+      await knex('employees')
+        .where('id', emp.id)
+        .update({
+          employee_code: targetCode,
+          employee_id: targetCode
+        });
+    }
   }
 
   // 3. Add unique constraint/index on employee_code if not already existing

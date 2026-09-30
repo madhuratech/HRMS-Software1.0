@@ -236,7 +236,7 @@ export default function PromotionsContent() {
                       { value: '', label: 'Choose Employee...' },
                       ...employees.map(emp => ({
                         value: String(emp.id),
-                        label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (${emp.employee_code || emp.employeeId || emp.emp_code || `EMP${String(emp.id).padStart(4, '0')}`})`
+                        label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (${emp.employee_code || emp.employeeId || emp.emp_code || (emp.id ? `ID #${emp.id}` : '')})`
                       }))
                     ]}
                     size="sm"

@@ -385,6 +385,8 @@ class EmployeeCreationService {
       UPDATE employees
       SET 
         name = COALESCE(NULLIF(?, ''), name),
+        employee_code = COALESCE(NULLIF(?, ''), employee_code),
+        employee_id = COALESCE(NULLIF(?, ''), employee_id),
         email = COALESCE(NULLIF(?, ''), email),
         phone = COALESCE(NULLIF(?, ''), phone),
         dob = COALESCE(?, dob),
@@ -404,8 +406,9 @@ class EmployeeCreationService {
       WHERE id = ?
     `;
 
+    const codeToUpdate = data.employeeCode || '';
     await queryAsync(updateSql, [
-      data.name, data.email, data.phone, data.dob || null, data.joinDate || null,
+      data.name, codeToUpdate, codeToUpdate, data.email, data.phone, data.dob || null, data.joinDate || null,
       data.gender, data.employmentType, data.shiftType, data.salary,
       data.address, data.emergencyContact, data.bankDetails,
       data.branch, data.department, data.designation, data.designation,
@@ -420,7 +423,7 @@ class EmployeeCreationService {
       );
     }
 
-    const empCode = currentEmp.employee_code || currentEmp.employee_id;
+    const empCode = codeToUpdate || currentEmp.employee_code || currentEmp.employee_id;
     logHistory(existingId, "Profile Update (Excel)", "Previous record", `Updated profile via Excel for ${data.name || currentEmp.name}`, new Date());
 
     return {
@@ -560,7 +563,7 @@ class EmployeeCreationService {
     const sql = `
       SELECT 
         e.id,
-        COALESCE(e.employee_code, e.employee_id, CONCAT('MT', LPAD(e.id, 4, '0'))) as employee_code,
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code,
         e.name,
         e.email,
         e.phone,

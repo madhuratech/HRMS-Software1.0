@@ -181,7 +181,7 @@ exports.getDailyStats = async (req, res) => {
             AND la.status = 'Approved' 
             AND ? BETWEEN la.start_date AND la.end_date
         ) as on_leave,
-        COALESCE(e.employee_code, e.employee_id, CONCAT('EMP', LPAD(e.id, 4, '0'))) as employee_code
+        COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code
       FROM employees e
       LEFT JOIN departments d ON e.department_id = d.id
       LEFT JOIN attendance a ON a.employee_id = e.id AND DATE(a.punch_time) = ?

@@ -136,8 +136,8 @@ export default function EmployeeListContent() {
                     {selectedAll ? <CheckSquare size={18} /> : <Square size={18} />}
                   </div>
                 </th>
-                <th style={{ width: '110px', whiteSpace: 'nowrap' }}>SL NO</th>
                 <th>Employee</th>
+                <th style={{ width: '120px', whiteSpace: 'nowrap' }}>Database ID</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Employee Code</th>
                 <th>Department</th>
                 <th>Designation</th>
@@ -156,6 +156,12 @@ export default function EmployeeListContent() {
                     </div>
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
+                    <div className="hrms-user-info" style={{ cursor: 'pointer' }} onClick={() => { localStorage.setItem('selectedEmployeeId', emp.id); navigate('/employees/profile'); }}>
+                      <EmployeeAvatar name={emp.name} photoUrl={emp.profile_photo} size={32} className="hrms-avatar" />
+                      <span className="hrms-font-medium hrms-text-primary">{emp.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
                     <span style={{
                       fontWeight: 600,
                       fontSize: '13px',
@@ -169,12 +175,6 @@ export default function EmployeeListContent() {
                     }}>
                       {emp.id}
                     </span>
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <div className="hrms-user-info" style={{ cursor: 'pointer' }} onClick={() => { localStorage.setItem('selectedEmployeeId', emp.id); navigate('/employees/profile'); }}>
-                      <EmployeeAvatar name={emp.name} photoUrl={emp.profile_photo} size={32} className="hrms-avatar" />
-                      <span className="hrms-font-medium hrms-text-primary">{emp.name}</span>
-                    </div>
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <span style={{

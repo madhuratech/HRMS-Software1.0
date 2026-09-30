@@ -253,7 +253,7 @@ export default function TransfersContent() {
                       { value: '', label: 'Choose Employee...' },
                       ...employees.map(emp => ({
                         value: String(emp.id),
-                        label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (${emp.employee_code || emp.employeeId || emp.emp_code || `EMP${String(emp.id).padStart(4, '0')}`})`
+                        label: `${emp.first_name || emp.name || ''} ${emp.last_name || ''} (${emp.employee_code || emp.employeeId || emp.emp_code || (emp.id ? `ID #${emp.id}` : '')})`
                       }))
                     ]}
                     size="sm"
@@ -332,7 +332,7 @@ export default function TransfersContent() {
                         { value: '', label: 'Choose Reporting Manager...' },
                         ...employees.map(e => ({
                           value: String(e.id),
-                          label: `${e.first_name || e.name || ''} ${e.last_name || ''} (${e.employee_code || e.employeeId || e.emp_code || `EMP${String(e.id).padStart(4, '0')}`})`
+                          label: `${e.first_name || e.name || ''} ${e.last_name || ''} (${e.employee_code || e.employeeId || e.emp_code || (e.id ? `ID #${e.id}` : '')})`
                         }))
                       ]}
                       size="sm"
@@ -450,7 +450,7 @@ export default function TransfersContent() {
                 <img src={getAvatarUrl(selectedTransfer.profile_photo, selectedTransfer.employee_name, selectedTransfer.employee_id)} alt={selectedTransfer.employee_name} className="hrms-avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
                 <div>
                   <span className="hrms-font-medium hrms-text-sm" style={{ color: '#0f172a', display: 'block' }}>{selectedTransfer.employee_name}</span>
-                  <span className="hrms-text-xs hrms-text-muted">{selectedTransfer.employee_code || selectedTransfer.employeeId || selectedTransfer.emp_code || (selectedTransfer.employee_id ? `EMP${String(selectedTransfer.employee_id).padStart(4, '0')}` : '')}</span>
+                  <span className="hrms-text-xs hrms-text-muted">{selectedTransfer.employee_code || selectedTransfer.employeeId || selectedTransfer.emp_code || ''}</span>
                 </div>
               </div>
 
