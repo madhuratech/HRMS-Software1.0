@@ -725,12 +725,12 @@ router.put("/:id", authenticateJWT, (req, res, next) => {
         return res.status(500).json({ error: "Failed to update employee details", details: err });
       }
 
-      // Update users table linked record
+      // Update users table linked record - strictly scope to employee_id
       if (finalName || email) {
         await new Promise(res => {
           db.query(
-            "UPDATE users SET full_name = COALESCE(NULLIF(?, ''), full_name), email = COALESCE(NULLIF(?, ''), email) WHERE employee_id = ? OR email = ?",
-            [finalName || null, email || null, targetId, email || ''],
+            "UPDATE users SET full_name = COALESCE(NULLIF(?, ''), full_name), email = COALESCE(NULLIF(?, ''), email) WHERE employee_id = ?",
+            [finalName || null, email || null, targetId],
             (uErr) => {
               if (uErr) console.error("Error updating users record:", uErr);
               res();
@@ -747,7 +747,7 @@ router.put("/:id", authenticateJWT, (req, res, next) => {
           await new Promise(res => db.query("UPDATE employees SET password_hash = ? WHERE id = ?", [password_hash, targetId], res));
 
           const existingUser = await new Promise(res => {
-            db.query("SELECT id FROM users WHERE employee_id = ? OR email = ?", [targetId, email || ''], (e, r) => res(r && r[0]));
+            db.query("SELECT id FROM users WHERE employee_id = ?", [targetId], (e, r) => res(r && r[0]));
           });
 
           if (existingUser) {
@@ -782,16 +782,32 @@ router.put("/:id", authenticateJWT, (req, res, next) => {
 /**
  * GET ME PROFILE (Returns profile for authenticated user)
  */
-router.get("/me/profile", authenticateJWT, (req, res) => {
-  getTeamLeaderContext(req, (errCtx, ctx) => {
-    renderEmployeeProfileResponse(ctx.leaderId, false, res);
-  });
+router.get("/me/profile", authenticateJWT, async (req, res) => {
+  try {
+    const IdentityService = require("../services/IdentityService");
+    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
+    const identity = await IdentityService.resolveUser(authIdentifier);
+    if (!identity || !identity.employeeId) {
+      return res.status(404).json({ error: "Employee profile unavailable" });
+    }
+    renderEmployeeProfileResponse(identity.employeeId, false, res);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to resolve authenticated employee" });
+  }
 });
 
-router.get("/me", authenticateJWT, (req, res) => {
-  getTeamLeaderContext(req, (errCtx, ctx) => {
-    renderEmployeeProfileResponse(ctx.leaderId, false, res);
-  });
+router.get("/me", authenticateJWT, async (req, res) => {
+  try {
+    const IdentityService = require("../services/IdentityService");
+    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
+    const identity = await IdentityService.resolveUser(authIdentifier);
+    if (!identity || !identity.employeeId) {
+      return res.status(404).json({ error: "Employee profile unavailable" });
+    }
+    renderEmployeeProfileResponse(identity.employeeId, false, res);
+  } catch (e) {
+    res.status(500).json({ error: "Failed to resolve authenticated employee" });
+  }
 });
 
 /**
@@ -800,18 +816,21 @@ router.get("/me", authenticateJWT, (req, res) => {
  */
 router.get("/:id/profile", authenticateJWT, (req, res) => {
   if (req.params.id === 'me') {
-    return getTeamLeaderContext(req, (errCtx, ctx) => {
-      renderEmployeeProfileResponse(ctx.leaderId, false, res);
+    const IdentityService = require("../services/IdentityService");
+    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
+    return IdentityService.resolveUser(authIdentifier).then(identity => {
+      if (!identity || !identity.employeeId) return res.status(404).json({ error: "Employee profile unavailable" });
+      renderEmployeeProfileResponse(identity.employeeId, false, res);
     });
   }
 
   const targetId = parseInt(req.params.id);
 
   getTeamLeaderContext(req, (errCtx, ctx) => {
-    const leaderId = (ctx && ctx.leaderId) ? ctx.leaderId : (req.user ? req.user.id : null);
-    const reqUserId = req.user ? req.user.id : null;
+    const leaderId = (ctx && ctx.leaderId) ? ctx.leaderId : (req.user ? (req.user.employee_id || req.user.id) : null);
+    const reqEmpId = req.user ? (req.user.employee_id || req.user.id) : null;
 
-    const isSelf = targetId === leaderId || targetId === reqUserId || (ctx && targetId === ctx.leaderId) || isNaN(targetId);
+    const isSelf = targetId === leaderId || targetId === reqEmpId || (ctx && targetId === ctx.leaderId) || isNaN(targetId);
 
     if (ctx.isTeamLeader && !isSelf) {
       const teamId = ctx.teamId;
@@ -822,8 +841,8 @@ router.get("/:id/profile", authenticateJWT, (req, res) => {
         });
       }
 
-      const sqlCheck = "SELECT id, team_id FROM employees WHERE (id = ? OR email = (SELECT email FROM users WHERE id = ? LIMIT 1)) AND team_id = ?";
-      return db.query(sqlCheck, [targetId, targetId, teamId], (vErr, vRows) => {
+      const sqlCheck = "SELECT id, team_id FROM employees WHERE id = ? AND team_id = ?";
+      return db.query(sqlCheck, [targetId, teamId], (vErr, vRows) => {
         if (vErr || !vRows || vRows.length === 0) {
           return res.status(403).json({
             error: "Access denied. You are authorized to view profiles of your own team members ONLY.",
@@ -843,8 +862,11 @@ router.get("/:id/profile", authenticateJWT, (req, res) => {
  */
 router.get("/:id", authenticateJWT, (req, res, next) => {
   if (req.params.id === 'me') {
-    return getTeamLeaderContext(req, (errCtx, ctx) => {
-      renderEmployeeProfileResponse((ctx && ctx.leaderId) || (req.user && req.user.id), false, res);
+    const IdentityService = require("../services/IdentityService");
+    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
+    return IdentityService.resolveUser(authIdentifier).then(identity => {
+      if (!identity || !identity.employeeId) return res.status(404).json({ error: "Employee profile unavailable" });
+      renderEmployeeProfileResponse(identity.employeeId, false, res);
     });
   }
 
@@ -858,8 +880,8 @@ router.get("/:id", authenticateJWT, (req, res, next) => {
       return renderEmployeeProfileResponse(targetId, false, res);
     }
     const leaderId = ctx.leaderId;
-    const reqUserId = req.user ? req.user.id : null;
-    const isSelf = targetId === leaderId || targetId === reqUserId || targetId === ctx.leaderId;
+    const reqEmpId = req.user ? (req.user.employee_id || req.user.id) : null;
+    const isSelf = targetId === leaderId || targetId === reqEmpId || targetId === ctx.leaderId;
 
     if (ctx.isTeamLeader && !isSelf) {
       const teamId = ctx.teamId;
@@ -870,8 +892,8 @@ router.get("/:id", authenticateJWT, (req, res, next) => {
         });
       }
 
-      const sqlCheck = "SELECT id, team_id FROM employees WHERE (id = ? OR email = (SELECT email FROM users WHERE id = ? LIMIT 1)) AND team_id = ?";
-      return db.query(sqlCheck, [targetId, targetId, teamId], (vErr, vRows) => {
+      const sqlCheck = "SELECT id, team_id FROM employees WHERE id = ? AND team_id = ?";
+      return db.query(sqlCheck, [targetId, teamId], (vErr, vRows) => {
         if (vErr || !vRows || vRows.length === 0) {
           return res.status(403).json({
             error: "Access denied. You are authorized to view profiles of your own team members ONLY.",
@@ -901,50 +923,37 @@ function renderEmployeeProfileResponse(targetId, isTeamMemberView, res) {
       m.name as manager_name,
       t.name as team_name
     FROM employees e
-    LEFT JOIN users u ON u.email = e.email
     LEFT JOIN branches b ON e.branch_id = b.id
     LEFT JOIN departments dept ON e.department_id = dept.id
     LEFT JOIN designations desg ON e.designation_id = desg.id
     LEFT JOIN employees m ON e.manager_id = m.id
     LEFT JOIN teams t ON e.team_id = t.id
-    WHERE e.id = ? OR u.id = ? OR e.email = (SELECT email FROM users WHERE id = ? LIMIT 1)
-    ORDER BY (e.id = ?) DESC
+    WHERE e.id = ?
     LIMIT 1
   `;
 
-  db.query(sql, [cleanTargetId, cleanTargetId, cleanTargetId, cleanTargetId], (err, results) => {
+  db.query(sql, [cleanTargetId], (err, results) => {
     if (err) {
       console.error("renderEmployeeProfileResponse DB error:", err);
       return res.status(500).json({ error: "Failed to fetch profile", details: err.message });
     }
 
-    if (results.length === 0) {
-      const fallbackSql = `
-        SELECT 
-          e.*,
-          b.branch_name,
-          dept.dept_name,
-          desg.role_name as role_name,
-          m.name as manager_name,
-          t.name as team_name
-        FROM employees e
-        LEFT JOIN branches b ON e.branch_id = b.id
-        LEFT JOIN departments dept ON e.department_id = dept.id
-        LEFT JOIN designations desg ON e.designation_id = desg.id
-        LEFT JOIN employees m ON e.manager_id = m.id
-        LEFT JOIN teams t ON e.team_id = t.id
-        ORDER BY e.id ASC
-        LIMIT 1
-      `;
-      return db.query(fallbackSql, (fbErr, fbResults) => {
-        if (fbErr || !fbResults || fbResults.length === 0) {
-          return res.status(404).json({ error: "Employee profile not found." });
-        }
-        return sendProfileObj(fbResults[0]);
-      });
+    if (results && results.length > 0) {
+      return sendProfileObj(results[0]);
     }
 
-    sendProfileObj(results[0]);
+    // Secondary fallback: check if client passed user_id instead of employee_id
+    db.query("SELECT employee_id FROM users WHERE id = ? AND employee_id IS NOT NULL", [cleanTargetId], (uErr, uRows) => {
+      if (!uErr && uRows && uRows.length > 0 && uRows[0].employee_id) {
+        return db.query(sql, [uRows[0].employee_id], (err2, res2) => {
+          if (!err2 && res2 && res2.length > 0) {
+            return sendProfileObj(res2[0]);
+          }
+          return res.status(404).json({ error: "Employee profile unavailable" });
+        });
+      }
+      return res.status(404).json({ error: "Employee profile unavailable" });
+    });
 
     function sendProfileObj(emp) {
       const empCode = emp.employee_code || emp.employee_id || '';
@@ -997,15 +1006,25 @@ function renderEmployeeProfileResponse(targetId, isTeamMemberView, res) {
         emergencyContact: emp.emergency_contact,
         address: emp.address,
         branchId: emp.branch_id || null,
+        branch: emp.branch_name,
+        branch_name: emp.branch_name,
         branchName: emp.branch_name,
         departmentId: emp.department_id || null,
+        department: emp.dept_name,
+        dept_name: emp.dept_name,
         deptName: emp.dept_name,
         designationId: emp.designation_id || null,
+        designation: emp.role_name,
+        role_name: emp.role_name,
         roleName: emp.role_name,
+        joining_date: emp.join_date,
+        join_date: emp.join_date,
         managerId: emp.manager_id || null,
         managerName: emp.manager_name,
         teamId: emp.team_id || null,
         teamName: emp.team_name,
+        profile_image: emp.profile_photo || null,
+        profile_photo: emp.profile_photo || null,
         profilePhoto: emp.profile_photo || null,
         attendanceSummary: {
           present: 20,

@@ -40,10 +40,12 @@ export function Login({ onLogin, onRegisterClick }) {
         // Backend resolved the actual role and employee ID
         const userPayload = {
           ...data.user,
+          employee: data.employee || null,
           token: data.token,
           permissions: data.permissions
         };
-        onLogin(data.user.role, data.user.name, userPayload);
+        const displayName = (data.employee && data.employee.name) || data.user.name;
+        onLogin(data.user.role, displayName, userPayload);
         return;
       } else if (data && data.message && !data.message.toLowerCase().includes('fetch') && !data.message.toLowerCase().includes('network')) {
         setErrorMsg(data.message);

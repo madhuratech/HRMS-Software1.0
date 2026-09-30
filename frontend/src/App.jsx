@@ -176,8 +176,9 @@ function App() {
               const res = await apiFetch('/auth/me');
               if (res && res.success && res.user) {
                 const refreshedUser = res.user;
+                const refreshedEmployee = res.employee || null;
                 const refreshedRole = res.role || refreshedUser.role;
-                const refreshedName = refreshedUser.name;
+                const refreshedName = refreshedEmployee?.name || refreshedUser.name;
                 setUserRole(refreshedRole);
                 setUserName(refreshedName);
                 setIsLoggedIn(true);
@@ -188,7 +189,15 @@ function App() {
                   name: refreshedName,
                   loggedIn: true,
                   token: authData.token,
-                  user: refreshedUser
+                  user: {
+                    ...refreshedUser,
+                    name: refreshedName,
+                    employee_id: refreshedEmployee?.id || refreshedUser.employee_id || null,
+                    employeeId: refreshedEmployee?.id || refreshedUser.employee_id || null,
+                    employee_code: refreshedEmployee?.employee_code || refreshedUser.employee_code || null,
+                    employeeCode: refreshedEmployee?.employee_code || refreshedUser.employee_code || null
+                  },
+                  employee: refreshedEmployee
                 }));
                 if (res.permissions) {
                   localStorage.setItem('hrms_permissions', JSON.stringify(res.permissions));
@@ -202,7 +211,7 @@ function App() {
             }
 
             const role = authData.role || authData.user?.role || 'EMPLOYEE';
-            const name = authData.name || authData.user?.name || '';
+            const name = authData.employee?.name || authData.name || authData.user?.name || '';
             setUserRole(role);
             setUserName(name);
             setIsLoggedIn(true);
@@ -223,11 +232,12 @@ function App() {
 
   const handleLogin = (role, name, userObj) => {
     const finalRole = role || (userObj && userObj.role) || 'EMPLOYEE';
-    const finalName = name || (userObj && userObj.name) || '';
-    const finalId = (userObj && (userObj.userId || userObj.id)) || 1;
-    const finalEmpId = (userObj && (userObj.employeeId || userObj.employee_id)) || finalId;
-    const finalEmpCode = (userObj && (userObj.employeeCode || userObj.employee_code || userObj.emp_id)) || `EMP${String(finalEmpId).padStart(4, '0')}`;
-    const finalEmail = (userObj && userObj.email) || '';
+    const employeeObj = (userObj && userObj.employee) || null;
+    const finalName = (employeeObj && employeeObj.name) || name || (userObj && userObj.name) || '';
+    const finalUserId = (userObj && (userObj.userId || userObj.id)) || 1;
+    const finalEmpId = (employeeObj && employeeObj.id) || (userObj && (userObj.employee_id || userObj.employeeId)) || null;
+    const finalEmpCode = (employeeObj && (employeeObj.employee_code || employeeObj.emp_code)) || (userObj && (userObj.employee_code || userObj.employeeCode || userObj.emp_id)) || null;
+    const finalEmail = (employeeObj && employeeObj.email) || (userObj && userObj.email) || '';
     const finalToken = (userObj && userObj.token) || 'mock_jwt_token';
 
     setUserRole(finalRole);
@@ -242,16 +252,21 @@ function App() {
       loggedIn: true,
       token: finalToken,
       user: {
-        id: finalId,
-        userId: finalId,
+        id: finalUserId,
+        userId: finalUserId,
         employee_id: finalEmpId,
         employeeId: finalEmpId,
         emp_id: finalEmpCode,
+        employee_code: finalEmpCode,
         employeeCode: finalEmpCode,
         name: finalName,
         email: finalEmail,
-        role: finalRole
-      }
+        role: finalRole,
+        department: (employeeObj && (employeeObj.department || employeeObj.dept_name)) || (userObj && userObj.department) || '',
+        designation: (employeeObj && (employeeObj.designation || employeeObj.role_name)) || (userObj && userObj.designation) || '',
+        joining_date: (employeeObj && (employeeObj.joining_date || employeeObj.join_date)) || (userObj && userObj.joining_date) || ''
+      },
+      employee: employeeObj
     };
     localStorage.setItem('hrms_auth', JSON.stringify(authObj));
 
@@ -274,20 +289,20 @@ function App() {
     const emailPreset = role === 'SUPER_ADMIN'
       ? 'madhuratechcbe@gmail.com'
       : role === 'TEAM_LEADER'
-      ? 'muthu@gmail.com'
-      : 'dhilipanmadhuratech@gmail.com';
+      ? 'abishekkevin.uiux@gmail.com'
+      : 'vinishdhilipan@gmail.com';
     
     const userObj = {
-      id: role === 'SUPER_ADMIN' ? 1 : (role === 'TEAM_LEADER' ? 3 : 2),
-      name: name,
+      id: role === 'SUPER_ADMIN' ? 1 : (role === 'TEAM_LEADER' ? 46 : 47),
+      name: role === 'SUPER_ADMIN' ? 'Madhura Admin' : (role === 'TEAM_LEADER' ? 'Abishek Kevin V' : 'Dhilipan P'),
       email: emailPreset,
       role: role,
       token: 'mock_demo_jwt_token',
-      employeeId: role === 'SUPER_ADMIN' ? 1 : (role === 'TEAM_LEADER' ? 3 : 2),
-      employeeCode: role === 'SUPER_ADMIN' ? 'EMP0001' : (role === 'TEAM_LEADER' ? 'EMP0003' : 'EMP0002'),
-      employee_code: role === 'SUPER_ADMIN' ? 'EMP0001' : (role === 'TEAM_LEADER' ? 'EMP0003' : 'EMP0002')
+      employeeId: role === 'SUPER_ADMIN' ? null : (role === 'TEAM_LEADER' ? 3 : 4),
+      employeeCode: role === 'SUPER_ADMIN' ? null : (role === 'TEAM_LEADER' ? 'MT/0308' : 'MT/0309'),
+      employee_code: role === 'SUPER_ADMIN' ? null : (role === 'TEAM_LEADER' ? 'MT/0308' : 'MT/0309')
     };
-    handleLogin(role, name, userObj);
+    handleLogin(role, userObj.name, userObj);
   };
 
   const handleLogout = () => {

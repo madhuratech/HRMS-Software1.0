@@ -26,21 +26,24 @@ export default function EmployeeDocuments() {
 
   const authRaw = localStorage.getItem('hrms_auth');
   let userRole = 'SUPER_ADMIN';
-  let authUserId = '11';
+  let authEmployeeId = '1';
   if (authRaw) {
     try {
       const parsed = JSON.parse(authRaw);
       const userObj = parsed.user || parsed;
+      const empObj = parsed.employee;
       if (parsed.role) userRole = parsed.role;
-      if (userObj && userObj.id) authUserId = String(userObj.id);
+      if (empObj && empObj.id) authEmployeeId = String(empObj.id);
+      else if (userObj && (userObj.employee_id || userObj.employeeId)) authEmployeeId = String(userObj.employee_id || userObj.employeeId);
+      else if (userObj && userObj.id) authEmployeeId = String(userObj.id);
     } catch (e) { }
   }
   const isEmployeeRole = userRole === 'EMPLOYEE';
   const isTeamLeaderRole = userRole === 'TEAM_LEADER' || userRole === 'Team Leader';
 
   const [currentEmpId, setCurrentEmpId] = useState(() => {
-    if (isEmployeeRole) return authUserId;
-    return localStorage.getItem('selectedEmployeeId') || authUserId || '1';
+    if (isEmployeeRole) return authEmployeeId;
+    return localStorage.getItem('selectedEmployeeId') || authEmployeeId || '1';
   });
 
   const handleEmployeeSelect = (newId) => {

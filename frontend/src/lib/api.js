@@ -38,7 +38,9 @@ export const getAuthHeaders = (extraHeaders = {}) => {
     try {
       const parsed = JSON.parse(auth);
       const userObj = parsed.user || parsed;
-      empHeaderId = userObj.id || userObj.emp_id || userObj.employee_id || '';
+      const empObj = parsed.employee;
+      // Database ID of employee (never user primary key)
+      empHeaderId = (empObj && empObj.id) || userObj.employee_id || userObj.employeeId || '';
       if (!userRole) userRole = parsed.role || userObj.role || '';
     } catch (e) {}
   }

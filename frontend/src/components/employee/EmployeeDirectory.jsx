@@ -154,8 +154,6 @@ export default function EmployeeDirectory() {
                       <div className="hrms-user-details">
                         <h4>{emp.name}</h4>
                         <p style={{ display: 'flex', gap: '6px', alignItems: 'center', fontSize: '12px' }}>
-                          <span style={{ color: '#64748b', fontWeight: 600 }}>#{emp.id}</span>
-                          <span style={{ color: '#cbd5e1' }}>•</span>
                           <span style={{ color: '#2563EB', fontWeight: 600, fontFamily: 'monospace' }}>
                             {emp.employee_code || emp.employee_id || '—'}
                           </span>

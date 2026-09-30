@@ -93,58 +93,97 @@ export function EmployeeDashboard() {
     const fetchDashboardData = async () => {
       setLoading(true);
       try {
-        // 1. Read Authenticated User
+        // 1. Read Authenticated User & Employee Record
         let empId = null;
+        let empCode = '';
         let empName = '';
         let empEmail = '';
         let empDept = '';
         let empDesg = '';
+        let empJoinDate = '';
+        let empAvatar = '';
 
-        const stored = localStorage.getItem('hrms_auth');
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            const userObj = parsed.user || parsed;
-            empId = userObj.id || userObj.emp_id || userObj.employee_id;
-            empName = userObj.name || userObj.username || '';
-            empEmail = userObj.email || '';
-            empDept = userObj.department || userObj.dept_name || '';
-            empDesg = userObj.designation || userObj.role || userObj.role_name || '';
-          } catch (e) {
-            console.error("Failed to parse auth token", e);
+        // Direct fetch from backend authenticated employee endpoint
+        try {
+          const meRes = await apiFetch('/employees/me');
+          if (meRes && !meRes.error && (meRes.id || meRes.employee_code)) {
+            empId = meRes.id;
+            empCode = meRes.employee_code || meRes.employeeCode || '';
+            empName = meRes.name || '';
+            empEmail = meRes.email || '';
+            empDept = meRes.department || meRes.dept_name || meRes.deptName || '';
+            empDesg = meRes.designation || meRes.role_name || meRes.roleName || '';
+            empJoinDate = meRes.joining_date || meRes.join_date || '';
+            empAvatar = meRes.profile_image || meRes.profile_photo || '';
+          }
+        } catch (meErr) {
+          console.warn('Could not fetch /employees/me:', meErr);
+        }
+
+        // Secondary fallback to session storage if /employees/me was not reachable
+        if (!empId) {
+          const stored = localStorage.getItem('hrms_auth');
+          if (stored) {
+            try {
+              const parsed = JSON.parse(stored);
+              const empObj = parsed.employee;
+              const userObj = parsed.user || parsed;
+              if (empObj && empObj.id) {
+                empId = empObj.id;
+                empCode = empObj.employee_code || empObj.emp_code || '';
+                empName = empObj.name || '';
+                empEmail = empObj.email || '';
+                empDept = empObj.department || empObj.dept_name || '';
+                empDesg = empObj.designation || empObj.role_name || '';
+                empJoinDate = empObj.joining_date || empObj.join_date || '';
+                empAvatar = empObj.profile_image || empObj.profile_photo || '';
+              } else if (userObj && (userObj.employee_id || userObj.employeeId)) {
+                empId = userObj.employee_id || userObj.employeeId;
+                empCode = userObj.employee_code || userObj.employeeCode || userObj.emp_id || '';
+                empName = userObj.name || '';
+                empEmail = userObj.email || '';
+                empDept = userObj.department || '';
+                empDesg = userObj.designation || '';
+                empJoinDate = userObj.joining_date || '';
+              }
+            } catch (e) {
+              console.error("Failed to parse auth token", e);
+            }
           }
         }
 
-        // Set baseline user state
-        setEmployee({
-          name: empName || 'Employee',
-          id: (userObj && (userObj.employee_code || userObj.employeeCode || userObj.emp_id)) || (empId ? `EMP${String(empId).padStart(4, '0')}` : 'EMP--'),
-          email: empEmail || 'N/A',
-          department: empDept || 'General',
-          designation: empDesg || 'Staff',
-          joined: 'N/A',
-          avatar: ''
-        });
-
-        // Fetch detailed employee profile from database
-        if (empId) {
+        // If extra employee details are needed
+        if (empId && (!empDept || !empDesg || !empJoinDate)) {
           try {
             const empRes = await apiFetch(`/employees/${empId}`);
             if (empRes && !empRes.error && empRes.id) {
-              setEmployee({
-                name: empRes.name || empName || 'Employee',
-                id: empRes.employee_code || empRes.employeeCode || empRes.employee_id || empRes.emp_code || (empRes.id ? `EMP${String(empRes.id).padStart(4, '0')}` : (empId ? `EMP${String(empId).padStart(4, '0')}` : 'EMP--')),
-                designation: empRes.role_name || empRes.designation || empDesg || 'Staff',
-                department: empRes.dept_name || empRes.department || empDept || 'General',
-                joined: empRes.join_date ? new Date(empRes.join_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A',
-                email: empRes.email || empEmail || 'N/A',
-                avatar: empRes.profile_photo ? `/${empRes.profile_photo}` : ''
-              });
+              empCode = empRes.employee_code || empRes.employeeCode || empCode;
+              empName = empRes.name || empName;
+              empEmail = empRes.email || empEmail;
+              empDept = empRes.dept_name || empRes.department || empDept;
+              empDesg = empRes.role_name || empRes.designation || empDesg;
+              empJoinDate = empRes.join_date || empRes.joining_date || empJoinDate;
+              if (empRes.profile_photo) empAvatar = empRes.profile_photo;
             }
           } catch (e) {
             console.error("Employee profile fetch error:", e);
           }
         }
+
+        const formattedJoin = empJoinDate
+          ? new Date(empJoinDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+          : '';
+
+        setEmployee({
+          name: empName,
+          id: empCode,
+          dbId: empId,
+          email: empEmail,
+          department: empDept,
+          designation: empDesg,
+          joined: formattedJoin,
+          avatar: empAvatar ? (empAvatar.startsWith('http') || empAvatar.startsWith('/') ? empAvatar : `/${empAvatar}`) : ''
+        });
 
         // 2. Fetch Active Shift
         try {
@@ -364,10 +403,7 @@ export function EmployeeDashboard() {
             (t.assigned_email && t.assigned_email.toLowerCase() === empEmail.toLowerCase())
           );
 
-          if (myTasks.length === 0 && rawTasksList.length > 0) {
-            myTasks = rawTasksList;
-          }
-
+          // Only keep tasks assigned to this authenticated employee
           if (myTasks.length > 0) {
             const displayTasks = myTasks.slice(0, 5).map(t => ({
               id: t.id,
@@ -486,7 +522,7 @@ export function EmployeeDashboard() {
       }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '700', letterSpacing: '-0.02em' }}>
-            {getGreeting()}, {employee.name || 'User'}! 👋
+            {getGreeting()}, {employee.name || userName || 'Employee'}! 👋
           </h1>
           <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: '#DBEAFE', fontWeight: '400' }}>
             Here's what's happening with your work today.
@@ -751,21 +787,29 @@ export function EmployeeDashboard() {
                 {employee.avatar ? (
                   <img src={employee.avatar} alt={employee.name} className="w-full h-full object-cover" />
                 ) : (
-                  (employee.name || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                  (employee.name ? employee.name.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() : 'EP')
                 )}
               </div>
               <h3 className="text-base font-bold text-slate-900">{employee.name || 'Employee Profile'}</h3>
-              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md inline-block mt-1">
-                {employee.id || 'EMP--'}
-              </span>
+              {employee.id && (
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md inline-block mt-1">
+                  {employee.id}
+                </span>
+              )}
             </div>
             <div className="py-4 space-y-2 text-xs text-slate-600">
-              <div className="flex justify-between"><span>Designation:</span><strong className="text-slate-800">{employee.designation || 'Staff'}</strong></div>
-              <div className="flex justify-between"><span>Department:</span><strong className="text-slate-800">{employee.department || 'General'}</strong></div>
-              <div className="flex justify-between"><span>Joined:</span><strong className="text-slate-800">{employee.joined || 'N/A'}</strong></div>
-              <div className="flex justify-between"><span>Email:</span><strong className="text-slate-800 truncate max-w-[140px]">{employee.email || 'N/A'}</strong></div>
+              <div className="flex justify-between"><span>Designation:</span><strong className="text-slate-800">{employee.designation || '—'}</strong></div>
+              <div className="flex justify-between"><span>Department:</span><strong className="text-slate-800">{employee.department || '—'}</strong></div>
+              <div className="flex justify-between"><span>Joined:</span><strong className="text-slate-800">{employee.joined || '—'}</strong></div>
+              <div className="flex justify-between"><span>Email:</span><strong className="text-slate-800 truncate max-w-[140px]">{employee.email || '—'}</strong></div>
             </div>
-            <button onClick={() => navigate('/employees/profile')} className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-colors mt-2">
+            <button
+              onClick={() => {
+                if (employee.dbId) localStorage.setItem('selectedEmployeeId', String(employee.dbId));
+                navigate('/employees/profile');
+              }}
+              className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold transition-colors mt-2"
+            >
               View Full Profile
             </button>
           </div>

@@ -14,14 +14,14 @@ const authenticateJWT = (req, res, next) => {
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) {
         const parsedHeaderId = parseInt(reqEmpId);
-        const resolvedId = (reqEmpId && !isNaN(parsedHeaderId)) ? parsedHeaderId : 1;
+        const resolvedId = (reqEmpId && !isNaN(parsedHeaderId)) ? parsedHeaderId : null;
         req.user = {
           id: resolvedId,
           userId: resolvedId,
           employeeId: resolvedId,
           employee_id: resolvedId,
-          employeeCode: `EMP${String(resolvedId).padStart(4, '0')}`,
-          employee_code: `EMP${String(resolvedId).padStart(4, '0')}`,
+          employeeCode: '',
+          employee_code: '',
           role: headerRole || 'EMPLOYEE',
           company_id: 1,
           branch_id: 1
@@ -29,9 +29,9 @@ const authenticateJWT = (req, res, next) => {
         return next();
       }
 
-      const userId = decoded.userId || decoded.id || 1;
-      const empId = decoded.employeeId || decoded.employee_id || userId;
-      const empCode = decoded.employeeCode || decoded.employee_code || `EMP${String(empId).padStart(4, '0')}`;
+      const userId = decoded.userId || decoded.id || null;
+      const empId = decoded.employeeId || decoded.employee_id || null;
+      const empCode = decoded.employeeCode || decoded.employee_code || '';
       const role = decoded.role || headerRole || 'EMPLOYEE';
 
       req.user = {
@@ -41,7 +41,7 @@ const authenticateJWT = (req, res, next) => {
         employee_id: empId,
         employeeCode: empCode,
         employee_code: empCode,
-        name: decoded.name || 'User',
+        name: decoded.name || '',
         email: decoded.email || '',
         role: role,
         company_id: 1,
@@ -52,14 +52,14 @@ const authenticateJWT = (req, res, next) => {
     });
   } else {
     const parsedHeaderId = parseInt(reqEmpId);
-    const resolvedId = (reqEmpId && !isNaN(parsedHeaderId)) ? parsedHeaderId : 1;
+    const resolvedId = (reqEmpId && !isNaN(parsedHeaderId)) ? parsedHeaderId : null;
     req.user = {
       id: resolvedId,
       userId: resolvedId,
       employeeId: resolvedId,
       employee_id: resolvedId,
-      employeeCode: `EMP${String(resolvedId).padStart(4, '0')}`,
-      employee_code: `EMP${String(resolvedId).padStart(4, '0')}`,
+      employeeCode: '',
+      employee_code: '',
       role: headerRole || 'EMPLOYEE',
       company_id: 1,
       branch_id: 1

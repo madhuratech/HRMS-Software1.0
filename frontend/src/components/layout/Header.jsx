@@ -147,15 +147,17 @@ export function Header({ title, userRole, currentView, onOpenMobileMenu }) {
   try { if (authRaw) authData = JSON.parse(authRaw); } catch (e) { }
 
   const handleProfileClick = () => {
-    let userId = 1;
+    let empId = 1;
     const auth = localStorage.getItem('hrms_auth');
     if (auth) {
       try {
         const parsed = JSON.parse(auth);
-        if (parsed.user && parsed.user.id) userId = parsed.user.id;
+        const empObj = parsed.employee;
+        const userObj = parsed.user || parsed;
+        empId = (empObj && empObj.id) || userObj.employee_id || userObj.employeeId || userObj.id || 1;
       } catch (e) { }
     }
-    localStorage.setItem('selectedEmployeeId', userId);
+    localStorage.setItem('selectedEmployeeId', String(empId));
     navigate('/employees/profile');
   };
 

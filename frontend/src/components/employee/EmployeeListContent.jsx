@@ -136,8 +136,8 @@ export default function EmployeeListContent() {
                     {selectedAll ? <CheckSquare size={18} /> : <Square size={18} />}
                   </div>
                 </th>
+                <th style={{ width: '60px', whiteSpace: 'nowrap' }}>S.No</th>
                 <th>Employee</th>
-                <th style={{ width: '120px', whiteSpace: 'nowrap' }}>Database ID</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Employee Code</th>
                 <th>Department</th>
                 <th>Designation</th>
@@ -148,33 +148,21 @@ export default function EmployeeListContent() {
               </tr>
             </thead>
             <tbody>
-              {employeeList.map((emp) => (
+              {employeeList.map((emp, index) => (
                 <tr key={emp.id}>
                   <td style={{ paddingRight: 0 }}>
                     <div style={{ cursor: 'pointer', color: selectedAll ? '#2952E3' : '#cbd5e1' }}>
                       {selectedAll ? <CheckSquare size={18} /> : <Square size={18} />}
                     </div>
                   </td>
+                  <td style={{ whiteSpace: 'nowrap', fontWeight: 600, color: '#64748b' }}>
+                    {index + 1}
+                  </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <div className="hrms-user-info" style={{ cursor: 'pointer' }} onClick={() => { localStorage.setItem('selectedEmployeeId', emp.id); navigate('/employees/profile'); }}>
                       <EmployeeAvatar name={emp.name} photoUrl={emp.profile_photo} size={32} className="hrms-avatar" />
                       <span className="hrms-font-medium hrms-text-primary">{emp.name}</span>
                     </div>
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>
-                    <span style={{
-                      fontWeight: 600,
-                      fontSize: '13px',
-                      color: '#475569',
-                      padding: '3px 10px',
-                      borderRadius: '6px',
-                      backgroundColor: '#F1F5F9',
-                      border: '1px solid #E2E8F0',
-                      display: 'inline-block',
-                      fontFamily: 'monospace'
-                    }}>
-                      {emp.id}
-                    </span>
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     <span style={{

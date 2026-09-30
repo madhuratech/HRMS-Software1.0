@@ -184,6 +184,19 @@ exports.login = async (req, res) => {
 
       const token = jwt.sign(jwtPayload, JWT_SECRET, { expiresIn: "24h" });
 
+      const empObject = identity.employeeId ? {
+        id: identity.employeeId,
+        employee_code: identity.employeeCode,
+        employeeCode: identity.employeeCode,
+        name: identity.name,
+        email: identity.email,
+        department: identity.department,
+        designation: identity.designation,
+        joining_date: identity.joiningDate,
+        profile_photo: identity.profilePhoto,
+        branch: identity.branch
+      } : null;
+
       return res.json({
         success: true,
         token,
@@ -196,8 +209,14 @@ exports.login = async (req, res) => {
           employeeCode: identity.employeeCode,
           name: identity.name,
           email: identity.email,
-          role: identity.role
+          role: identity.role,
+          department: identity.department,
+          designation: identity.designation,
+          joining_date: identity.joiningDate,
+          profile_photo: identity.profilePhoto,
+          branch: identity.branch
         },
+        employee: empObject,
         role: identity.role,
         permissions: identity.permissions
       });
@@ -211,7 +230,7 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const IdentityService = require("../services/IdentityService");
-    const authIdentifier = (req.user && (req.user.email || req.user.userId || req.user.id || req.user.employee_id || req.user.employeeId)) || null;
+    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || null;
 
     if (!authIdentifier) {
       return res.status(401).json({ success: false, message: 'Unauthenticated' });
@@ -221,6 +240,19 @@ exports.getMe = async (req, res) => {
     if (!identity) {
       return res.status(404).json({ success: false, message: 'User identity not found' });
     }
+
+    const empObject = identity.employeeId ? {
+      id: identity.employeeId,
+      employee_code: identity.employeeCode,
+      employeeCode: identity.employeeCode,
+      name: identity.name,
+      email: identity.email,
+      department: identity.department,
+      designation: identity.designation,
+      joining_date: identity.joiningDate,
+      profile_photo: identity.profilePhoto,
+      branch: identity.branch
+    } : null;
 
     return res.json({
       success: true,
@@ -234,8 +266,13 @@ exports.getMe = async (req, res) => {
         name: identity.name,
         email: identity.email,
         role: identity.role,
-        designation: identity.designation
+        department: identity.department,
+        designation: identity.designation,
+        joining_date: identity.joiningDate,
+        profile_photo: identity.profilePhoto,
+        branch: identity.branch
       },
+      employee: empObject,
       role: identity.role,
       permissions: identity.permissions
     });

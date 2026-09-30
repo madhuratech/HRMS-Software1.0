@@ -33,13 +33,19 @@ export default function EmployeeProfileContent() {
 
   const authRaw = localStorage.getItem('hrms_auth');
   let userRole = 'SUPER_ADMIN';
-  let authUserId = '11';
+  let authUserId = '1';
+  let authEmployeeId = '1';
   if (authRaw) {
     try {
       const parsed = JSON.parse(authRaw);
       const userObj = parsed.user || parsed;
+      const empObj = parsed.employee;
       if (parsed.role) userRole = parsed.role;
+      if (userObj && userObj.role) userRole = userObj.role;
       if (userObj && userObj.id) authUserId = String(userObj.id);
+      if (empObj && empObj.id) authEmployeeId = String(empObj.id);
+      else if (userObj && (userObj.employee_id || userObj.employeeId)) authEmployeeId = String(userObj.employee_id || userObj.employeeId);
+      else authEmployeeId = authUserId;
     } catch (e) { }
   }
   const isEmployeeRole = userRole === 'EMPLOYEE';
@@ -105,8 +111,8 @@ export default function EmployeeProfileContent() {
   const [loadingExp, setLoadingExp] = useState(false);
 
   const [currentEmpId, setCurrentEmpId] = useState(() => {
-    if (isTeamLeaderRole || isEmployeeRole) return authUserId;
-    return localStorage.getItem('selectedEmployeeId') || '1';
+    if (isTeamLeaderRole || isEmployeeRole) return authEmployeeId;
+    return localStorage.getItem('selectedEmployeeId') || authEmployeeId || '1';
   });
   const [allEmployees, setAllEmployees] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -167,14 +173,15 @@ export default function EmployeeProfileContent() {
   const loadProfile = () => {
     setLoading(true);
     setProfileError(null);
-    apiFetch(`/employees/${currentEmpId}/profile`)
+    const targetEndpoint = isEmployeeRole ? '/employees/me/profile' : `/employees/${currentEmpId}/profile`;
+    apiFetch(targetEndpoint)
       .then(data => {
         if (data && data.error) {
           setProfileError(data.error);
           setProfile(null);
         } else {
           setProfile(data);
-          if (data && data.id && String(data.id) !== String(currentEmpId)) {
+          if (data && data.id && String(data.id) !== String(currentEmpId) && !isEmployeeRole) {
             setCurrentEmpId(String(data.id));
             localStorage.setItem('selectedEmployeeId', String(data.id));
           }
@@ -206,6 +213,10 @@ export default function EmployeeProfileContent() {
         })
         .catch(err => console.error("Error fetching team members:", err));
     } else {
+      if (isEmployeeRole) {
+        // Employees can only view their own authenticated profile
+        return;
+      }
       apiFetch('/employees')
         .then(data => {
           if (Array.isArray(data)) {
@@ -219,7 +230,7 @@ export default function EmployeeProfileContent() {
         })
         .catch(err => console.error("Error fetching all employees:", err));
     }
-  }, [isTeamLeaderRole]);
+  }, [isTeamLeaderRole, isEmployeeRole]);
 
   // Fetch profile on mount and when selected employee changes
   useEffect(() => {
@@ -454,8 +465,8 @@ export default function EmployeeProfileContent() {
           </div>
           <button
             onClick={() => {
-              localStorage.setItem('selectedEmployeeId', authUserId);
-              setCurrentEmpId(authUserId);
+              localStorage.setItem('selectedEmployeeId', authEmployeeId);
+              setCurrentEmpId(authEmployeeId);
             }}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-all"
           >
