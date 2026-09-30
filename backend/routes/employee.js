@@ -282,9 +282,9 @@ router.get("/", authenticateJWT, (req, res) => {
     }
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
-    let validSortCol = 'e.id';
-    if (sortBy === 'id') validSortCol = 'e.id';
-    else if (sortBy === 'employee_code' || sortBy === 'employee_id' || sortBy === 'code') validSortCol = 'COALESCE(NULLIF(e.employee_code, ""), NULLIF(e.employee_id, ""))';
+    let validSortCol = "COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), e.id)";
+    if (sortBy === 'employee_code' || sortBy === 'employee_id' || sortBy === 'code') validSortCol = "COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''))";
+    else if (sortBy === 'id') validSortCol = 'e.id';
     else if (sortBy === 'name') validSortCol = 'e.name';
     else if (sortBy === 'created_at') validSortCol = 'e.created_at';
     else if (sortBy === 'join_date') validSortCol = 'e.join_date';

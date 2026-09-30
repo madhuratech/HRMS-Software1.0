@@ -23,10 +23,13 @@ export default function EmployeeListContent() {
 
   const fetchEmployees = useCallback(() => {
     setLoading(true);
-    apiFetch(`/employees?search=${encodeURIComponent(searchTerm)}&sortBy=id&sortOrder=asc&_t=${Date.now()}`)
+    apiFetch(`/employees?search=${encodeURIComponent(searchTerm)}&sortBy=employee_code&sortOrder=asc&_t=${Date.now()}`)
       .then(data => {
         if (Array.isArray(data)) {
-          setEmployeeList(data);
+          const sorted = [...data].sort((a, b) =>
+            (a.employee_code || '').localeCompare(b.employee_code || '', undefined, { numeric: true })
+          );
+          setEmployeeList(sorted);
         } else {
           setEmployeeList([]);
         }

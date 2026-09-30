@@ -31,7 +31,10 @@ export default function EmployeeDirectory() {
     apiFetch(`/employees?${query}`)
       .then(data => {
         if (Array.isArray(data)) {
-          setEmployees(data);
+          const sorted = [...data].sort((a, b) =>
+            (a.employee_code || '').localeCompare(b.employee_code || '', undefined, { numeric: true })
+          );
+          setEmployees(sorted);
         } else {
           setEmployees([]);
         }
