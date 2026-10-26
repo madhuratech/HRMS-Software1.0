@@ -60,17 +60,17 @@ export default defineConfig({
     open: true,
     proxy: {
       '/app': {
-        target: 'http://127.0.0.1:5000',
+        target: process.env.VITE_BACKEND_URL || `http://127.0.0.1:${process.env.VITE_BACKEND_PORT || 3308}`,
         changeOrigin: true,
         secure: false
       },
       '/api': {
-        target: 'http://127.0.0.1:5000',
+        target: process.env.VITE_BACKEND_URL || `http://127.0.0.1:${process.env.VITE_BACKEND_PORT || 3308}`,
         changeOrigin: true,
         secure: false
       },
       '/uploads': {
-        target: 'http://127.0.0.1:5000',
+        target: process.env.VITE_BACKEND_URL || `http://127.0.0.1:${process.env.VITE_BACKEND_PORT || 3308}`,
         changeOrigin: true,
         secure: false
       }
