@@ -276,15 +276,20 @@ const MAP_STYLES = {
   street: {
     version: 8,
     sources: {
-      'osm-base': {
+      'carto-base': {
         type: 'raster',
-        tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+        tiles: [
+          'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+          'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+          'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+          'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+        ],
         tileSize: 256,
         maxzoom: 19,
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap contributors © CARTO'
       }
     },
-    layers: [{ id: 'osm-tiles', source: 'osm-base', type: 'raster', minzoom: 0, maxzoom: 19 }]
+    layers: [{ id: 'carto-tiles', source: 'carto-base', type: 'raster', minzoom: 0, maxzoom: 19 }]
   },
   satellite: {
     version: 8,
