@@ -12,6 +12,7 @@ import { GeoPunch } from './GeoPunch';
 import { useNavigate } from 'react-router-dom';
 import EmployeeAvatar from '../employee/EmployeeAvatar';
 import ClientVisits from './ClientVisits';
+import { getMapStyle } from '../../config/mapConfig';
 
 // Helper: Generate accurate GeoJSON circle polygon from center + radius in meters
 function createGeoJSONCircle(center, radiusInMeters, points = 64) {
@@ -27,24 +28,8 @@ function createGeoJSONCircle(center, radiusInMeters, points = 64) {
   return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ret] } };
 }
 
-// CARTO Voyager tile style object for MapLibre GL (OpenStreetMap data served via global CDN, production-ready)
-const MAP_STYLE = {
-  version: 8,
-  sources: {
-    'carto-tiles': {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
-      ],
-      tileSize: 256,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    }
-  },
-  layers: [{ id: 'carto-tiles-layer', type: 'raster', source: 'carto-tiles', minzoom: 0, maxzoom: 20 }]
-};
+// MapTiler style URL for MapLibre GL
+const MAP_STYLE = getMapStyle('streets');
 
 // Auto-fit map bounds when geofences or records change
 function AutoFitBounds({ geofences, records }) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Map, { Marker, NavigationControl, Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { apiFetch, API_URL } from '../../lib/api';
+import { getMapStyle } from '../../config/mapConfig';
 import { 
   MapPin, Navigation, Camera, CheckCircle2, XCircle, Play, Pause, 
   Map as MapIcon, Building, LogOut, Search, Loader2, Link, Image, 
@@ -271,48 +272,10 @@ function injectStyles() {
   document.head.appendChild(s);
 }
 
-// ─── Multi-Theme Map Engine (100% Legal Open Cartography: Street & Esri Satellite HD) ─
+// ─── Multi-Theme Map Engine (MapTiler Streets & Satellite HD) ───────────────
 const MAP_STYLES = {
-  street: {
-    version: 8,
-    sources: {
-      'carto-base': {
-        type: 'raster',
-        tiles: [
-          'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
-        ],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: '© OpenStreetMap contributors © CARTO'
-      }
-    },
-    layers: [{ id: 'carto-tiles', source: 'carto-base', type: 'raster', minzoom: 0, maxzoom: 19 }]
-  },
-  satellite: {
-    version: 8,
-    sources: {
-      'esri-sat-base': {
-        type: 'raster',
-        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-        tileSize: 256,
-        maxzoom: 19,
-        attribution: '© Esri, Maxar, Earthstar Geographics'
-      },
-      'esri-labels-base': {
-        type: 'raster',
-        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],
-        tileSize: 256,
-        maxzoom: 19
-      }
-    },
-    layers: [
-      { id: 'esri-sat-layer', source: 'esri-sat-base', type: 'raster', minzoom: 0, maxzoom: 19 },
-      { id: 'esri-labels-layer', source: 'esri-labels-base', type: 'raster', minzoom: 0, maxzoom: 19 }
-    ]
-  }
+  street: getMapStyle('streets'),
+  satellite: getMapStyle('satellite')
 };
 
 // ═══════════════════════════════════════════════════════════════════════════

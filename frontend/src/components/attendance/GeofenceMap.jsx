@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Map, { Marker, Source, Layer } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import { getMapStyle } from '../../config/mapConfig';
 
 // Helper to generate a circle polygon in GeoJSON
 function createGeoJSONCircle(center, radiusInMeters, points = 64) {
@@ -58,31 +59,7 @@ export default function GeofenceMap({ lat, lng, radius, onChange, readonly = fal
     return createGeoJSONCircle([defaultLat, defaultLng], currentRadius);
   }, [defaultLat, defaultLng, currentRadius]);
 
-  const mapStyle = {
-    version: 8,
-    sources: {
-      'raster-tiles': {
-        type: 'raster',
-        tiles: [
-          'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-          'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
-        ],
-        tileSize: 256,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-      }
-    },
-    layers: [
-      {
-        id: 'simple-tiles',
-        type: 'raster',
-        source: 'raster-tiles',
-        minzoom: 0,
-        maxzoom: 22
-      }
-    ]
-  };
+  const mapStyle = getMapStyle('streets');
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative', borderRadius: 8, overflow: 'hidden' }}>

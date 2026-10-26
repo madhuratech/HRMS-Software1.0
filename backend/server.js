@@ -72,6 +72,8 @@ const envOrigins = (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL || p
   .filter(Boolean);
 
 const allowedOrigins = [
+  'https://hrms.madhuratech.com',
+  'https://api.hrms.madhuratech.com',
   'https://hrms-software1-0-one.vercel.app',
   'https://madhuratech.com',
   'https://www.madhuratech.com',
