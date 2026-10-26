@@ -5,6 +5,14 @@
  * Provides MapLibre-compatible vector tile style endpoints for Streets and Hybrid/Satellite.
  */
 
+import { setWorkerUrl } from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+// Register MapLibre GL worker URL for Vite production bundles
+if (typeof window !== 'undefined' && setWorkerUrl && workerUrl) {
+  setWorkerUrl(workerUrl);
+}
+
 export const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY || '';
 
 export const isMapTilerConfigured = () => {

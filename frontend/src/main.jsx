@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from './App';
 import "./index.css";
+import './config/mapConfig';
 import { API_URL } from './lib/api';
 
 // Intercept relative API paths (/app/*, /api/*, /uploads/*) to route to the configured backend URL
