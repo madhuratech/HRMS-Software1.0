@@ -234,24 +234,30 @@ export function Departments() {
     try {
       if (selectedDept) {
         // Edit mode
-        await apiFetch(`/organization/departments/${selectedDept.id}`, {
+        const res = await apiFetch(`/organization/departments/${selectedDept.id}`, {
           method: 'PUT',
           body: JSON.stringify(formData)
         });
+        if (res && (res.error || res.success === false)) {
+          throw new Error(res.error || res.message || 'Failed to update department');
+        }
         addToast('Department updated successfully!', 'success');
       } else {
         // Add mode
-        await apiFetch('/organization/departments', {
+        const res = await apiFetch('/organization/departments', {
           method: 'POST',
           body: JSON.stringify(formData)
         });
+        if (res && (res.error || res.success === false)) {
+          throw new Error(res.error || res.message || 'Failed to create department');
+        }
         addToast('Department created successfully!', 'success');
       }
       await loadDepartments();
       setIsAddEditModalOpen(false);
     } catch (err) {
       console.error('Error saving department:', err);
-      addToast('Failed to save department', 'error');
+      addToast(err.message || 'Failed to save department', 'error');
     }
   };
 

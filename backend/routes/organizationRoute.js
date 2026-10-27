@@ -10,12 +10,12 @@ router.get("/departments", authenticateJWT, checkPermission("organization", "dep
   const sql = `
     SELECT 
       d.id,
-      d.dept_name as name,
-      COALESCE(d.code, CONCAT('DEPT-', LPAD(d.id, 2, '0'))) as code,
+      COALESCE(d.dept_name, d.department_name) as name,
+      COALESCE(d.code, d.department_code, CONCAT('DEPT-', LPAD(d.id, 2, '0'))) as code,
       COALESCE(e.name, 'Unassigned') as headName,
       IF(e.name IS NOT NULL, 'Department Manager', 'Unassigned') as headRole,
       e.profile_photo as headAvatar,
-      d.branch,
+      COALESCE(d.branch, 'Chennai') as branch,
       (SELECT COUNT(*) FROM employees e2 WHERE e2.department_id = d.id AND e2.status = 'Active') as employees,
       COALESCE(d.createdDate, DATE_FORMAT(NOW(), '%d %b %Y')) as createdDate,
       COALESCE(d.createdDate, DATE_FORMAT(NOW(), '%d %b %Y')) as updatedDate,
@@ -39,10 +39,10 @@ router.get("/departments", authenticateJWT, checkPermission("organization", "dep
 router.post("/departments", authenticateJWT, checkPermission("organization", "departments", "create"), (req, res) => {
   const { name, code, headName, branch, email, phone, extension, location, parentDepartment, description, status } = req.body;
   const sql = `
-    INSERT INTO departments (dept_name, code, branch, status, email, phone, extension, location, parentDepartment, description, manager_id, createdDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT id FROM employees WHERE name = ? LIMIT 1), DATE_FORMAT(NOW(), '%d %b %Y'))
+    INSERT INTO departments (department_name, dept_name, department_code, code, branch, status, email, phone, extension, location, parentDepartment, description, manager_id, createdDate)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT id FROM employees WHERE name = ? LIMIT 1), DATE_FORMAT(NOW(), '%d %b %Y'))
   `;
-  db.query(sql, [name, code, branch || 'Chennai', status || 'Active', email, phone, extension, location, parentDepartment, description, headName], (err, result) => {
+  db.query(sql, [name, name, code, code, branch || 'Chennai', status || 'Active', email, phone, extension, location, parentDepartment, description, headName], (err, result) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Department created successfully", id: result.insertId });
   });
@@ -53,11 +53,11 @@ router.put("/departments/:id", authenticateJWT, checkPermission("organization", 
   const { name, code, headName, branch, status, email, phone, extension, location, parentDepartment, description } = req.body;
   const sql = `
     UPDATE departments
-    SET dept_name = ?, code = ?, branch = ?, status = ?, email = ?, phone = ?, extension = ?, location = ?, parentDepartment = ?, description = ?,
+    SET department_name = ?, dept_name = ?, department_code = ?, code = ?, branch = ?, status = ?, email = ?, phone = ?, extension = ?, location = ?, parentDepartment = ?, description = ?,
         manager_id = (SELECT id FROM employees WHERE name = ? LIMIT 1)
     WHERE id = ?
   `;
-  db.query(sql, [name, code, branch || 'Chennai', status || 'Active', email, phone, extension, location, parentDepartment, description, headName, id], (err, result) => {
+  db.query(sql, [name, name, code, code, branch || 'Chennai', status || 'Active', email, phone, extension, location, parentDepartment, description, headName, id], (err, result) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Department updated successfully" });
   });
@@ -78,8 +78,8 @@ router.get("/designations", authenticateJWT, checkPermission("organization", "de
   const sql = `
     SELECT 
       des.id,
-      des.role_name as name,
-      des.role_code as code,
+      COALESCE(des.role_name, des.designation_name) as name,
+      COALESCE(des.role_code, des.designation_code) as code,
       des.department,
       des.reportsTo,
       des.grade,
@@ -100,10 +100,10 @@ router.get("/designations", authenticateJWT, checkPermission("organization", "de
 router.post("/designations", authenticateJWT, checkPermission("organization", "designations", "create"), (req, res) => {
   const { name, code, department, reportsTo, grade, level, status, description } = req.body;
   const sql = `
-    INSERT INTO designations (role_name, role_code, department, reportsTo, grade, level, status, description, createdDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_FORMAT(NOW(), '%d %b %Y'))
+    INSERT INTO designations (designation_name, role_name, designation_code, role_code, department, reportsTo, grade, level, status, description, createdDate)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_FORMAT(NOW(), '%d %b %Y'))
   `;
-  db.query(sql, [name, code, department, reportsTo, grade, level, status || 'Active', description], (err, result) => {
+  db.query(sql, [name, name, code, code, department, reportsTo, grade, level, status || 'Active', description], (err, result) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Designation created successfully", id: result.insertId });
   });
@@ -114,10 +114,10 @@ router.put("/designations/:id", authenticateJWT, checkPermission("organization",
   const { name, code, department, reportsTo, grade, level, status, description } = req.body;
   const sql = `
     UPDATE designations
-    SET role_name = ?, role_code = ?, department = ?, reportsTo = ?, grade = ?, level = ?, status = ?, description = ?
+    SET designation_name = ?, role_name = ?, designation_code = ?, role_code = ?, department = ?, reportsTo = ?, grade = ?, level = ?, status = ?, description = ?
     WHERE id = ?
   `;
-  db.query(sql, [name, code, department, reportsTo, grade, level, status, description, id], (err, result) => {
+  db.query(sql, [name, name, code, code, department, reportsTo, grade, level, status, description, id], (err, result) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Designation updated successfully" });
   });
