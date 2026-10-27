@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { apiFetch } from '../../lib/api';
+import { useToast } from '../ui/Toast';
 import AppDropdown from '../ui/AppDropdown';
 import { canCreate, canEdit, canDelete, canExport } from '../../lib/permissions';
 import {
@@ -27,7 +28,8 @@ import {
   Star,
   Target,
   Zap,
-  Layers
+  Layers,
+  User
 } from 'lucide-react';
 
 const INITIAL_DESIGNATIONS = [];
@@ -36,7 +38,7 @@ const DEPARTMENTS = ['Management', 'Technology', 'Human Resources', 'Finance', '
 const GRADES = ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'];
 
 const emptyForm = {
-  name: '', code: '', department: '', reportsTo: '', grade: '', level: '', status: 'Active', description: ''
+  name: '', code: '', department: '', reportsTo: '', grade: '', level: '', status: 'Active', description: '', employeeIds: []
 };
 
 const getDesigStyles = (name) => {
@@ -56,6 +58,7 @@ const getDesigStyles = (name) => {
 
 
 export const Designations = () => {
+  const { addToast } = useToast();
   const [designations, setDesignations] = useState([]);
   const [departmentsList, setDepartmentsList] = useState([]);
   const [employeesList, setEmployeesList] = useState([]);
@@ -100,6 +103,22 @@ export const Designations = () => {
     loadDesignations();
   }, []);
 
+  const employeeOptions = useMemo(() => {
+    if (!Array.isArray(employeesList) || employeesList.length === 0) return [];
+    return employeesList.map(emp => {
+      const role = emp.role_name || emp.designation || '';
+      const dept = emp.dept_name || emp.department || '';
+      const sub = [role, dept].filter(Boolean).join(' • ');
+      return {
+        id: emp.id,
+        value: emp.id,
+        label: `${emp.name}${sub ? ` (${sub})` : ''}`,
+        name: emp.name,
+        profile_photo: emp.profile_photo || emp.avatar
+      };
+    });
+  }, [employeesList]);
+
   const reportsToOptions = useMemo(() => {
     const list = [
       { value: 'None', label: 'None (Top Level / Direct)' }
@@ -141,41 +160,76 @@ export const Designations = () => {
   const handleSaveAdd = async () => {
     if (!formData.name || !formData.code) return;
     try {
-      await apiFetch('/organization/designations', {
+      const res = await apiFetch('/organization/designations', {
         method: 'POST',
         body: JSON.stringify(formData)
       });
+      if (res && (res.error || res.success === false)) {
+        throw new Error(res.error || res.message || 'Failed to create designation');
+      }
+      addToast('Designation created successfully!', 'success');
       await loadDesignations();
+      setShowAddModal(false);
     } catch (err) {
       console.error("Error creating designation:", err);
+      addToast(err.message || 'Failed to create designation', 'error');
     }
-    setShowAddModal(false);
   };
-  const handleOpenEdit = (item) => { setSelectedItem(item); setFormData({ name: item.name, code: item.code, department: item.department, reportsTo: item.reportsTo, grade: item.grade, level: item.level, status: item.status, description: item.description }); setShowEditModal(true); };
+
+  const handleOpenEdit = (item) => {
+    const assignedIds = item.employee_ids
+      ? String(item.employee_ids).split(',').map(s => Number(s.trim())).filter(Boolean)
+      : [];
+    setSelectedItem(item);
+    setFormData({
+      name: item.name,
+      code: item.code,
+      department: item.department,
+      reportsTo: item.reportsTo,
+      grade: item.grade,
+      level: item.level,
+      status: item.status,
+      description: item.description,
+      employeeIds: assignedIds
+    });
+    setShowEditModal(true);
+  };
+
   const handleSaveEdit = async () => {
     if (!formData.name || !formData.code) return;
     try {
-      await apiFetch(`/organization/designations/${selectedItem.id}`, {
+      const res = await apiFetch(`/organization/designations/${selectedItem.id}`, {
         method: 'PUT',
         body: JSON.stringify(formData)
       });
+      if (res && (res.error || res.success === false)) {
+        throw new Error(res.error || res.message || 'Failed to update designation');
+      }
+      addToast('Designation updated successfully!', 'success');
       await loadDesignations();
+      setShowEditModal(false);
     } catch (err) {
       console.error("Error updating designation:", err);
+      addToast(err.message || 'Failed to update designation', 'error');
     }
-    setShowEditModal(false);
   };
+
   const handleOpenView = (item) => { setSelectedItem(item); setShowViewModal(true); };
   const handleOpenDelete = (item) => { setSelectedItem(item); setShowDeleteModal(true); };
   const handleConfirmDelete = async () => {
     if (selectedItem) {
       try {
-        await apiFetch(`/organization/designations/${selectedItem.id}`, {
+        const res = await apiFetch(`/organization/designations/${selectedItem.id}`, {
           method: 'DELETE'
         });
+        if (res && (res.error || res.success === false)) {
+          throw new Error(res.error || res.message || 'Failed to delete designation');
+        }
+        addToast('Designation deleted successfully!', 'success');
         await loadDesignations();
       } catch (err) {
         console.error("Error deleting designation:", err);
+        addToast(err.message || 'Failed to delete designation', 'error');
       }
     }
     setShowDeleteModal(false);
@@ -336,6 +390,90 @@ export const Designations = () => {
                   placeholder="Select Level"
                   size="sm"
                 />
+              </div>
+              <div className="hrms-input-group" style={{ gridColumn: 'span 2' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label className="hrms-label" style={{ fontWeight: '600', color: '#334155', margin: 0 }}>
+                    Employees (Assign to this Designation)
+                  </label>
+                  {(formData.employeeIds || []).length > 0 && (
+                    <span style={{ fontSize: '11px', color: '#2563EB', fontWeight: '600' }}>
+                      {(formData.employeeIds || []).length} assigned
+                    </span>
+                  )}
+                </div>
+                <AppDropdown
+                  value=""
+                  onChange={v => {
+                    if (!v) return;
+                    const idNum = Number(v);
+                    const current = formData.employeeIds || [];
+                    if (!current.includes(idNum)) {
+                      setFormData({ ...formData, employeeIds: [...current, idNum] });
+                    }
+                  }}
+                  options={[
+                    { value: '', label: 'Select employee to assign...' },
+                    ...employeeOptions.filter(opt => !(formData.employeeIds || []).includes(opt.id))
+                  ]}
+                  placeholder={
+                    (formData.employeeIds || []).length > 0
+                      ? `+ Assign another employee (${(formData.employeeIds || []).length} currently assigned)`
+                      : "Select employee(s) for this designation..."
+                  }
+                  size="sm"
+                />
+                {(formData.employeeIds || []).length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                    {(formData.employeeIds || []).map(empId => {
+                      const emp = employeesList.find(e => Number(e.id) === Number(empId));
+                      const empName = emp ? emp.name : `Employee #${empId}`;
+                      const empSub = emp?.role_name || emp?.designation || '';
+                      return (
+                        <span
+                          key={empId}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: '#EFF6FF',
+                            color: '#1D4ED8',
+                            fontSize: '12px',
+                            fontWeight: '500',
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            border: '1px solid #BFDBFE'
+                          }}
+                        >
+                          <User size={13} />
+                          <span>{empName}{empSub ? ` (${empSub})` : ''}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                employeeIds: (formData.employeeIds || []).filter(id => id !== empId)
+                              });
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: 0,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              color: '#60A5FA',
+                              marginLeft: '2px'
+                            }}
+                            title="Remove employee"
+                          >
+                            <X size={13} />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div className="hrms-input-group" style={{ gridColumn: 'span 2' }}>
                 <label className="hrms-label" style={{ fontWeight: '600', color: '#334155' }}>Status *</label>

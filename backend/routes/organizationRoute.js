@@ -85,6 +85,8 @@ router.get("/designations", authenticateJWT, checkPermission("organization", "de
       des.grade,
       des.level,
       (SELECT COUNT(*) FROM employees e WHERE e.designation_id = des.id AND e.status = 'Active') as employees,
+      (SELECT GROUP_CONCAT(e.id) FROM employees e WHERE e.designation_id = des.id AND e.status = 'Active') as employee_ids,
+      (SELECT GROUP_CONCAT(e.name SEPARATOR ', ') FROM employees e WHERE e.designation_id = des.id AND e.status = 'Active') as employee_names,
       COALESCE(des.createdDate, DATE_FORMAT(NOW(), '%d %b %Y')) as createdDate,
       COALESCE(des.status, 'Active') as status,
       des.description
@@ -98,20 +100,28 @@ router.get("/designations", authenticateJWT, checkPermission("organization", "de
 });
 
 router.post("/designations", authenticateJWT, checkPermission("organization", "designations", "create"), (req, res) => {
-  const { name, code, department, reportsTo, grade, level, status, description } = req.body;
+  const { name, code, department, reportsTo, grade, level, status, description, employeeIds, assignedEmployees } = req.body;
   const sql = `
     INSERT INTO designations (designation_name, role_name, designation_code, role_code, department, reportsTo, grade, level, status, description, createdDate)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_FORMAT(NOW(), '%d %b %Y'))
   `;
   db.query(sql, [name, name, code, code, department, reportsTo, grade, level, status || 'Active', description], (err, result) => {
     if (err) return res.status(500).json(err);
-    res.json({ message: "Designation created successfully", id: result.insertId });
+    const newId = result.insertId;
+    const targetIds = Array.isArray(employeeIds) ? employeeIds : (Array.isArray(assignedEmployees) ? assignedEmployees : []);
+    if (targetIds.length > 0) {
+      db.query("UPDATE employees SET designation_id = ? WHERE id IN (?)", [newId, targetIds], () => {
+        res.json({ message: "Designation created successfully", id: newId });
+      });
+    } else {
+      res.json({ message: "Designation created successfully", id: newId });
+    }
   });
 });
 
 router.put("/designations/:id", authenticateJWT, checkPermission("organization", "designations", "edit"), (req, res) => {
   const { id } = req.params;
-  const { name, code, department, reportsTo, grade, level, status, description } = req.body;
+  const { name, code, department, reportsTo, grade, level, status, description, employeeIds, assignedEmployees } = req.body;
   const sql = `
     UPDATE designations
     SET designation_name = ?, role_name = ?, designation_code = ?, role_code = ?, department = ?, reportsTo = ?, grade = ?, level = ?, status = ?, description = ?
@@ -119,7 +129,21 @@ router.put("/designations/:id", authenticateJWT, checkPermission("organization",
   `;
   db.query(sql, [name, name, code, code, department, reportsTo, grade, level, status, description, id], (err, result) => {
     if (err) return res.status(500).json(err);
-    res.json({ message: "Designation updated successfully" });
+    const targetIds = Array.isArray(employeeIds) ? employeeIds : (Array.isArray(assignedEmployees) ? assignedEmployees : null);
+    if (targetIds !== null) {
+      // Clear previous employees for this designation and assign new ones
+      db.query("UPDATE employees SET designation_id = NULL WHERE designation_id = ?", [id], () => {
+        if (targetIds.length > 0) {
+          db.query("UPDATE employees SET designation_id = ? WHERE id IN (?)", [id, targetIds], () => {
+            res.json({ message: "Designation updated successfully" });
+          });
+        } else {
+          res.json({ message: "Designation updated successfully" });
+        }
+      });
+    } else {
+      res.json({ message: "Designation updated successfully" });
+    }
   });
 });
 
