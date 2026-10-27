@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Map, { Marker, NavigationControl, Source, Layer, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { apiFetch, API_URL } from '../../lib/api';
-import { getMapStyle } from '../../config/mapConfig';
+import { getMapStyle, handleStyleImageMissing } from '../../config/mapConfig';
 import { 
   MapPin, Navigation, Camera, CheckCircle2, XCircle, Play, Pause, 
   Map as MapIcon, Building, LogOut, Search, Loader2, Link, Image, 
@@ -896,6 +896,7 @@ const LiveTrackingMap = ({ visitId, onClose }) => {
               minZoom={3}
               maxZoom={18.5}
               mapStyle={MAP_STYLES[mapStyle] || MAP_STYLES.street}
+              onStyleImageMissing={handleStyleImageMissing}
               style={{ width:'100%', height:'100%' }}
             >
               <NavigationControl position="bottom-right" />
@@ -1620,6 +1621,7 @@ const RiderNavigatorModal = ({ visit, onClose, onReachClient }) => {
           minZoom={4}
           maxZoom={19}
           mapStyle={MAP_STYLES.street}
+          onStyleImageMissing={handleStyleImageMissing}
           style={{ width:'100%', height:'100%' }}
         >
           <NavigationControl position="bottom-right" />

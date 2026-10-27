@@ -80,3 +80,18 @@ export const getMapStyle = (theme = 'streets') => {
 
 export const DEFAULT_MAP_STYLE = getMapStyle('streets');
 export const SATELLITE_MAP_STYLE = getMapStyle('satellite');
+
+/**
+ * Global handler for missing style images/sprites to prevent console warnings
+ */
+export const handleStyleImageMissing = (e) => {
+  try {
+    const map = e.target;
+    const id = e.id;
+    if (map && typeof map.hasImage === 'function' && !map.hasImage(id)) {
+      map.addImage(id, { width: 1, height: 1, data: new Uint8Array(4) });
+    }
+  } catch (err) {
+    // Non-fatal fallback
+  }
+};

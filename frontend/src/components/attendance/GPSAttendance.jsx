@@ -12,7 +12,7 @@ import { GeoPunch } from './GeoPunch';
 import { useNavigate } from 'react-router-dom';
 import EmployeeAvatar from '../employee/EmployeeAvatar';
 import ClientVisits from './ClientVisits';
-import { getMapStyle } from '../../config/mapConfig';
+import { getMapStyle, handleStyleImageMissing } from '../../config/mapConfig';
 
 // Helper: Generate accurate GeoJSON circle polygon from center + radius in meters
 function createGeoJSONCircle(center, radiusInMeters, points = 64) {
@@ -229,6 +229,7 @@ export default function GPSAttendance() {
                 {...viewState}
                 onMove={evt => setViewState(evt.viewState)}
                 mapStyle={MAP_STYLE}
+                onStyleImageMissing={handleStyleImageMissing}
                 style={{ width: '100%', height: '100%' }}
               >
                 <AutoFitBounds geofences={geofences} records={records} />

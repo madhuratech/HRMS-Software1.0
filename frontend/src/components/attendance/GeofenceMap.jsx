@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import Map, { Marker, Source, Layer } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { getMapStyle } from '../../config/mapConfig';
+import { getMapStyle, handleStyleImageMissing } from '../../config/mapConfig';
 
 // Helper to generate a circle polygon in GeoJSON
 function createGeoJSONCircle(center, radiusInMeters, points = 64) {
@@ -67,6 +67,7 @@ export default function GeofenceMap({ lat, lng, radius, onChange, readonly = fal
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
         mapStyle={mapStyle}
+        onStyleImageMissing={handleStyleImageMissing}
         onClick={onClick}
         cursor={readonly ? 'grab' : 'crosshair'}
       >
