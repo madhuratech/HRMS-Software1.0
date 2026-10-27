@@ -38,19 +38,25 @@ export default function PayrollProcessing() {
     setLoading(true);
     try {
       const [empData, deptData, structData, bonusData, claimData, loanData, payslipData] = await Promise.all([
-        apiFetch('/employees?status=Active'),
-        apiFetch('/departments'),
-        apiFetch('/payroll/structures'),
-        apiFetch('/payroll/bonuses'),
-        apiFetch('/payroll/reimbursements'),
-        apiFetch('/payroll/loans'),
-        apiFetch(`/payroll/payslips?month=${month}&year=${year}`)
+        apiFetch('/employees?status=Active').catch(() => apiFetch('/employees')),
+        apiFetch('/organization/departments').catch(() => apiFetch('/departments')),
+        apiFetch('/payroll/structures').catch(() => []),
+        apiFetch('/payroll/bonuses').catch(() => []),
+        apiFetch('/payroll/reimbursements').catch(() => []),
+        apiFetch('/payroll/loans').catch(() => []),
+        apiFetch(`/payroll/payslips?month=${month}&year=${year}`).catch(() => [])
       ]);
 
       if (Array.isArray(empData)) setActiveEmployees(empData);
       else if (empData && Array.isArray(empData.data)) setActiveEmployees(empData.data);
+      else if (empData && Array.isArray(empData.employees)) setActiveEmployees(empData.employees);
+      else setActiveEmployees([]);
 
       if (Array.isArray(deptData)) setDepartments(deptData);
+      else if (deptData && Array.isArray(deptData.data)) setDepartments(deptData.data);
+      else if (deptData && Array.isArray(deptData.departments)) setDepartments(deptData.departments);
+      else setDepartments([]);
+
       if (Array.isArray(structData)) setStructures(structData);
       if (Array.isArray(bonusData)) setBonuses(bonusData);
       if (Array.isArray(claimData)) setClaims(claimData);
@@ -121,6 +127,26 @@ export default function PayrollProcessing() {
     deptSummaryMap[dept].net += parseFloat(p.net_salary || 0);
   });
   const deptSummaries = Object.values(deptSummaryMap);
+
+  const monthOptions = MONTHS.map(m => ({ value: m, label: m }));
+
+  const departmentOptions = [
+    { value: '', label: '-- Choose Department --' },
+    ...departments.map(d => ({
+      value: String(d.id),
+      label: d.department_name || d.dept_name || d.name || `Department ${d.id}`,
+      sublabel: d.code ? `Code: ${d.code}` : undefined
+    }))
+  ];
+
+  const employeeOptions = [
+    { value: '', label: '-- Choose Employee --' },
+    ...activeEmployees.map(e => ({
+      value: String(e.id),
+      label: e.name || (e.first_name ? `${e.first_name} ${e.last_name || ''}`.trim() : `Employee #${e.id}`),
+      sublabel: `${e.employee_code || e.employee_id || e.emp_code || `EMP${e.id}`}${e.department ? ` • ${e.department}` : ''}`
+    }))
+  ];
 
   const cardStyle = {
     background: '#FFFFFF',
@@ -201,7 +227,12 @@ export default function PayrollProcessing() {
             
             <div>
               <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#BFDBFE', marginBottom: '4px' }}>Month</label>
-              <AppDropdown value={month} options={[{value:'m',label:'m'}, ...(MONTHS || [])]} size="sm" />
+              <AppDropdown 
+                value={month} 
+                onChange={v => setMonth(v)}
+                options={monthOptions} 
+                size="sm" 
+              />
             </div>
 
             <div>
@@ -225,26 +256,30 @@ export default function PayrollProcessing() {
             </div>
 
             {scope === 'department' && (
-              <div>
+              <div style={{ minWidth: '180px' }}>
                 <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#BFDBFE', marginBottom: '4px' }}>Department</label>
                 <AppDropdown
-                value={departmentId}
-                onChange={v => setDepartmentId(v)}
-                options={[{value:'',label:'-- Choose Dept --'}]}
-                size="sm"
-              />
+                  value={departmentId}
+                  onChange={v => setDepartmentId(v)}
+                  options={departmentOptions}
+                  placeholder="-- Choose Dept --"
+                  searchable={true}
+                  size="sm"
+                />
               </div>
             )}
 
             {scope === 'employee' && (
-              <div>
+              <div style={{ minWidth: '220px' }}>
                 <label style={{ display: 'block', fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', color: '#BFDBFE', marginBottom: '4px' }}>Employee</label>
                 <AppDropdown
-                value={employeeId}
-                onChange={v => setEmployeeId(v)}
-                options={[{value:'',label:'-- Choose Employee --'}]}
-                size="sm"
-              />
+                  value={employeeId}
+                  onChange={v => setEmployeeId(v)}
+                  options={employeeOptions}
+                  placeholder="-- Choose Employee --"
+                  searchable={true}
+                  size="sm"
+                />
               </div>
             )}
 

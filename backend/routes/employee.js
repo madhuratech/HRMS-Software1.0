@@ -280,6 +280,10 @@ router.get("/", authenticateJWT, (req, res) => {
       conditions.push("b.branch_name = ?");
       params.push(branch);
     }
+    if (status) {
+      conditions.push("LOWER(e.status) = LOWER(?)");
+      params.push(status);
+    }
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
     let validSortCol = "COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), e.id)";

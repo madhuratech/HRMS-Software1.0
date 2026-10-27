@@ -43,6 +43,7 @@ export default function SalaryStructure() {
 
   // Assign Form State
   const [assignEmpId, setAssignEmpId] = useState('');
+  const [assignEmpIds, setAssignEmpIds] = useState([]);
   const [assignStructId, setAssignStructId] = useState('');
   const [customGross, setCustomGross] = useState('');
   const [effectiveFrom, setEffectiveFrom] = useState('');
@@ -53,7 +54,7 @@ export default function SalaryStructure() {
       const [structData, compData, empData] = await Promise.all([
         apiFetch('/payroll/structures'),
         apiFetch('/payroll/components'),
-        apiFetch('/employees?status=Active')
+        apiFetch('/employees?status=Active').catch(() => apiFetch('/employees'))
       ]);
 
       if (Array.isArray(structData)) setStructures(structData);
@@ -64,6 +65,8 @@ export default function SalaryStructure() {
 
       if (Array.isArray(empData)) setActiveEmployees(empData);
       else if (empData && Array.isArray(empData.data)) setActiveEmployees(empData.data);
+      else if (empData && Array.isArray(empData.employees)) setActiveEmployees(empData.employees);
+      else setActiveEmployees([]);
     } catch (err) {
       console.error("Failed to load structures data:", err);
       addToast('Failed to load salary structure records', 'error');
@@ -252,15 +255,16 @@ export default function SalaryStructure() {
 
   const handleAssignStructure = async (e) => {
     e.preventDefault();
-    if (!assignEmpId || !assignStructId) {
-      addToast('Please select both an employee and a salary structure', 'warning');
+    const targetIds = assignEmpIds.length > 0 ? assignEmpIds : (assignEmpId ? [assignEmpId] : []);
+    if (targetIds.length === 0 || !assignStructId) {
+      addToast('Please select at least one employee and a salary structure', 'warning');
       return;
     }
 
     setSaving(true);
     try {
       const payload = {
-        employee_id: assignEmpId,
+        employee_ids: targetIds,
         structure_id: assignStructId,
         effective_from: effectiveFrom || null,
         custom_gross: customGross ? parseFloat(customGross) : null
@@ -272,7 +276,7 @@ export default function SalaryStructure() {
       });
 
       if (res && res.success) {
-        addToast('Salary structure assigned to employee successfully!', 'success');
+        addToast(res.message || `Salary structure successfully assigned to ${targetIds.length} employee(s)!`, 'success');
         setShowAssignModal(false);
         loadAllData();
       } else {
@@ -287,6 +291,7 @@ export default function SalaryStructure() {
 
   const openAssignModal = async () => {
     setAssignEmpId('');
+    setAssignEmpIds([]);
     setCustomGross('');
     setEffectiveFrom(new Date().toISOString().split('T')[0]);
 
@@ -297,7 +302,7 @@ export default function SalaryStructure() {
       try {
         const [structData, empData] = await Promise.all([
           apiFetch('/payroll/structures'),
-          apiFetch('/employees?status=Active')
+          apiFetch('/employees?status=Active').catch(() => apiFetch('/employees'))
         ]);
         if (Array.isArray(structData)) {
           sList = structData;
@@ -325,12 +330,38 @@ export default function SalaryStructure() {
     setShowAssignModal(true);
   };
 
+  const handleEmployeeToggle = (empId) => {
+    if (!empId) return;
+    const strId = String(empId);
+    setAssignEmpIds(prev => {
+      const exists = prev.includes(strId);
+      const next = exists ? prev.filter(id => id !== strId) : [...prev, strId];
+      if (next.length === 1) {
+        const singleEmp = activeEmployees.find(e => String(e.id) === next[0]);
+        if (singleEmp?.salary) setCustomGross(singleEmp.salary);
+        setAssignEmpId(next[0]);
+      } else {
+        setAssignEmpId('');
+        if (next.length === 0) setCustomGross('');
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllEmployees = () => {
+    const allIds = activeEmployees.map(e => String(e.id));
+    setAssignEmpIds(allIds);
+    setAssignEmpId('');
+  };
+
+  const handleClearEmployees = () => {
+    setAssignEmpIds([]);
+    setAssignEmpId('');
+    setCustomGross('');
+  };
+
   const handleEmployeeSelect = (empId) => {
-    setAssignEmpId(empId);
-    const emp = activeEmployees.find(e => String(e.id) === String(empId));
-    if (emp && emp.salary) {
-      setCustomGross(emp.salary);
-    }
+    handleEmployeeToggle(empId);
   };
 
   const totalStructures = structures.length;
@@ -359,7 +390,8 @@ export default function SalaryStructure() {
     boxSizing: 'border-box'
   };
 
-  const selectedEmployee = activeEmployees.find(emp => String(emp.id) === String(assignEmpId));
+  const selectedEmployees = activeEmployees.filter(emp => assignEmpIds.includes(String(emp.id)) || String(emp.id) === String(assignEmpId));
+  const selectedEmployee = selectedEmployees.length === 1 ? selectedEmployees[0] : null;
   const selectedStructure = structures.find(str => String(str.id) === String(assignStructId));
 
   return (
@@ -785,53 +817,122 @@ export default function SalaryStructure() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '18px 20px' }}>
 
-                {/* Row 1: Employee Name & Employee ID */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#1E293B', marginBottom: '7px' }}>
-                    Employee Name <span style={{ color: '#EF4444' }}>*</span>
-                  </label>
+                {/* Row 1: Employee Selection (Supports Single & Multiple) */}
+                <div style={{ gridColumn: 'span 2' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '7px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: '700', color: '#1E293B', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>Select Employees</span> <span style={{ color: '#EF4444' }}>*</span>
+                      {assignEmpIds.length > 0 && (
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: '#2563EB', background: '#EFF6FF', border: '1px solid #BFDBFE', padding: '2px 8px', borderRadius: '12px' }}>
+                          {assignEmpIds.length} staff selected
+                        </span>
+                      )}
+                    </label>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={handleSelectAllEmployees}
+                        style={{ background: 'none', border: 'none', color: '#2563EB', fontSize: '12px', fontWeight: '600', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                      >
+                        Select All Active ({activeEmployees.length})
+                      </button>
+                      {assignEmpIds.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearEmployees}
+                          style={{ background: 'none', border: 'none', color: '#EF4444', fontSize: '12px', fontWeight: '600', cursor: 'pointer', padding: 0 }}
+                        >
+                          Clear Selection
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <AppDropdown
-                    value={assignEmpId}
-                    onChange={handleEmployeeSelect}
+                    value=""
+                    onChange={handleEmployeeToggle}
                     options={[
-                      { value: '', label: '-- Select Active Employee --' },
-                      ...activeEmployees.map(emp => ({
-                        value: String(emp.id),
-                        label: emp.name,
-                        sublabel: `${emp.employee_code || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')}${emp.designation ? ` • ${emp.designation}` : ''}`
-                      }))
+                      { value: '', label: assignEmpIds.length > 0 ? '+ Click to add another employee...' : '-- Select Active Employee --' },
+                      ...activeEmployees.map(emp => {
+                        const isSelected = assignEmpIds.includes(String(emp.id));
+                        return {
+                          value: String(emp.id),
+                          label: `${isSelected ? '✓ ' : ''}${emp.name}`,
+                          sublabel: `${emp.employee_code || emp.emp_code || (emp.id ? `EMP${String(emp.id).padStart(4, '0')}` : '')}${emp.department ? ` • ${emp.department}` : ''}${emp.designation ? ` (${emp.designation})` : ''}`
+                        };
+                      })
                     ]}
-                    placeholder="Search or select employee..."
+                    placeholder={assignEmpIds.length > 0 ? `+ Add more employees (${assignEmpIds.length} currently selected)...` : "Search and select employee(s)..."}
                     searchable={true}
                     size="md"
                   />
+
+                  {/* Selected Employees Chips/Badges */}
+                  {assignEmpIds.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px', maxHeight: '110px', overflowY: 'auto', padding: '8px 10px', background: '#F8FAFC', borderRadius: '12px', border: '1.5px solid #E2E8F0' }}>
+                      {assignEmpIds.map(id => {
+                        const emp = activeEmployees.find(e => String(e.id) === String(id));
+                        const name = emp ? emp.name : `Employee #${id}`;
+                        const code = emp?.employee_code || emp?.emp_code || `EMP${id}`;
+                        return (
+                          <span
+                            key={id}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              background: '#EFF6FF',
+                              color: '#1D4ED8',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              border: '1px solid #BFDBFE'
+                            }}
+                          >
+                            <Users size={12} color="#2563EB" />
+                            <span>{name} ({code})</span>
+                            <button
+                              type="button"
+                              onClick={() => handleEmployeeToggle(id)}
+                              style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '0 2px' }}
+                              title="Remove"
+                            >
+                              <X size={13} />
+                            </button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
+                {/* Row 2: Selected Staff Summary & Current Status */}
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#1E293B', marginBottom: '7px' }}>
-                    Employee ID
+                    {assignEmpIds.length > 1 ? 'Selected Staff Count' : 'Employee ID'}
                   </label>
-                  <div style={{ width: '100%', height: '46px', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', fontSize: '13.5px', color: selectedEmployee ? '#1E293B' : '#94A3B8', fontWeight: selectedEmployee ? '700' : '500', boxSizing: 'border-box' }}>
-                    {selectedEmployee ? (selectedEmployee.employee_code || selectedEmployee.emp_code || (selectedEmployee.id ? `EMP${String(selectedEmployee.id).padStart(4, '0')}` : '')) : 'Select an employee...'}
+                  <div style={{ width: '100%', height: '46px', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', fontSize: '13.5px', color: assignEmpIds.length > 0 ? '#1E293B' : '#94A3B8', fontWeight: assignEmpIds.length > 0 ? '700' : '500', boxSizing: 'border-box' }}>
+                    {assignEmpIds.length > 1 
+                      ? `${assignEmpIds.length} staff selected for batch assignment`
+                      : selectedEmployee 
+                        ? (selectedEmployee.employee_code || selectedEmployee.emp_code || (selectedEmployee.id ? `EMP${String(selectedEmployee.id).padStart(4, '0')}` : ''))
+                        : 'Select employee(s)...'
+                    }
                   </div>
                 </div>
 
-                {/* Row 2: Department / Designation & Current Base Salary */}
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#1E293B', marginBottom: '7px' }}>
-                    Department / Designation
+                    {assignEmpIds.length > 1 ? 'Department Scope' : 'Department / Designation'}
                   </label>
-                  <div style={{ width: '100%', height: '46px', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', fontSize: '13.5px', color: selectedEmployee ? '#334155' : '#94A3B8', fontWeight: '600', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {selectedEmployee ? (selectedEmployee.department_name || selectedEmployee.department || selectedEmployee.designation || 'General Staff') : 'Select an employee...'}
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '700', color: '#1E293B', marginBottom: '7px' }}>
-                    Current Base Salary
-                  </label>
-                  <div style={{ width: '100%', height: '46px', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', fontSize: '13.5px', color: '#2563EB', fontWeight: '700', boxSizing: 'border-box' }}>
-                    {selectedEmployee ? (selectedEmployee.salary ? `₹ ${Number(selectedEmployee.salary).toLocaleString('en-IN')} / month` : 'Not Configured') : '—'}
+                  <div style={{ width: '100%', height: '46px', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', fontSize: '13.5px', color: assignEmpIds.length > 0 ? '#334155' : '#94A3B8', fontWeight: '600', boxSizing: 'border-box', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {assignEmpIds.length > 1
+                      ? `Multiple staff across departments`
+                      : selectedEmployee 
+                        ? (selectedEmployee.department_name || selectedEmployee.department || selectedEmployee.designation || 'General Staff')
+                        : 'Select employee(s)...'
+                    }
                   </div>
                 </div>
 

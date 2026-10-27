@@ -641,32 +641,47 @@ exports.deleteStructure = async (req, res) => {
 
 exports.assignStructure = async (req, res) => {
   try {
-    const { employee_id, structure_id, effective_from, custom_gross } = req.body;
-    if (!employee_id || !structure_id) {
-      return res.status(400).json({ success: false, message: "Employee and Structure are required." });
+    const { employee_id, employee_ids, structure_id, effective_from, custom_gross } = req.body;
+    
+    let targetEmployeeIds = [];
+    if (Array.isArray(employee_ids) && employee_ids.length > 0) {
+      targetEmployeeIds = employee_ids.map(id => parseInt(id, 10)).filter(Boolean);
+    } else if (employee_id) {
+      if (Array.isArray(employee_id)) {
+        targetEmployeeIds = employee_id.map(id => parseInt(id, 10)).filter(Boolean);
+      } else {
+        targetEmployeeIds = [parseInt(employee_id, 10)].filter(Boolean);
+      }
     }
 
-    // Check if exists
-    const existing = await dbQuery("SELECT * FROM employee_salary_mappings WHERE employee_id = ?", [employee_id]);
-    if (existing.length > 0) {
-      await dbQuery(`
-        UPDATE employee_salary_mappings 
-        SET structure_id = ?, effective_from = ?, custom_gross = ?, assigned_date = NOW()
-        WHERE employee_id = ?
-      `, [structure_id, effective_from || null, custom_gross || null, employee_id]);
-    } else {
-      await dbQuery(`
-        INSERT INTO employee_salary_mappings (employee_id, structure_id, effective_from, custom_gross, assigned_date, created_at)
-        VALUES (?, ?, ?, ?, NOW(), NOW())
-      `, [employee_id, structure_id, effective_from || null, custom_gross || null]);
+    if (targetEmployeeIds.length === 0 || !structure_id) {
+      return res.status(400).json({ success: false, message: "At least one Employee and a Structure are required." });
     }
 
-    // Also sync to employees.salary if custom_gross provided
-    if (custom_gross && parseFloat(custom_gross) > 0) {
-      await dbQuery("UPDATE employees SET salary = ? WHERE id = ?", [custom_gross, employee_id]);
+    for (const empId of targetEmployeeIds) {
+      const existing = await dbQuery("SELECT * FROM employee_salary_mappings WHERE employee_id = ?", [empId]);
+      if (existing.length > 0) {
+        await dbQuery(`
+          UPDATE employee_salary_mappings 
+          SET structure_id = ?, effective_from = ?, custom_gross = ?, assigned_date = NOW()
+          WHERE employee_id = ?
+        `, [structure_id, effective_from || null, custom_gross || null, empId]);
+      } else {
+        await dbQuery(`
+          INSERT INTO employee_salary_mappings (employee_id, structure_id, effective_from, custom_gross, assigned_date, created_at)
+          VALUES (?, ?, ?, ?, NOW(), NOW())
+        `, [empId, structure_id, effective_from || null, custom_gross || null]);
+      }
+
+      if (custom_gross && parseFloat(custom_gross) > 0) {
+        await dbQuery("UPDATE employees SET salary = ? WHERE id = ?", [custom_gross, empId]);
+      }
     }
 
-    return res.status(200).json({ success: true, message: "Salary structure successfully assigned to employee." });
+    return res.status(200).json({ 
+      success: true, 
+      message: `Salary structure successfully assigned to ${targetEmployeeIds.length} employee(s).` 
+    });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
   }
