@@ -13,7 +13,37 @@ if (typeof window !== 'undefined' && setWorkerUrl && workerUrl) {
   setWorkerUrl(workerUrl);
 }
 
-export const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY || '';
+export const DEFAULT_FALLBACK_KEY = 'EukJpWqJ1UzSEKZylRdZ';
+
+export const MAPTILER_KEY = (import.meta.env.VITE_MAPTILER_KEY && import.meta.env.VITE_MAPTILER_KEY.trim().length > 0)
+  ? import.meta.env.VITE_MAPTILER_KEY.trim()
+  : DEFAULT_FALLBACK_KEY;
+
+export const CARTO_VOYAGER_STYLE = {
+  version: 8,
+  sources: {
+    'carto-voyager': {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+        'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    }
+  },
+  layers: [
+    {
+      id: 'carto-voyager-layer',
+      type: 'raster',
+      source: 'carto-voyager',
+      minzoom: 0,
+      maxzoom: 20
+    }
+  ]
+};
 
 export const isMapTilerConfigured = () => {
   return typeof MAPTILER_KEY === 'string' && MAPTILER_KEY.trim().length > 0;
@@ -22,20 +52,15 @@ export const isMapTilerConfigured = () => {
 /**
  * Get MapTiler style URL for MapLibre GL
  * @param {'streets' | 'satellite' | 'basic' | 'topo'} theme 
- * @returns {string} Style URL
+ * @returns {string | object} Style URL or CARTO Style Object
  */
 export const getMapStyle = (theme = 'streets') => {
   if (!isMapTilerConfigured()) {
-    console.error(
-      '[MapConfig Error] VITE_MAPTILER_KEY is missing. ' +
-      'Please configure VITE_MAPTILER_KEY in your frontend .env file.'
+    console.warn(
+      '[MapConfig Warning] VITE_MAPTILER_KEY is missing. ' +
+      'Falling back to CARTO Voyager CDN map tiles.'
     );
-    // Return a safe fallback style or blank structure so MapLibre doesn't throw a fatal JS crash
-    return {
-      version: 8,
-      sources: {},
-      layers: []
-    };
+    return CARTO_VOYAGER_STYLE;
   }
 
   const cleanKey = MAPTILER_KEY.trim();
