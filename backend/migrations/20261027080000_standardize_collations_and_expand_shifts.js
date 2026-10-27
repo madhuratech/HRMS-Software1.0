@@ -50,6 +50,9 @@ exports.up = async function (knex) {
     await checkAndAddCol('createdDate', t => t.string('createdDate', 50).nullable());
 
     try {
+      await knex.raw("ALTER TABLE `shifts` MODIFY COLUMN `start_time` TIME NULL DEFAULT '09:00:00'");
+      await knex.raw("ALTER TABLE `shifts` MODIFY COLUMN `end_time` TIME NULL DEFAULT '18:00:00'");
+      await knex.raw("ALTER TABLE `shifts` MODIFY COLUMN `shift_name` VARCHAR(100) NULL DEFAULT 'General Shift'");
       await knex.raw(`
         UPDATE shifts 
         SET name = COALESCE(NULLIF(name, ''), shift_name),

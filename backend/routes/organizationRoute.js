@@ -867,6 +867,24 @@ router.get("/shifts", authenticateJWT, checkPermission("organization", "shift_ma
   });
 });
 
+function parseToTimeString(timeStr, fallback = '09:00:00') {
+  if (!timeStr || typeof timeStr !== 'string') return fallback;
+  const clean = timeStr.trim();
+  const match = clean.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+  if (match) {
+    let [_, h, m, s, meridian] = match;
+    let hour = parseInt(h, 10);
+    const minute = m.padStart(2, '0');
+    const second = (s || '00').padStart(2, '0');
+    if (meridian) {
+      if (meridian.toUpperCase() === 'PM' && hour < 12) hour += 12;
+      if (meridian.toUpperCase() === 'AM' && hour === 12) hour = 0;
+    }
+    return `${String(hour).padStart(2, '0')}:${minute}:${second}`;
+  }
+  return fallback;
+}
+
 router.post("/shifts", authenticateJWT, checkPermission("organization", "shift_management", "create"), (req, res) => {
   const { name, code, startTime, endTime, breakTime, graceTime, workingHours, employees, status, description, assignedEmployees, workingDays, offLabel, dayOffLabels } = req.body;
   const empCount = Array.isArray(assignedEmployees) ? assignedEmployees.length : (parseInt(employees) || 0);
@@ -874,9 +892,24 @@ router.post("/shifts", authenticateJWT, checkPermission("organization", "shift_m
   const empsJson = JSON.stringify(Array.isArray(assignedEmployees) ? assignedEmployees : []);
   const dayOffJson = JSON.stringify(dayOffLabels && typeof dayOffLabels === 'object' ? dayOffLabels : {});
 
+  const startTimeDb = parseToTimeString(startTime, '09:00:00');
+  const endTimeDb = parseToTimeString(endTime, '18:00:00');
+  const graceMinutes = parseInt(graceTime) || 15;
+
   const sql = `
-    INSERT INTO shifts (name, shift_name, code, startTime, endTime, breakTime, graceTime, workingHours, employees, workingDays, assignedEmployees, offLabel, dayOffLabels, status, description, createdDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_FORMAT(NOW(), '%d %b %Y'))
+    INSERT INTO shifts (
+      name, shift_name, code, 
+      startTime, endTime, start_time, end_time, 
+      breakTime, graceTime, grace_time, workingHours, 
+      employees, workingDays, assignedEmployees, offLabel, dayOffLabels, 
+      status, description, createdDate
+    ) VALUES (
+      ?, ?, ?, 
+      ?, ?, ?, ?, 
+      ?, ?, ?, ?, 
+      ?, ?, ?, ?, ?, 
+      ?, ?, DATE_FORMAT(NOW(), '%d %b %Y')
+    )
   `;
   db.query(sql, [
     name,
@@ -884,8 +917,11 @@ router.post("/shifts", authenticateJWT, checkPermission("organization", "shift_m
     code,
     startTime || '09:00 AM',
     endTime || '06:00 PM',
+    startTimeDb,
+    endTimeDb,
     breakTime || '60 mins',
     graceTime || '15 mins',
+    graceMinutes,
     workingHours || '9 hours',
     empCount,
     daysJson,
@@ -911,9 +947,17 @@ router.put("/shifts/:id", authenticateJWT, checkPermission("organization", "shif
   const empsJson = JSON.stringify(Array.isArray(assignedEmployees) ? assignedEmployees : []);
   const dayOffJson = JSON.stringify(dayOffLabels && typeof dayOffLabels === 'object' ? dayOffLabels : {});
 
+  const startTimeDb = parseToTimeString(startTime, '09:00:00');
+  const endTimeDb = parseToTimeString(endTime, '18:00:00');
+  const graceMinutes = parseInt(graceTime) || 15;
+
   const sql = `
     UPDATE shifts
-    SET name = ?, shift_name = ?, code = ?, startTime = ?, endTime = ?, breakTime = ?, graceTime = ?, workingHours = ?, employees = ?, workingDays = ?, assignedEmployees = ?, offLabel = ?, dayOffLabels = ?, status = ?, description = ?
+    SET name = ?, shift_name = ?, code = ?, 
+        startTime = ?, endTime = ?, start_time = ?, end_time = ?, 
+        breakTime = ?, graceTime = ?, grace_time = ?, workingHours = ?, 
+        employees = ?, workingDays = ?, assignedEmployees = ?, offLabel = ?, dayOffLabels = ?, 
+        status = ?, description = ?
     WHERE id = ?
   `;
   db.query(sql, [
@@ -922,8 +966,11 @@ router.put("/shifts/:id", authenticateJWT, checkPermission("organization", "shif
     code,
     startTime,
     endTime,
+    startTimeDb,
+    endTimeDb,
     breakTime,
     graceTime,
+    graceMinutes,
     workingHours,
     empCount,
     daysJson,

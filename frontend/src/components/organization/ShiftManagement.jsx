@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import AppDropdown from '../ui/AppDropdown';
+import { useToast } from '../ui/Toast';
 import { apiFetch } from '../../lib/api';
 import { canCreate, canEdit, canDelete, canExport } from '../../lib/permissions';
 import {
@@ -53,6 +54,7 @@ const getShiftStyles = (name) => {
 };
 
 export const ShiftManagement = () => {
+  const { addToast } = useToast();
   const [shifts, setShifts] = useState([]);
   const [employeeList, setEmployeeList] = useState(DEFAULT_EMPLOYEE_RECORDS);
   const [showEmpDropdown, setShowEmpDropdown] = useState(false);
@@ -123,22 +125,31 @@ export const ShiftManagement = () => {
 
   const handleAdd = () => { setFormData(emptyForm); setShowEmpDropdown(false); setShowAddModal(true); };
   const handleSaveAdd = async () => {
-    if (!formData.name || !formData.code || !formData.startTime || !formData.endTime) return;
+    if (!formData.name || !formData.code || !formData.startTime || !formData.endTime) {
+      addToast('Please fill in Name, Code, Start Time, and End Time', 'warning');
+      return;
+    }
     try {
       const empCount = formData.assignedEmployees ? formData.assignedEmployees.length : 0;
       const payload = {
         ...formData,
         employees: empCount
       };
-      await apiFetch('/organization/shifts', {
+      const res = await apiFetch('/organization/shifts', {
         method: 'POST',
         body: JSON.stringify(payload)
       });
+      if (res && res.error) {
+        addToast(res.error || 'Failed to create shift', 'error');
+        return;
+      }
+      addToast('Shift created successfully', 'success');
+      setShowAddModal(false);
       await loadShifts();
     } catch (err) {
       console.error("Error creating shift:", err);
+      addToast(err.message || 'Error creating shift', 'error');
     }
-    setShowAddModal(false);
   };
 
   const handleOpenEdit = (item) => {
@@ -166,22 +177,31 @@ export const ShiftManagement = () => {
   };
 
   const handleSaveEdit = async () => {
-    if (!formData.name || !formData.code || !formData.startTime || !formData.endTime) return;
+    if (!formData.name || !formData.code || !formData.startTime || !formData.endTime) {
+      addToast('Please fill in Name, Code, Start Time, and End Time', 'warning');
+      return;
+    }
     try {
       const empCount = formData.assignedEmployees ? formData.assignedEmployees.length : 0;
       const payload = {
         ...formData,
         employees: empCount
       };
-      await apiFetch(`/organization/shifts/${selectedItem.id}`, {
+      const res = await apiFetch(`/organization/shifts/${selectedItem.id}`, {
         method: 'PUT',
         body: JSON.stringify(payload)
       });
+      if (res && res.error) {
+        addToast(res.error || 'Failed to update shift', 'error');
+        return;
+      }
+      addToast('Shift updated successfully', 'success');
+      setShowEditModal(false);
       await loadShifts();
     } catch (err) {
       console.error("Error updating shift:", err);
+      addToast(err.message || 'Error updating shift', 'error');
     }
-    setShowEditModal(false);
   };
 
   const handleOpenView = (item) => { setSelectedItem(item); setShowViewModal(true); };
@@ -189,12 +209,18 @@ export const ShiftManagement = () => {
   const handleConfirmDelete = async () => {
     if (selectedItem) {
       try {
-        await apiFetch(`/organization/shifts/${selectedItem.id}`, {
+        const res = await apiFetch(`/organization/shifts/${selectedItem.id}`, {
           method: 'DELETE'
         });
-        await loadShifts();
+        if (res && res.error) {
+          addToast(res.error || 'Failed to delete shift', 'error');
+        } else {
+          addToast('Shift deleted successfully', 'success');
+          await loadShifts();
+        }
       } catch (err) {
         console.error("Error deleting shift:", err);
+        addToast(err.message || 'Error deleting shift', 'error');
       }
     }
     setShowDeleteModal(false);
