@@ -20,13 +20,19 @@ class PayrollService {
     try {
       const rows = await this.query("SELECT * FROM company_profile LIMIT 1");
       const c = rows[0] || {};
+      const basicPct = (c.basic_salary_pct !== null && c.basic_salary_pct !== undefined && String(c.basic_salary_pct).trim() !== '' && !isNaN(parseFloat(c.basic_salary_pct)))
+        ? parseFloat(c.basic_salary_pct)
+        : null;
+      const hraPct = (c.hra_pct !== null && c.hra_pct !== undefined && String(c.hra_pct).trim() !== '' && !isNaN(parseFloat(c.hra_pct)))
+        ? parseFloat(c.hra_pct)
+        : null;
       return {
         company_name: c.company_name || 'Madhura Technologies',
         head_office_address: c.head_office_address || 'Tamil Nadu, India',
         official_email: c.official_email || 'hr@madhuratech.com',
         phone_number: c.phone_number || '+91 9876543210',
-        basic_salary_pct: parseFloat(c.basic_salary_pct) || 50.0,
-        hra_pct: parseFloat(c.hra_pct) || 40.0,
+        basic_salary_pct: basicPct,
+        hra_pct: hraPct,
         pf_enabled: c.pf_enabled !== undefined ? Boolean(c.pf_enabled) : true,
         esi_enabled: c.esi_enabled !== undefined ? Boolean(c.esi_enabled) : true,
         professional_tax: c.professional_tax !== undefined ? Boolean(c.professional_tax) : true,
@@ -35,8 +41,8 @@ class PayrollService {
     } catch (e) {
       return {
         company_name: 'Madhura Technologies',
-        basic_salary_pct: 50.0,
-        hra_pct: 40.0,
+        basic_salary_pct: null,
+        hra_pct: null,
         pf_enabled: true,
         esi_enabled: true,
         professional_tax: true,
@@ -318,7 +324,9 @@ class PayrollService {
           basic = parseFloat(basicComponent.value);
         }
       } else {
-        basic = (baseSalary * company.basic_salary_pct) / 100;
+        basic = (company.basic_salary_pct !== null && company.basic_salary_pct > 0 && company.basic_salary_pct < 100)
+          ? Math.round((baseSalary * company.basic_salary_pct) / 100)
+          : baseSalary;
       }
       earningsBreakdownList.push({ name: 'Basic Salary', type: 'Earning', amount: basic });
 
@@ -362,12 +370,20 @@ class PayrollService {
       }
     } else {
       // Standard statutory and configured company base
-      basic = Math.round((baseSalary * company.basic_salary_pct) / 100);
-      hra = Math.round((basic * company.hra_pct) / 100);
-      allowances = Math.max(0, baseSalary - basic - hra);
+      if (company.basic_salary_pct !== null && company.basic_salary_pct > 0 && company.basic_salary_pct < 100) {
+        basic = Math.round((baseSalary * company.basic_salary_pct) / 100);
+        hra = company.hra_pct ? Math.round((basic * company.hra_pct) / 100) : 0;
+        allowances = Math.max(0, baseSalary - basic - hra);
+      } else {
+        basic = baseSalary;
+        hra = 0;
+        allowances = 0;
+      }
 
       earningsBreakdownList.push({ name: 'Basic Salary', type: 'Earning', amount: basic });
-      earningsBreakdownList.push({ name: 'House Rent Allowance (HRA)', type: 'Earning', amount: hra });
+      if (hra > 0) {
+        earningsBreakdownList.push({ name: 'House Rent Allowance (HRA)', type: 'Earning', amount: hra });
+      }
       if (allowances > 0) {
         earningsBreakdownList.push({ name: 'Special Allowance', type: 'Earning', amount: allowances });
       }
@@ -511,25 +527,27 @@ class PayrollService {
       throw err;
     }
 
-    // 2. Check for duplicate records
-    const existingRecords = await this.query(`
+    // 2. Fetch existing PAID records to never overwrite finalized payments
+    const paidRecords = await this.query(`
       SELECT employee_id FROM payslips
-      WHERE month = ? AND year = ? AND employee_id IN (${employees.map(() => '?').join(',')})
+      WHERE month = ? AND year = ? AND status = 'Paid' AND employee_id IN (${employees.map(() => '?').join(',')})
     `, [month, year, ...employees.map(e => e.id)]);
+    const paidMap = new Set(paidRecords.map(r => r.employee_id));
 
-    const existingMap = new Set(existingRecords.map(r => r.employee_id));
+    // If single employee scope and already paid
+    if (scope === 'employee' && employee_id && paidMap.has(Number(employee_id))) {
+      const err = new Error("Payroll has already been paid and finalized for this employee for the selected period.");
+      err.statusCode = 400;
+      throw err;
+    }
 
-    // If single employee scope and already generated
-    if (scope === 'employee' && existingMap.has(Number(employee_id))) {
-      const paidCheck = await this.query("SELECT id FROM payslips WHERE month = ? AND year = ? AND employee_id = ? AND status = 'Paid' LIMIT 1", [month, year, employee_id]);
-      if (paidCheck.length > 0) {
-        const err = new Error("Payroll has already been paid and finalized for this employee for the selected period.");
-        err.statusCode = 400;
-        throw err;
-      }
-      // Delete old draft payslip so it recalculates with updated salary structure
-      await this.query("DELETE FROM payslips WHERE month = ? AND year = ? AND employee_id = ? AND status != 'Paid'", [month, year, employee_id]);
-      existingMap.delete(Number(employee_id));
+    // Clean up draft/unfinalized payslips for eligible employees so they recalculate with latest salary structure
+    const nonPaidEmpIds = employees.map(e => e.id).filter(id => !paidMap.has(id));
+    if (nonPaidEmpIds.length > 0) {
+      await this.query(`
+        DELETE FROM payslips
+        WHERE month = ? AND year = ? AND status != 'Paid' AND employee_id IN (${nonPaidEmpIds.map(() => '?').join(',')})
+      `, [month, year, ...nonPaidEmpIds]);
     }
 
     // 3. Create or find payroll_run
@@ -558,7 +576,7 @@ class PayrollService {
     const errors = [];
 
     for (const emp of employees) {
-      if (existingMap.has(emp.id)) {
+      if (paidMap.has(emp.id)) {
         skippedCount++;
         continue;
       }
