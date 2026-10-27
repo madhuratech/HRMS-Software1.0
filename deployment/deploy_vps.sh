@@ -20,23 +20,23 @@ npm install --omit=dev
 # Run pending Knex migrations safely against madhurahrms database
 npx knex migrate:latest
 
-# Restart or Start PM2 process
-if pm2 list | grep -q "Hrms-Backend"; then
-  echo "Restarting Hrms-Backend..."
-  pm2 restart Hrms-Backend --update-env
-else
-  echo "Starting Hrms-Backend..."
-  pm2 start server.js --name Hrms-Backend
-fi
+# Clean and restart PM2 process
+pm2 delete Hrms-Backend 2>/dev/null || true
+pm2 start server.js --name Hrms-Backend
 pm2 save
 
 echo "=== 2. Deploying Frontend ==="
 cd "$FRONTEND_DIR"
 
+npm install
+
 # Fix esbuild binary executable permissions if needed
 if [ -f "node_modules/@esbuild/linux-x64/bin/esbuild" ]; then
   chmod +x "node_modules/@esbuild/linux-x64/bin/esbuild"
 fi
+
+# Clean previous build
+rm -rf dist
 
 # Ensure MapTiler key and Production API URL are available for the build
 export VITE_MAPTILER_KEY="EukJpWqJ1UzSEKZylRdZ"
@@ -46,5 +46,5 @@ export VITE_API_URL="https://api.hrms.madhuratech.com"
 npm run build
 
 echo "=== 3. Testing Services ==="
-curl -I http://127.0.0.1:3308 || echo "Backend check failed"
+curl -i http://127.0.0.1:3308/ || echo "Backend check failed"
 echo "=== Deployment Completed Successfully ==="

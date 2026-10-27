@@ -1,11 +1,9 @@
 // Centralized API Base URL configured via environment variable
 export const API_URL = (
-  import.meta.env.DEV ? '' : (
-    import.meta.env.VITE_API_URL ||
-    import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.VITE_HRMS_API_URL ||
-    ''
-  )
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  import.meta.env.VITE_HRMS_API_URL ||
+  (import.meta.env.DEV ? '' : 'https://api.hrms.madhuratech.com')
 ).replace(/\/+$/, '');
 
 export const getApiUrl = (path = '') => {

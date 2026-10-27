@@ -229,17 +229,42 @@ app.use("/app/documents", require("./routes/documents"));
 app.use("/app/aichat", require("./routes/aichatroute"));
 app.use("/api/ai", require("./routes/aichatroute"));
 
+// Centralized Express Error Handling
 app.use((err, req, res, next) => {
-  const logMessage = `[${new Date().toISOString()}] Middleware Error: ${err.stack || err}\n\n`;
+  const isDbError = err.code && (err.sql || err.sqlState || err.sqlMessage || err.errno);
+  const logDetails = {
+    timestamp: new Date().toISOString(),
+    route: req.originalUrl || req.url,
+    method: req.method,
+    errorCode: err.code || 'UNKNOWN',
+    sqlState: err.sqlState || null,
+    errorMessage: err.message,
+    stack: err.stack
+  };
+
+  const logMessage = `[${logDetails.timestamp}] ${logDetails.method} ${logDetails.route} [${logDetails.errorCode}] ${err.message}\n${err.stack || ''}\n\n`;
   try {
     fs.appendFileSync(path.join(__dirname, 'error.log'), logMessage);
   } catch (e) {
     console.error('Failed to write to error.log', e);
   }
-  res.status(500).json({ success: false, message: err.message || 'Internal Server Error' });
+
+  console.error(`[Server Error] ${req.method} ${req.originalUrl}:`, err.message || err);
+
+  if (isDbError) {
+    return res.status(500).json({
+      success: false,
+      message: 'Database operation failed. Please try again.'
+    });
+  }
+
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
+  });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3308;
 
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`SERVER IS RUNNING at http://127.0.0.1:${PORT}`);
