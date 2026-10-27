@@ -276,18 +276,23 @@ class PayrollService {
     const structureInfo = await this.getEmployeeSalaryStructure(employeeId);
     const company = await this.getCompanySettings();
 
-    // 2. Base salary resolution
+    // 2. Base salary resolution: Prioritize assigned salary structure
     let baseSalary = 0;
-    if (emp.salary && parseFloat(emp.salary) > 0) {
-      baseSalary = parseFloat(emp.salary);
-    } else if (structureInfo.has_structure && structureInfo.total_ctc > 0) {
+    if (structureInfo.has_structure && structureInfo.total_ctc > 0) {
       baseSalary = structureInfo.total_ctc;
+    } else if (emp.salary && parseFloat(emp.salary) > 0) {
+      baseSalary = parseFloat(emp.salary);
     }
 
     if (baseSalary <= 0) {
       const err = new Error(`Salary structure is not configured for this employee.`);
       err.statusCode = 400;
       throw err;
+    }
+
+    // Synchronize employee profile salary tab (employees.salary) if it differs
+    if (parseFloat(emp.salary || 0) !== baseSalary) {
+      this.query("UPDATE employees SET salary = ? WHERE id = ?", [baseSalary, emp.id]).catch(() => {});
     }
 
     // 3. Components Calculation
@@ -514,11 +519,17 @@ class PayrollService {
 
     const existingMap = new Set(existingRecords.map(r => r.employee_id));
 
-    // If single employee scope and already generated, throw explicit message
+    // If single employee scope and already generated
     if (scope === 'employee' && existingMap.has(Number(employee_id))) {
-      const err = new Error("Payroll has already been generated for this employee for the selected period.");
-      err.statusCode = 400;
-      throw err;
+      const paidCheck = await this.query("SELECT id FROM payslips WHERE month = ? AND year = ? AND employee_id = ? AND status = 'Paid' LIMIT 1", [month, year, employee_id]);
+      if (paidCheck.length > 0) {
+        const err = new Error("Payroll has already been paid and finalized for this employee for the selected period.");
+        err.statusCode = 400;
+        throw err;
+      }
+      // Delete old draft payslip so it recalculates with updated salary structure
+      await this.query("DELETE FROM payslips WHERE month = ? AND year = ? AND employee_id = ? AND status != 'Paid'", [month, year, employee_id]);
+      existingMap.delete(Number(employee_id));
     }
 
     // 3. Create or find payroll_run

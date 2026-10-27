@@ -654,9 +654,13 @@ exports.assignStructure = async (req, res) => {
       }
     }
 
-    if (targetEmployeeIds.length === 0 || !structure_id) {
-      return res.status(400).json({ success: false, message: "At least one Employee and a Structure are required." });
+    const structRows = await dbQuery("SELECT id, name, total_ctc FROM salary_structures WHERE id = ?", [structure_id]);
+    if (structRows.length === 0) {
+      return res.status(404).json({ success: false, message: "Selected salary structure not found." });
     }
+    const structCtc = parseFloat(structRows[0].total_ctc) || 0;
+    const hasCustomGross = custom_gross !== null && custom_gross !== undefined && String(custom_gross).trim() !== '' && parseFloat(custom_gross) > 0;
+    const finalSalary = hasCustomGross ? parseFloat(custom_gross) : structCtc;
 
     for (const empId of targetEmployeeIds) {
       const existing = await dbQuery("SELECT * FROM employee_salary_mappings WHERE employee_id = ?", [empId]);
@@ -665,22 +669,23 @@ exports.assignStructure = async (req, res) => {
           UPDATE employee_salary_mappings 
           SET structure_id = ?, effective_from = ?, custom_gross = ?, assigned_date = NOW()
           WHERE employee_id = ?
-        `, [structure_id, effective_from || null, custom_gross || null, empId]);
+        `, [structure_id, effective_from || null, hasCustomGross ? finalSalary : null, empId]);
       } else {
         await dbQuery(`
           INSERT INTO employee_salary_mappings (employee_id, structure_id, effective_from, custom_gross, assigned_date, created_at)
           VALUES (?, ?, ?, ?, NOW(), NOW())
-        `, [empId, structure_id, effective_from || null, custom_gross || null]);
+        `, [empId, structure_id, effective_from || null, hasCustomGross ? finalSalary : null]);
       }
 
-      if (custom_gross && parseFloat(custom_gross) > 0) {
-        await dbQuery("UPDATE employees SET salary = ? WHERE id = ?", [custom_gross, empId]);
+      // ALWAYS update employee profile salary tab (employees.salary) to match structure CTC
+      if (finalSalary > 0) {
+        await dbQuery("UPDATE employees SET salary = ? WHERE id = ?", [finalSalary, empId]);
       }
     }
 
     return res.status(200).json({ 
       success: true, 
-      message: `Salary structure successfully assigned to ${targetEmployeeIds.length} employee(s).` 
+      message: `Salary structure successfully assigned to ${targetEmployeeIds.length} employee(s) and profile salary updated to ₹${finalSalary.toLocaleString('en-IN')}.` 
     });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });

@@ -337,8 +337,6 @@ export default function SalaryStructure() {
       const exists = prev.includes(strId);
       const next = exists ? prev.filter(id => id !== strId) : [...prev, strId];
       if (next.length === 1) {
-        const singleEmp = activeEmployees.find(e => String(e.id) === next[0]);
-        if (singleEmp?.salary) setCustomGross(singleEmp.salary);
         setAssignEmpId(next[0]);
       } else {
         setAssignEmpId('');
