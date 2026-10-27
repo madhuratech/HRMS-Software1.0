@@ -551,8 +551,8 @@ router.get("/teams", (req, res) => {
       t.createdDate,
       t.status
     FROM teams t
-    LEFT JOIN departments d ON (t.department_id = d.id OR t.department = d.dept_name OR t.department = d.department_name)
-    LEFT JOIN employees tl ON (t.team_lead_id = tl.id OR t.teamLead = tl.name)
+    LEFT JOIN departments d ON (t.department_id = d.id OR t.department COLLATE utf8mb4_general_ci = d.dept_name OR t.department COLLATE utf8mb4_general_ci = d.department_name)
+    LEFT JOIN employees tl ON (t.team_lead_id = tl.id OR t.teamLead COLLATE utf8mb4_general_ci = tl.name)
     ORDER BY t.id ASC
   `;
   db.query(sql, async (err, rows) => {
@@ -594,7 +594,7 @@ router.post("/teams", authenticateJWT, checkPermission("organization", "teams", 
   if (!deptId && department) {
     const cleanDept = String(department).replace(/\s*\([^)]*\)/g, '').trim();
     const deptRows = await new Promise(r => db.query(
-      "SELECT id FROM departments WHERE dept_name = ? OR dept_name = ? OR name = ? OR name = ? OR CONCAT(dept_name, ' (', code, ')') = ? LIMIT 1",
+      "SELECT id FROM departments WHERE dept_name = ? OR dept_name = ? OR department_name = ? OR department_name = ? OR CONCAT(COALESCE(dept_name, department_name), ' (', COALESCE(code, department_code), ')') = ? LIMIT 1",
       [department, cleanDept, department, cleanDept, department],
       (e, res) => r(res)
     ));
@@ -652,7 +652,7 @@ router.put("/teams/:id", authenticateJWT, checkPermission("organization", "teams
   if (!deptId && department) {
     const cleanDept = String(department).replace(/\s*\([^)]*\)/g, '').trim();
     const deptRows = await new Promise(r => db.query(
-      "SELECT id FROM departments WHERE dept_name = ? OR dept_name = ? OR name = ? OR name = ? OR CONCAT(dept_name, ' (', code, ')') = ? LIMIT 1",
+      "SELECT id FROM departments WHERE dept_name = ? OR dept_name = ? OR department_name = ? OR department_name = ? OR CONCAT(COALESCE(dept_name, department_name), ' (', COALESCE(code, department_code), ')') = ? LIMIT 1",
       [department, cleanDept, department, cleanDept, department],
       (e, res) => r(res)
     ));
@@ -719,12 +719,12 @@ router.get("/holidays", authenticateJWT, checkPermission("organization", "holida
     SELECT 
       id,
       name,
-      DATE_FORMAT(holiday_date, '%d %b %Y') as date,
-      type,
-      branch,
+      COALESCE(NULLIF(DATE_FORMAT(holiday_date, '%d %b %Y'), ''), h.date, DATE_FORMAT(NOW(), '%d %b %Y')) as date,
+      COALESCE(type, 'National') as type,
+      COALESCE(branch, 'All Branches') as branch,
       description,
       COALESCE(status, 'Active') as status
-    FROM holidays
+    FROM holidays h
     ORDER BY id ASC
   `;
   db.query(sql, (err, rows) => {
@@ -775,8 +775,8 @@ router.get("/org-chart", authenticateJWT, checkPermission("organization", "organ
     SELECT 
       e.id,
       e.name,
-      des.role_name as title,
-      d.dept_name as department,
+      COALESCE(des.role_name, des.designation_name, 'Employee') as title,
+      COALESCE(d.dept_name, d.department_name, 'General') as department,
       e.profile_photo as image,
       e.manager_id
     FROM employees e
@@ -809,36 +809,58 @@ router.get("/org-chart", authenticateJWT, checkPermission("organization", "organ
 /**
  * SHIFTS CRUD
  */
-const shiftExtraStore = {};
-
 router.get("/shifts", authenticateJWT, checkPermission("organization", "shift_management", "view"), (req, res) => {
   const sql = `
     SELECT 
       id,
-      name,
-      COALESCE(code, CONCAT('SHT-', UPPER(SUBSTRING(name, 1, 3)))) as code,
-      startTime,
-      endTime,
-      breakTime,
-      graceTime,
-      workingHours,
-      employees,
+      COALESCE(NULLIF(name, ''), shift_name, 'General Shift') as name,
+      COALESCE(NULLIF(code, ''), CONCAT('SHT-', UPPER(SUBSTRING(COALESCE(NULLIF(name, ''), shift_name, 'SHT'), 1, 3)))) as code,
+      COALESCE(NULLIF(startTime, ''), TIME_FORMAT(start_time, '%h:%i %p'), '09:00 AM') as startTime,
+      COALESCE(NULLIF(endTime, ''), TIME_FORMAT(end_time, '%h:%i %p'), '06:00 PM') as endTime,
+      COALESCE(NULLIF(breakTime, ''), '60 mins') as breakTime,
+      COALESCE(NULLIF(graceTime, ''), CONCAT(COALESCE(grace_time, 15), ' mins')) as graceTime,
+      COALESCE(NULLIF(workingHours, ''), '9 hours') as workingHours,
+      COALESCE(employees, 0) as employees,
       COALESCE(status, 'Active') as status,
       description,
-      COALESCE(createdDate, DATE_FORMAT(NOW(), '%d %b %Y')) as createdDate
+      COALESCE(createdDate, DATE_FORMAT(NOW(), '%d %b %Y')) as createdDate,
+      workingDays,
+      assignedEmployees,
+      offLabel,
+      dayOffLabels
     FROM shifts
     ORDER BY id ASC
   `;
   db.query(sql, (err, rows) => {
-    if (err) return res.status(500).json(err);
+    if (err) {
+      console.error("[GET /shifts] Query error:", err);
+      return res.status(500).json(err);
+    }
     const enriched = (rows || []).map(r => {
-      const extra = shiftExtraStore[r.id] || {};
+      let workingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+      try {
+        if (Array.isArray(r.workingDays)) workingDays = r.workingDays;
+        else if (typeof r.workingDays === 'string' && r.workingDays) workingDays = JSON.parse(r.workingDays);
+      } catch (e) {}
+
+      let assignedEmployees = [];
+      try {
+        if (Array.isArray(r.assignedEmployees)) assignedEmployees = r.assignedEmployees;
+        else if (typeof r.assignedEmployees === 'string' && r.assignedEmployees) assignedEmployees = JSON.parse(r.assignedEmployees);
+      } catch (e) {}
+
+      let dayOffLabels = {};
+      try {
+        if (r.dayOffLabels && typeof r.dayOffLabels === 'object') dayOffLabels = r.dayOffLabels;
+        else if (typeof r.dayOffLabels === 'string' && r.dayOffLabels) dayOffLabels = JSON.parse(r.dayOffLabels);
+      } catch (e) {}
+
       return {
         ...r,
-        workingDays: extra.workingDays || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-        assignedEmployees: extra.assignedEmployees || [],
-        offLabel: extra.offLabel || 'Weekly Off',
-        dayOffLabels: extra.dayOffLabels || {}
+        workingDays,
+        assignedEmployees,
+        offLabel: r.offLabel || 'Weekly Off',
+        dayOffLabels
       };
     });
     res.json(enriched);
@@ -848,20 +870,36 @@ router.get("/shifts", authenticateJWT, checkPermission("organization", "shift_ma
 router.post("/shifts", authenticateJWT, checkPermission("organization", "shift_management", "create"), (req, res) => {
   const { name, code, startTime, endTime, breakTime, graceTime, workingHours, employees, status, description, assignedEmployees, workingDays, offLabel, dayOffLabels } = req.body;
   const empCount = Array.isArray(assignedEmployees) ? assignedEmployees.length : (parseInt(employees) || 0);
+  const daysJson = JSON.stringify(Array.isArray(workingDays) ? workingDays : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+  const empsJson = JSON.stringify(Array.isArray(assignedEmployees) ? assignedEmployees : []);
+  const dayOffJson = JSON.stringify(dayOffLabels && typeof dayOffLabels === 'object' ? dayOffLabels : {});
+
   const sql = `
-    INSERT INTO shifts (name, code, startTime, endTime, breakTime, graceTime, workingHours, employees, status, description, createdDate)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_FORMAT(NOW(), '%d %b %Y'))
+    INSERT INTO shifts (name, shift_name, code, startTime, endTime, breakTime, graceTime, workingHours, employees, workingDays, assignedEmployees, offLabel, dayOffLabels, status, description, createdDate)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE_FORMAT(NOW(), '%d %b %Y'))
   `;
-  db.query(sql, [name, code, startTime, endTime, breakTime || '60 mins', graceTime || '15 mins', workingHours || '9 hours', empCount, status || 'Active', description], (err, result) => {
-    if (err) return res.status(500).json(err);
-    const newId = result.insertId;
-    shiftExtraStore[newId] = {
-      workingDays: Array.isArray(workingDays) ? workingDays : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-      assignedEmployees: Array.isArray(assignedEmployees) ? assignedEmployees : [],
-      offLabel: offLabel || 'Weekly Off',
-      dayOffLabels: dayOffLabels || {}
-    };
-    res.json({ message: "Shift created successfully", id: newId });
+  db.query(sql, [
+    name,
+    name,
+    code,
+    startTime || '09:00 AM',
+    endTime || '06:00 PM',
+    breakTime || '60 mins',
+    graceTime || '15 mins',
+    workingHours || '9 hours',
+    empCount,
+    daysJson,
+    empsJson,
+    offLabel || 'Weekly Off',
+    dayOffJson,
+    status || 'Active',
+    description
+  ], (err, result) => {
+    if (err) {
+      console.error("[POST /shifts] Query error:", err);
+      return res.status(500).json(err);
+    }
+    res.json({ message: "Shift created successfully", id: result.insertId });
   });
 });
 
@@ -869,19 +907,37 @@ router.put("/shifts/:id", authenticateJWT, checkPermission("organization", "shif
   const { id } = req.params;
   const { name, code, startTime, endTime, breakTime, graceTime, workingHours, employees, status, description, assignedEmployees, workingDays, offLabel, dayOffLabels } = req.body;
   const empCount = Array.isArray(assignedEmployees) ? assignedEmployees.length : (parseInt(employees) || 0);
+  const daysJson = JSON.stringify(Array.isArray(workingDays) ? workingDays : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+  const empsJson = JSON.stringify(Array.isArray(assignedEmployees) ? assignedEmployees : []);
+  const dayOffJson = JSON.stringify(dayOffLabels && typeof dayOffLabels === 'object' ? dayOffLabels : {});
+
   const sql = `
     UPDATE shifts
-    SET name = ?, code = ?, startTime = ?, endTime = ?, breakTime = ?, graceTime = ?, workingHours = ?, employees = ?, status = ?, description = ?
+    SET name = ?, shift_name = ?, code = ?, startTime = ?, endTime = ?, breakTime = ?, graceTime = ?, workingHours = ?, employees = ?, workingDays = ?, assignedEmployees = ?, offLabel = ?, dayOffLabels = ?, status = ?, description = ?
     WHERE id = ?
   `;
-  db.query(sql, [name, code, startTime, endTime, breakTime, graceTime, workingHours, empCount, status, description, id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    shiftExtraStore[id] = {
-      workingDays: Array.isArray(workingDays) ? workingDays : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-      assignedEmployees: Array.isArray(assignedEmployees) ? assignedEmployees : [],
-      offLabel: offLabel || 'Weekly Off',
-      dayOffLabels: dayOffLabels || {}
-    };
+  db.query(sql, [
+    name,
+    name,
+    code,
+    startTime,
+    endTime,
+    breakTime,
+    graceTime,
+    workingHours,
+    empCount,
+    daysJson,
+    empsJson,
+    offLabel || 'Weekly Off',
+    dayOffJson,
+    status,
+    description,
+    id
+  ], (err, result) => {
+    if (err) {
+      console.error("[PUT /shifts] Query error:", err);
+      return res.status(500).json(err);
+    }
     res.json({ message: "Shift updated successfully" });
   });
 });
@@ -889,8 +945,10 @@ router.put("/shifts/:id", authenticateJWT, checkPermission("organization", "shif
 router.delete("/shifts/:id", authenticateJWT, checkPermission("organization", "shift_management", "delete"), (req, res) => {
   const { id } = req.params;
   db.query("DELETE FROM shifts WHERE id = ?", [id], (err, result) => {
-    if (err) return res.status(500).json(err);
-    delete shiftExtraStore[id];
+    if (err) {
+      console.error("[DELETE /shifts] Query error:", err);
+      return res.status(500).json(err);
+    }
     res.json({ message: "Shift deleted successfully" });
   });
 });
