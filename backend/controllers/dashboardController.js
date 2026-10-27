@@ -69,9 +69,9 @@ exports.getStats = async (req, res) => {
           e.profile_photo,
           COALESCE(d.dept_name, 'General') as dept, 
           COALESCE(desg.role_name, 'Employee') as designation, 
-          IF(COUNT(g.id) > 0, ROUND(AVG(g.progress)/20, 2), 0.00) as score,
-          CONCAT(IF(COUNT(g.id) > 0, ROUND(AVG(g.progress)), 0), '%') as goals,
-          IF(COUNT(g.id) > 0, ROUND(AVG(g.progress)/20), 0) as stars,
+          IF(COUNT(g.id) > 0, ROUND(AVG(COALESCE(g.completion_percentage, 0))/20, 2), 0.00) as score,
+          CONCAT(IF(COUNT(g.id) > 0, ROUND(AVG(COALESCE(g.completion_percentage, 0))), 0), '%') as goals,
+          IF(COUNT(g.id) > 0, ROUND(AVG(COALESCE(g.completion_percentage, 0))/20), 0) as stars,
           IF(COUNT(g.id) > 0, '↑ 5.0%', '0.0%') as trend, 
           IF(COUNT(g.id) > 0, 1, 0) as isUp 
         FROM employees e 
@@ -96,11 +96,11 @@ exports.getStats = async (req, res) => {
           d.dept_name as team,
           d.dept_name as dept,
           (SELECT COUNT(*) FROM employees e WHERE e.department_id = d.id AND e.status = 'Active') as total_employees,
-          (SELECT COUNT(*) FROM goals g WHERE (g.department_id = d.id OR g.employee_id IN (SELECT e2.id FROM employees e2 WHERE e2.department_id = d.id AND e2.status = 'Active')) AND g.status != 'Cancelled') as total_goals,
+          (SELECT COUNT(*) FROM goals g WHERE g.employee_id IN (SELECT e2.id FROM employees e2 WHERE e2.department_id = d.id AND e2.status = 'Active') AND g.status != 'Cancelled') as total_goals,
           COALESCE(
-            (SELECT ROUND(AVG(COALESCE(g.completion_percentage, g.progress, 0))) 
+            (SELECT ROUND(AVG(COALESCE(g.completion_percentage, 0))) 
              FROM goals g 
-             WHERE (g.department_id = d.id OR g.employee_id IN (SELECT e2.id FROM employees e2 WHERE e2.department_id = d.id AND e2.status = 'Active')) 
+             WHERE g.employee_id IN (SELECT e2.id FROM employees e2 WHERE e2.department_id = d.id AND e2.status = 'Active') 
                AND g.status != 'Cancelled'),
             0
           ) as achievement
