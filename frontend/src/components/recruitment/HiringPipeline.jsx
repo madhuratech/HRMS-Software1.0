@@ -35,7 +35,7 @@ export default function HiringPipeline() {
     setLoading(true);
     try {
       const res = await fetch('/app/pipeline/stats', {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (data.success && data.data) {
@@ -77,10 +77,7 @@ export default function HiringPipeline() {
     try {
       const res = await fetch('/app/pipeline/sources', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           source_name: sourceForm.sourceName.trim(),
           description: sourceForm.description.trim(),

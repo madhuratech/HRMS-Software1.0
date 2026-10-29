@@ -3,7 +3,7 @@ import AppDropdown from '../ui/AppDropdown';
 import { Search, Download, Plus, MoreHorizontal, ChevronLeft, ChevronRight, X, Eye, Send, Edit, Trash2, FileText, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { useToast } from '../ui/Toast';
 import { canCreate, canEdit, canDelete, checkActionPermission } from '../../lib/permissions';
-import { apiFetch, formatDate } from '../../lib/api';
+import { apiFetch, formatDate, getAuthHeaders } from '../../lib/api';
 
 export default function OfferLetters() {
   const { addToast } = useToast();
@@ -378,7 +378,7 @@ export default function OfferLetters() {
     try {
       addToast('Generating offer letter PDF...', 'info');
       const res = await fetch(`/app/offers/${offer.id}/download`, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       if (!res.ok) {
         throw new Error('Failed to download PDF');

@@ -25,6 +25,21 @@ export default function DailyAttendance() {
   });
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDepartment, setSelectedDepartment] = useState('All');
+  const [selectedLocation, setSelectedLocation] = useState('All');
+  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [departments, setDepartments] = useState([]);
+  const [locations, setLocations] = useState([]);
+
+  let userRole = localStorage.getItem('userRole') || '';
+  const auth = localStorage.getItem('hrms_auth');
+  if (!userRole && auth) {
+    try {
+      const parsed = JSON.parse(auth);
+      userRole = parsed.role || (parsed.user && parsed.user.role) || '';
+    } catch (e) {}
+  }
+  const isEmployee = String(userRole).toUpperCase() === 'EMPLOYEE' || String(userRole).toUpperCase() === 'STAFF';
 
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -38,7 +53,18 @@ export default function DailyAttendance() {
 
   const loadDailyAttendance = () => {
     setLoading(true);
-    apiFetch(`/attendance/daily?date=${selectedDate}`)
+    const params = new URLSearchParams({ date: selectedDate });
+    if (selectedDepartment && selectedDepartment !== 'All' && selectedDepartment !== 'All Departments') {
+      params.append('department', selectedDepartment);
+    }
+    if (selectedLocation && selectedLocation !== 'All' && selectedLocation !== 'All Locations') {
+      params.append('location', selectedLocation);
+    }
+    if (selectedStatus && selectedStatus !== 'All' && selectedStatus !== 'All Status') {
+      params.append('status', selectedStatus);
+    }
+
+    apiFetch(`/attendance/daily?${params.toString()}`)
       .then(data => {
         if (data.records) setAttendanceData(data.records);
         if (data.kpis) setKpis(data.kpis);
@@ -49,6 +75,24 @@ export default function DailyAttendance() {
         setLoading(false);
       });
   };
+
+  useEffect(() => {
+    apiFetch('/employees/lookup/departments')
+      .then(res => {
+        if (Array.isArray(res)) {
+          setDepartments(res.map(d => ({ value: d.dept_name || d.department_name, label: d.dept_name || d.department_name })));
+        }
+      })
+      .catch(console.error);
+
+    apiFetch('/attendance/punch-locations?limit=100')
+      .then(res => {
+        if (res && res.locations && Array.isArray(res.locations)) {
+          setLocations(res.locations.map(loc => ({ value: loc.name, label: loc.name })));
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     loadDailyAttendance();
@@ -135,29 +179,56 @@ export default function DailyAttendance() {
     <div className="hrms-content">
       {/* Header and Toolbar */}
       <div className="hrms-header" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '16px', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: '4px' }}>
-        <div className="hrms-flex-start" style={{ flexWrap: 'nowrap', flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '180px', justifyContent: 'space-between' }}>
+        <div className="hrms-flex-start" style={{ flexWrap: 'nowrap', flexShrink: 0, gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px 12px', minWidth: '160px' }}>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              style={{ border: 'none', outline: 'none', color: '#475569', fontWeight: '500', fontSize: '14px', width: '100%', cursor: 'pointer' }}
+              style={{ border: 'none', outline: 'none', color: '#475569', fontWeight: '500', fontSize: '13px', width: '100%', cursor: 'pointer' }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '180px', justifyContent: 'space-between', cursor: 'pointer' }}>
-            <span className="hrms-text-sm" style={{ color: '#475569', fontWeight: '500' }}>All Departments</span>
-            <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+          <div style={{ minWidth: '170px' }}>
+            <AppDropdown
+              value={selectedDepartment}
+              onChange={v => setSelectedDepartment(v)}
+              options={departments}
+              allOption="All Departments"
+              allOptionValue="All"
+              size="sm"
+            />
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '180px', justifyContent: 'space-between', cursor: 'pointer' }}>
-            <span className="hrms-text-sm" style={{ color: '#475569', fontWeight: '500' }}>All Locations</span>
-            <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+          <div style={{ minWidth: '160px' }}>
+            <AppDropdown
+              value={selectedLocation}
+              onChange={v => setSelectedLocation(v)}
+              options={locations}
+              allOption="All Locations"
+              allOptionValue="All"
+              size="sm"
+            />
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '150px', justifyContent: 'space-between', cursor: 'pointer' }}>
-            <span className="hrms-text-sm" style={{ color: '#475569', fontWeight: '500' }}>All Status</span>
-            <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+          <div style={{ minWidth: '140px' }}>
+            <AppDropdown
+              value={selectedStatus}
+              onChange={v => setSelectedStatus(v)}
+              options={[
+                { value: 'Present', label: 'Present' },
+                { value: 'Late', label: 'Late' },
+                { value: 'Absent', label: 'Absent' },
+                { value: 'On Leave', label: 'On Leave' }
+              ]}
+              allOption="All Status"
+              allOptionValue="All"
+              size="sm"
+            />
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', color: '#64748b', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            <Filter size={16} /> Filter
+          <button
+            type="button"
+            onClick={loadDailyAttendance}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#2563EB', border: 'none', borderRadius: '8px', padding: '8px 16px', color: '#fff', fontWeight: '600', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 4px rgba(37,99,235,0.2)' }}
+          >
+            <Filter size={15} /> Filter
           </button>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
@@ -277,20 +348,24 @@ export default function DailyAttendance() {
                               >
                                 <Eye size={16} />
                               </button>
-                              <button
-                                onClick={() => handleOpenEdit(emp)}
-                                title="Edit Attendance"
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', padding: '4px' }}
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteRecord(emp)}
-                                title="Delete Record"
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '4px' }}
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                              {!isEmployee && (
+                                <>
+                                  <button
+                                    onClick={() => handleOpenEdit(emp)}
+                                    title="Edit Attendance"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', padding: '4px' }}
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteRecord(emp)}
+                                    title="Delete Record"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '4px' }}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>

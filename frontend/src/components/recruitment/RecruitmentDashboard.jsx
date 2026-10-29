@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, Briefcase, Users, CalendarDays, FileCheck, UserCheck, TrendingUp, TrendingDown, MoreHorizontal, X, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, Label } from 'recharts';
+import { apiFetch } from '../../lib/api';
 
 export default function RecruitmentDashboard() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -9,38 +10,21 @@ export default function RecruitmentDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  const getAuthToken = () => {
-    const auth = localStorage.getItem('hrms_auth');
-    if (auth) {
-      try {
-        const parsed = JSON.parse(auth);
-        return parsed.token || 'mock_jwt_token';
-      } catch (e) {
-        return 'mock_jwt_token';
-      }
-    }
-    return 'mock_jwt_token';
-  };
-
   const fetchDashboardData = async () => {
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
-
       // Fetch Stats
-      const statsRes = await fetch('/app/requirements/dashboard', { headers });
-      const statsData = await statsRes.json();
+      const statsData = await apiFetch('/requirements/dashboard');
 
       // Fetch Recent Jobs
-      const jobsRes = await fetch('/app/requirements?limit=5', { headers });
-      const jobsData = await jobsRes.json();
+      const jobsData = await apiFetch('/requirements?limit=5');
 
-      if (statsData.success && jobsData.success) {
+      if (statsData && statsData.success && jobsData && jobsData.success) {
         setStats(statsData.data);
         setRecentJobs(jobsData.data.requirements || []);
       } else {
-        setErrorMsg(statsData.message || jobsData.message || 'Failed to load dashboard data');
+        setErrorMsg((statsData && statsData.message) || (jobsData && jobsData.message) || 'Failed to load dashboard data');
       }
     } catch (err) {
       setErrorMsg(err.message || 'Failed to fetch dashboard data');

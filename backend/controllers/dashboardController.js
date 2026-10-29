@@ -56,12 +56,23 @@ exports.getStats = async (req, res) => {
       `),
       query("SELECT holiday_date as date, name FROM holidays WHERE holiday_date >= ? ORDER BY holiday_date ASC LIMIT 4", [today]),
       query(`
-        SELECT e.id, e.name, e.profile_photo, DATE_FORMAT(e.dob, '%M %d') as date
+        SELECT 
+          e.id, 
+          e.name, 
+          e.profile_photo, 
+          COALESCE(desg.role_name, 'Team Member') as role,
+          CASE 
+            WHEN DATE_FORMAT(e.dob, '%m%d') = DATE_FORMAT(COALESCE(?, CURDATE()), '%m%d') THEN 'Today'
+            ELSE DATE_FORMAT(e.dob, '%M %d')
+          END as date
         FROM employees e
+        LEFT JOIN designations desg ON e.designation_id = desg.id
         WHERE e.status = 'Active' AND e.dob IS NOT NULL
-        ORDER BY DATE_FORMAT(e.dob, '%m%d') ASC
+        ORDER BY 
+          CASE WHEN DATE_FORMAT(e.dob, '%m%d') >= DATE_FORMAT(COALESCE(?, CURDATE()), '%m%d') THEN 0 ELSE 1 END ASC,
+          DATE_FORMAT(e.dob, '%m%d') ASC
         LIMIT 4
-      `),
+      `, [today, today]),
       query(`
         SELECT 
           e.id,

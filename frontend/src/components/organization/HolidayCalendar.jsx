@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import AppDropdown from '../ui/AppDropdown';
+import { useToast } from '../ui/Toast';
 import { apiFetch } from '../../lib/api';
 import { canCreate, canEdit, canDelete, canExport } from '../../lib/permissions';
 import {
@@ -60,6 +61,7 @@ const CustomSelect = ({ label, required, value, onChange, options, placeholder }
 };
 
 export const HolidayCalendar = () => {
+  const { addToast } = useToast();
   const [holidays, setHolidays] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
@@ -116,33 +118,80 @@ export const HolidayCalendar = () => {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleAdd = () => { setFormData(emptyForm); setShowAddModal(true); };
+  const handleAdd = () => {
+    const today = new Date().toISOString().split('T')[0];
+    setFormData({ ...emptyForm, holiday_date: today, date: today });
+    setShowAddModal(true);
+  };
+
   const handleSaveAdd = async () => {
-    if (!formData.name || !formData.date || !formData.type) return;
+    const hDate = formData.holiday_date || formData.date;
+    if (!formData.name || !hDate || !formData.type) {
+      addToast("Please fill all required fields.", "error");
+      return;
+    }
     try {
       await apiFetch('/organization/holidays', {
         method: 'POST',
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          holiday_date: hDate,
+          date: hDate
+        })
       });
+      addToast("Holiday added successfully!", "success");
       await loadHolidays();
+      setShowAddModal(false);
     } catch (err) {
       console.error("Error creating holiday:", err);
+      addToast("Failed to create holiday.", "error");
     }
-    setShowAddModal(false);
   };
-  const handleOpenEdit = (item) => { setSelectedItem(item); setFormData({ name: item.name, date: item.date, type: item.type, description: item.description, status: item.status }); setShowEditModal(true); };
+
+  const handleOpenEdit = (item) => {
+    setSelectedItem(item);
+    let editDate = item.holiday_date;
+    if (!editDate && item.date) {
+      const d = new Date(item.date);
+      if (!isNaN(d.getTime())) {
+        editDate = d.toISOString().split('T')[0];
+      } else {
+        editDate = item.date;
+      }
+    }
+    setFormData({
+      name: item.name,
+      holiday_date: editDate,
+      date: editDate,
+      type: item.type,
+      description: item.description,
+      status: item.status
+    });
+    setShowEditModal(true);
+  };
+
   const handleSaveEdit = async () => {
-    if (!formData.name || !formData.date || !formData.type) return;
+    const hDate = formData.holiday_date || formData.date;
+    if (!formData.name || !hDate || !formData.type) {
+      addToast("Please fill all required fields.", "error");
+      return;
+    }
     try {
       await apiFetch(`/organization/holidays/${selectedItem.id}`, {
         method: 'PUT',
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          holiday_date: hDate,
+          date: hDate
+        })
       });
+      addToast("Holiday updated successfully!", "success");
       await loadHolidays();
+      setShowEditModal(false);
     } catch (err) {
       console.error("Error updating holiday:", err);
+      addToast("Failed to update holiday.", "error");
     }
-    setShowEditModal(false);
   };
   const handleOpenView = (item) => { setSelectedItem(item); setShowViewModal(true); };
   const handleOpenDelete = (item) => { setSelectedItem(item); setShowDeleteModal(true); };
@@ -274,7 +323,14 @@ export const HolidayCalendar = () => {
               </div>
               <div className="hrms-input-group">
                 <label className="hrms-label" style={{ fontWeight: '600', color: '#334155' }}>Holiday Date *</label>
-                <input type="text" className="hrms-input" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} placeholder="e.g. 15 Aug 2026" style={{ borderRadius: '10px', padding: '10px 14px', borderColor: '#CBD5E1' }} />
+                <input
+                  type="date"
+                  required
+                  className="hrms-input"
+                  value={formData.holiday_date || formData.date || ''}
+                  onChange={e => setFormData({ ...formData, holiday_date: e.target.value, date: e.target.value })}
+                  style={{ borderRadius: '10px', padding: '10px 14px', borderColor: '#CBD5E1', cursor: 'pointer' }}
+                />
               </div>
               <div className="hrms-input-group">
                 <label className="hrms-label" style={{ fontWeight: '600', color: '#334155' }}>Holiday Type *</label>

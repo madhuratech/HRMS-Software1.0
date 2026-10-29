@@ -147,8 +147,13 @@ class KpiService {
     sql += ` ORDER BY k.created_at DESC`;
 
     if (pagination) {
+      const pageNum = Math.max(1, parseInt(pagination.page || 1, 10));
+      const limitNum = Math.max(1, parseInt(pagination.limit || 10, 10));
+      const offsetNum = (pagination.offset !== undefined && pagination.offset !== null && !isNaN(pagination.offset))
+        ? Math.max(0, parseInt(pagination.offset, 10))
+        : (pageNum - 1) * limitNum;
       sql += ` LIMIT ? OFFSET ?`;
-      params.push(pagination.limit, pagination.offset);
+      params.push(limitNum, offsetNum);
     }
 
     const rows = await Performance.query(sql, params);

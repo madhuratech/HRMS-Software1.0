@@ -108,7 +108,7 @@ router.delete("/records/:employeeId/:date", authenticateJWT, attendanceControlle
 router.get("/regularization", authenticateJWT, async (req, res) => {
   const db = require("../config/database");
   const DataScopeService = require("../services/DataScopeService");
-  const { status } = req.query;
+  const { status, department, type, date, employee_id, search } = req.query;
 
   try {
     const scopeInfo = await DataScopeService.getScope(req);
@@ -117,9 +117,12 @@ router.get("/regularization", authenticateJWT, async (req, res) => {
       SELECT 
         ar.*,
         COALESCE(e.name, ar.employee_name) as employee_name,
-        e.profile_photo as profile_photo
+        COALESCE(e.employee_code, e.employee_id, '') as employee_code,
+        e.profile_photo as profile_photo,
+        COALESCE(d.dept_name, d.department_name, 'General') as department
       FROM attendance_regularizations ar
       LEFT JOIN employees e ON ar.employee_id = e.id
+      LEFT JOIN departments d ON e.department_id = d.id
     `;
     const whereClauses = [];
     const params = [];
@@ -133,9 +136,35 @@ router.get("/regularization", authenticateJWT, async (req, res) => {
       }
     }
 
-    if (status && status !== 'All' && status !== 'all') {
+    if (employee_id && employee_id !== 'All' && employee_id !== 'all') {
+      whereClauses.push(`ar.employee_id = ?`);
+      params.push(employee_id);
+    }
+
+    if (status && status !== 'All' && status !== 'all' && status !== 'All Status') {
       whereClauses.push(`LOWER(ar.status) = LOWER(?)`);
       params.push(status);
+    }
+
+    if (department && department !== 'All' && department !== 'all' && department !== 'All Departments') {
+      whereClauses.push(`(d.dept_name = ? OR d.department_name = ? OR e.department_id = ?)`);
+      params.push(department, department, department);
+    }
+
+    if (type && type !== 'All' && type !== 'all' && type !== 'All Types') {
+      whereClauses.push(`LOWER(ar.type) = LOWER(?)`);
+      params.push(type);
+    }
+
+    if (date && date.trim()) {
+      whereClauses.push(`(ar.date = ? OR DATE(ar.created_at) = ?)`);
+      params.push(date.trim(), date.trim());
+    }
+
+    if (search && search.trim()) {
+      const q = `%${search.trim()}%`;
+      whereClauses.push(`(COALESCE(e.name, ar.employee_name) LIKE ? OR e.employee_code LIKE ? OR ar.reason LIKE ?)`);
+      params.push(q, q, q);
     }
 
     if (whereClauses.length > 0) {
@@ -157,7 +186,7 @@ router.get("/regularization", authenticateJWT, async (req, res) => {
   }
 });
 
-router.post("/regularization", authenticateJWT, checkPermission('attendance', 'regularization', 'create'), async (req, res) => {
+router.post("/regularization", authenticateJWT, async (req, res) => {
   const db = require("../config/database");
   const DataScopeService = require("../services/DataScopeService");
   let { employee_id, employee_name, date, type, reason, time } = req.body;
@@ -201,6 +230,7 @@ router.put("/regularization/:id/status", authenticateJWT, (req, res) => {
 router.get("/overtime", authenticateJWT, async (req, res) => {
   const db = require("../config/database");
   const DataScopeService = require("../services/DataScopeService");
+  const { status, department, employee_id, month, search } = req.query;
 
   try {
     const scopeInfo = await DataScopeService.getScope(req);
@@ -209,9 +239,12 @@ router.get("/overtime", authenticateJWT, async (req, res) => {
       SELECT 
         o.*,
         COALESCE(e.name, o.employee_name) as employee_name,
-        e.profile_photo as profile_photo
+        COALESCE(e.employee_code, e.employee_id, '') as employee_code,
+        e.profile_photo as profile_photo,
+        COALESCE(d.dept_name, d.department_name, 'General') as department
       FROM overtime_records o
       LEFT JOIN employees e ON o.employee_id = e.id
+      LEFT JOIN departments d ON e.department_id = d.id
     `;
     const whereClauses = [];
     const params = [];
@@ -223,6 +256,33 @@ router.get("/overtime", authenticateJWT, async (req, res) => {
       } else {
         whereClauses.push(`o.employee_id = -1`);
       }
+    }
+
+    if (employee_id && employee_id !== 'All' && employee_id !== 'all') {
+      whereClauses.push(`o.employee_id = ?`);
+      params.push(employee_id);
+    }
+
+    if (status && status !== 'All' && status !== 'all' && status !== 'All Status') {
+      whereClauses.push(`LOWER(o.status) = LOWER(?)`);
+      params.push(status);
+    }
+
+    if (department && department !== 'All' && department !== 'all' && department !== 'All Departments') {
+      whereClauses.push(`(d.dept_name = ? OR d.department_name = ? OR e.department_id = ?)`);
+      params.push(department, department, department);
+    }
+
+    if (month && month !== 'All' && month !== 'all') {
+      whereClauses.push(`(o.date LIKE ? OR DATE_FORMAT(o.created_at, '%Y-%m') = ? OR DATE_FORMAT(o.created_at, '%M %Y') = ?)`);
+      const monthPattern = `%${month}%`;
+      params.push(monthPattern, month, month);
+    }
+
+    if (search && search.trim()) {
+      const q = `%${search.trim()}%`;
+      whereClauses.push(`(COALESCE(e.name, o.employee_name) LIKE ? OR e.employee_code LIKE ? OR o.reason LIKE ?)`);
+      params.push(q, q, q);
     }
 
     if (whereClauses.length > 0) {
@@ -244,7 +304,7 @@ router.get("/overtime", authenticateJWT, async (req, res) => {
   }
 });
 
-router.post("/overtime", authenticateJWT, checkPermission('attendance', 'overtime', 'create'), async (req, res) => {
+router.post("/overtime", authenticateJWT, async (req, res) => {
   const db = require("../config/database");
   const DataScopeService = require("../services/DataScopeService");
   let { employee_id, employee_name, date, hours, reason } = req.body;

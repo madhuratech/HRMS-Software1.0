@@ -172,7 +172,7 @@ export function SuperAdminDashboard() {
     ? stats.upcomingBirthdays.map((b, idx) => ({
       img: getAvatarUrl(b.profile_photo, b.name, b.id || idx + 1),
       name: b.name,
-      role: 'Team Member',
+      role: b.role || 'Team Member',
       date: b.date || 'Today'
     }))
     : [];

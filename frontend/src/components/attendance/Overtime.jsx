@@ -12,6 +12,10 @@ export default function Overtime() {
   const [employees, setEmployees] = useState([]);
   const [overtimeData, setOvertimeData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState('2026-10');
+  const [selectedDepartment, setSelectedDepartment] = useState('All');
+  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [departments, setDepartments] = useState([]);
 
   const getLoggedInUser = () => {
     try {
@@ -54,7 +58,17 @@ export default function Overtime() {
   const loadOvertime = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch('/attendance/overtime');
+      const params = new URLSearchParams();
+      if (selectedMonth && selectedMonth !== 'All') {
+        params.append('month', selectedMonth);
+      }
+      if (selectedDepartment && selectedDepartment !== 'All' && selectedDepartment !== 'All Departments') {
+        params.append('department', selectedDepartment);
+      }
+      if (selectedStatus && selectedStatus !== 'All' && selectedStatus !== 'All Status') {
+        params.append('status', selectedStatus);
+      }
+      const data = await apiFetch(`/attendance/overtime?${params.toString()}`);
       if (Array.isArray(data)) {
         setOvertimeData(data);
       }
@@ -65,9 +79,17 @@ export default function Overtime() {
   };
 
   useEffect(() => {
-    loadOvertime();
+    apiFetch('/employees/lookup/departments')
+      .then(res => {
+        if (Array.isArray(res)) {
+          setDepartments(res.map(d => ({ value: d.dept_name || d.department_name, label: d.dept_name || d.department_name })));
+        }
+      })
+      .catch(console.error);
+
     loadEmployees();
-  }, []);
+    loadOvertime();
+  }, [selectedMonth]);
 
   const handleOpenModal = () => {
     const defaultEmpId = isAdminOrHR ? (employees[0]?.value || '') : (currentUser?.employee_id || currentUser?.id || '');
@@ -172,21 +194,45 @@ export default function Overtime() {
     <div className="hrms-content">
       {/* Header and Toolbar */}
       <div className="hrms-header" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '16px', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: '16px' }}>
-        <div className="hrms-flex-start" style={{ flexWrap: 'nowrap', flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '180px', justifyContent: 'space-between', cursor: 'pointer' }}>
-            <span className="hrms-text-sm" style={{ color: '#475569', fontWeight: '500' }}>August 2026</span>
-            <CalendarIcon size={16} style={{ color: '#64748b' }} />
+        <div className="hrms-flex-start" style={{ flexWrap: 'nowrap', flexShrink: 0, gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '6px 12px', minWidth: '150px' }}>
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={e => setSelectedMonth(e.target.value)}
+              style={{ border: 'none', outline: 'none', color: '#475569', fontWeight: '500', fontSize: '13px', width: '100%', cursor: 'pointer' }}
+            />
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '160px', justifyContent: 'space-between', cursor: 'pointer' }}>
-            <span className="hrms-text-sm" style={{ color: '#475569', fontWeight: '500' }}>All Departments</span>
-            <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+          <div style={{ minWidth: '170px' }}>
+            <AppDropdown
+              value={selectedDepartment}
+              onChange={v => setSelectedDepartment(v)}
+              options={departments}
+              allOption="All Departments"
+              allOptionValue="All"
+              size="sm"
+            />
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '160px', justifyContent: 'space-between', cursor: 'pointer' }}>
-            <span className="hrms-text-sm" style={{ color: '#475569', fontWeight: '500' }}>All Status</span>
-            <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+          <div style={{ minWidth: '150px' }}>
+            <AppDropdown
+              value={selectedStatus}
+              onChange={v => setSelectedStatus(v)}
+              options={[
+                { value: 'Pending', label: 'Pending' },
+                { value: 'Approved', label: 'Approved' },
+                { value: 'Rejected', label: 'Rejected' }
+              ]}
+              allOption="All Status"
+              allOptionValue="All"
+              size="sm"
+            />
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', color: '#64748b', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            <Filter size={16} /> Filter
+          <button
+            type="button"
+            onClick={loadOvertime}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#2563EB', border: 'none', borderRadius: '8px', padding: '8px 16px', color: '#fff', fontWeight: '600', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 4px rgba(37,99,235,0.2)' }}
+          >
+            <Filter size={15} /> Filter
           </button>
         </div>
         {canCreate('attendance', 'overtime') && (

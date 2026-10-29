@@ -151,9 +151,11 @@ exports.getDailyStats = async (req, res) => {
   try {
     const scopeData = await DataScopeService.getScope(req);
     const targetDate = req.query.date || new Date().toISOString().split('T')[0];
+    const { department, location, status, search } = req.query;
 
-    let scopeClause = '';
-    let queryParams = [targetDate, targetDate, targetDate];
+    const conditions = ["e.status = 'Active'"];
+    // 4 placeholders in the base query: 1 for leave check, 1 for attendance punch_time, 2 for GPSAttendance punch_date / check_in_time
+    const queryParams = [targetDate, targetDate, targetDate, targetDate];
 
     if (!scopeData.isUnrestricted && Array.isArray(scopeData.allowedEmployeeIds)) {
       if (scopeData.allowedEmployeeIds.length === 0) {
@@ -162,8 +164,24 @@ exports.getDailyStats = async (req, res) => {
           records: []
         });
       }
-      scopeClause = ' AND e.id IN (?)';
-      queryParams = [targetDate, targetDate, scopeData.allowedEmployeeIds, targetDate];
+      conditions.push('e.id IN (?)');
+      queryParams.push(scopeData.allowedEmployeeIds);
+    }
+
+    if (department && department !== 'All' && department !== 'all' && department !== 'All Departments') {
+      conditions.push('(d.dept_name = ? OR d.department_name = ? OR e.department_id = ?)');
+      queryParams.push(department, department, department);
+    }
+
+    if (location && location !== 'All' && location !== 'all' && location !== 'All Locations') {
+      conditions.push('(e.work_location = ? OR b.branch_name = ? OR b.location = ? OR g.punch_in_location = ?)');
+      queryParams.push(location, location, location, location);
+    }
+
+    if (search && search.trim()) {
+      const q = `%${search.trim()}%`;
+      conditions.push('(e.name LIKE ? OR e.employee_code LIKE ? OR e.employee_id LIKE ?)');
+      queryParams.push(q, q, q);
     }
 
     const sql = `
@@ -171,9 +189,11 @@ exports.getDailyStats = async (req, res) => {
         e.id,
         e.name,
         e.profile_photo as avatar,
-        d.dept_name as department,
-        MIN(CASE WHEN a.punch_type = 'IN' THEN a.punch_time END) as check_in_time,
-        MAX(CASE WHEN a.punch_type = 'OUT' THEN a.punch_time END) as check_out_time,
+        COALESCE(d.dept_name, d.department_name, 'General') as department,
+        COALESCE(b.branch_name, e.work_location, 'Main Office') as location,
+        COALESCE(MIN(CASE WHEN a.punch_type = 'IN' THEN a.punch_time END), MIN(g.check_in_time)) as check_in_time,
+        COALESCE(MAX(CASE WHEN a.punch_type = 'OUT' THEN a.punch_time END), MAX(g.check_out_time)) as check_out_time,
+        MAX(g.punch_in_location) as punch_location,
         (
           SELECT COUNT(*) 
           FROM leave_applications la 
@@ -184,81 +204,89 @@ exports.getDailyStats = async (req, res) => {
         COALESCE(NULLIF(e.employee_code, ''), NULLIF(e.employee_id, ''), '') as employee_code
       FROM employees e
       LEFT JOIN departments d ON e.department_id = d.id
+      LEFT JOIN branches b ON e.branch_id = b.id
       LEFT JOIN attendance a ON a.employee_id = e.id AND DATE(a.punch_time) = ?
-      WHERE e.status = 'Active'${scopeClause}
-      GROUP BY e.id, e.name, e.profile_photo, d.dept_name, e.employee_code, e.employee_id
+      LEFT JOIN GPSAttendance g ON g.employee_id = e.id AND (g.punch_date = ? OR DATE(g.check_in_time) = ?)
+      WHERE ${conditions.join(' AND ')}
+      GROUP BY e.id, e.name, e.profile_photo, d.dept_name, d.department_name, b.branch_name, e.work_location, e.employee_code, e.employee_id
+      ORDER BY e.name ASC
     `;
 
     db.query(sql, queryParams, (err, rows) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ message: "Failed to load daily attendance stats", error: err.message });
-    }
-
-    const records = rows.map(row => {
-      let status = 'Absent';
-      let checkIn = '--';
-      let checkOut = '--';
-      let workingHours = '00h 00m';
-
-      if (row.check_in_time) {
-        const checkInDate = new Date(row.check_in_time);
-
-        checkIn = checkInDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-        const checkInHour = checkInDate.getHours();
-        const checkInMin = checkInDate.getMinutes();
-        if (checkInHour > 9 || (checkInHour === 9 && checkInMin > 15)) {
-          status = 'Late';
-        } else {
-          status = 'Present';
-        }
-
-        if (row.check_out_time) {
-          const checkOutDate = new Date(row.check_out_time);
-          checkOut = checkOutDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-          const diffMs = checkOutDate - checkInDate;
-          if (diffMs > 0) {
-            const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-            const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-            workingHours = `${String(diffHrs).padStart(2, '0')}h ${String(diffMins).padStart(2, '0')}m`;
-          }
-        }
-      } else if (row.on_leave > 0) {
-        status = 'On Leave';
+      if (err) {
+        console.error("getDailyStats query error:", err);
+        return res.status(500).json({ message: "Failed to load daily attendance stats", error: err.message });
       }
 
-      const empCode = row.employee_code || `EMP${String(row.id).padStart(4, '0')}`;
-      return {
-        id: empCode,
-        employee_code: empCode,
-        employee_id: empCode,
-        employeeId: empCode,
-        db_id: row.id,
-        name: row.name,
-        avatar: row.avatar ? `/${row.avatar}` : null,
-        department: row.department || 'General',
-        checkIn,
-        checkOut,
-        status,
-        workingHours
-      };
-    });
+      const allRecords = (rows || []).map(row => {
+        let recStatus = 'Absent';
+        let checkIn = '--';
+        let checkOut = '--';
+        let workingHours = '00h 00m';
 
-    const totalEmployees = records.length;
-    const present = records.filter(r => r.status === 'Present').length;
-    const late = records.filter(r => r.status === 'Late').length;
-    const leave = records.filter(r => r.status === 'On Leave').length;
-    const absent = records.filter(r => r.status === 'Absent').length;
+        if (row.check_in_time) {
+          const checkInDate = new Date(row.check_in_time);
+          checkIn = checkInDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    const formatPct = (val) => totalEmployees > 0 ? `${((val / totalEmployees) * 100).toFixed(2)}%` : '0.00%';
+          const checkInHour = checkInDate.getHours();
+          const checkInMin = checkInDate.getMinutes();
+          if (checkInHour > 9 || (checkInHour === 9 && checkInMin > 15)) {
+            recStatus = 'Late';
+          } else {
+            recStatus = 'Present';
+          }
+
+          if (row.check_out_time) {
+            const checkOutDate = new Date(row.check_out_time);
+            checkOut = checkOutDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+            const diffMs = checkOutDate - checkInDate;
+            if (diffMs > 0) {
+              const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+              const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+              workingHours = `${String(diffHrs).padStart(2, '0')}h ${String(diffMins).padStart(2, '0')}m`;
+            }
+          }
+        } else if (row.on_leave > 0) {
+          recStatus = 'On Leave';
+        }
+
+        const empCode = row.employee_code || `EMP${String(row.id).padStart(4, '0')}`;
+        return {
+          id: empCode,
+          employee_code: empCode,
+          employee_id: empCode,
+          employeeId: empCode,
+          db_id: row.id,
+          name: row.name,
+          avatar: row.avatar ? (row.avatar.startsWith('/') ? row.avatar : `/${row.avatar}`) : null,
+          department: row.department || 'General',
+          location: row.punch_location || row.location || 'Main Office',
+          checkIn,
+          checkOut,
+          status: recStatus,
+          workingHours
+        };
+      });
+
+      const totalEmployees = allRecords.length;
+      const presentOnly = allRecords.filter(r => r.status === 'Present').length;
+      const late = allRecords.filter(r => r.status === 'Late').length;
+      const leave = allRecords.filter(r => r.status === 'On Leave').length;
+      const absent = allRecords.filter(r => r.status === 'Absent').length;
+
+      const formatPct = (val) => totalEmployees > 0 ? `${((val / totalEmployees) * 100).toFixed(2)}%` : '0.00%';
+
+      let filteredRecords = allRecords;
+      if (status && status !== 'All' && status !== 'all' && status !== 'All Status') {
+        filteredRecords = allRecords.filter(r => r.status.toLowerCase() === status.toLowerCase());
+      }
 
       res.json({
         kpis: {
           totalEmployees,
-          present: present + late,
-          presentPct: formatPct(present + late),
+          present: presentOnly + late,
+          presentPct: formatPct(presentOnly + late),
           absent,
           absentPct: formatPct(absent),
           late,
@@ -266,7 +294,7 @@ exports.getDailyStats = async (req, res) => {
           leave,
           leavePct: formatPct(leave)
         },
-        records
+        records: filteredRecords
       });
     });
   } catch (err) {

@@ -365,6 +365,31 @@ export default function LeaveApplications() {
       }
     }
 
+    // Overlapping leave validation
+    if (formData.startDate && formData.endDate && !newErr.dateRange) {
+      const newStart = new Date(formData.startDate);
+      const newEnd = new Date(formData.endDate);
+      const currentEmpId = String(formData.employeeId || '');
+
+      const hasOverlap = applications.some(app => {
+        const appEmpId = String(app.employee_id || app.db_employee_id || app.employeeId || '');
+        if (currentEmpId && appEmpId && appEmpId !== currentEmpId) return false;
+        const status = (app.status || '').toLowerCase();
+        if (status === 'rejected' || status === 'cancelled') return false;
+
+        const existingStart = new Date(app.start_date || app.startDate);
+        const existingEnd = new Date(app.end_date || app.endDate);
+
+        if (isNaN(existingStart.getTime()) || isNaN(existingEnd.getTime())) return false;
+
+        return existingStart <= newEnd && existingEnd >= newStart;
+      });
+
+      if (hasOverlap) {
+        newErr.overlap = "A leave request already exists for the selected date range.";
+      }
+    }
+
     setErrors(newErr);
     return Object.keys(newErr).length === 0;
   };
@@ -373,8 +398,10 @@ export default function LeaveApplications() {
     e.preventDefault();
     if (!checkActionPermission('my_leave', 'CREATE')) return;
     if (!validate()) {
-      if (errors.balance) {
-        addToast("Insufficient leave balance.", "error");
+      if (errors.overlap) {
+        addToast(errors.overlap, "error");
+      } else if (errors.balance) {
+        addToast(errors.balance || "Insufficient leave balance.", "error");
       }
       return;
     }

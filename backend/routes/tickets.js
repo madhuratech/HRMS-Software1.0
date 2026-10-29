@@ -179,37 +179,6 @@ router.get("/", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 
   });
 });
 
-// Single ticket view
-router.get("/:id", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'view'), (req, res) => {
-  const { id } = req.params;
-  const sql = `
-    SELECT 
-      t.id as db_id,
-      t.ticket_code as id,
-      t.subject,
-      t.category as cat,
-      t.priority,
-      t.requester,
-      t.employee_id,
-      t.department,
-      t.assigned_to,
-      t.description,
-      t.status,
-      DATE_FORMAT(t.created_at, '%d %b %Y %h:%i %p') as date,
-      t.created_at,
-      t.resolved_at
-    FROM helpdesk_tickets t
-    WHERE t.ticket_code = ? OR t.id = ?
-    LIMIT 1
-  `;
-  db.query(sql, [id, id], (err, rows) => {
-    if (err || !rows || rows.length === 0) {
-      return res.status(404).json({ error: "Ticket not found" });
-    }
-    res.json(rows[0]);
-  });
-});
-
 // Create Ticket
 router.post("/", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'create'), (req, res) => {
   const { subject, cat, category, priority, requester, employee_id, department, description, assigned_to } = req.body;
@@ -253,86 +222,6 @@ router.post("/", authenticateJWT, checkPermission('helpdesk', 'support_tickets',
     } catch (e) { }
 
     res.json({ message: "Ticket created successfully", id: code, db_id: result.insertId });
-  });
-});
-
-// Update Ticket (Full or Partial)
-router.put("/:id", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'edit'), (req, res) => {
-  const { id } = req.params;
-  const { subject, cat, category, priority, requester, department, description, assigned_to, status } = req.body;
-
-  const updates = [];
-  const params = [];
-
-  if (subject !== undefined) { updates.push("subject = ?"); params.push(subject); }
-  if (cat !== undefined || category !== undefined) { updates.push("category = ?"); params.push(cat || category); }
-  if (priority !== undefined) { updates.push("priority = ?"); params.push(priority); }
-  if (requester !== undefined) { updates.push("requester = ?"); params.push(requester); }
-  if (department !== undefined) { updates.push("department = ?"); params.push(department); }
-  if (description !== undefined) { updates.push("description = ?"); params.push(description); }
-  if (assigned_to !== undefined) { updates.push("assigned_to = ?"); params.push(assigned_to); }
-  if (status !== undefined) { 
-    updates.push("status = ?"); 
-    params.push(status);
-    if (status === 'Resolved' || status === 'Closed') {
-      updates.push("resolved_at = NOW()");
-    }
-  }
-
-  if (updates.length === 0) {
-    return res.json({ message: "No fields to update" });
-  }
-
-  params.push(id, id);
-  const sql = `UPDATE helpdesk_tickets SET ${updates.join(', ')} WHERE ticket_code = ? OR id = ?`;
-
-  db.query(sql, params, (err, result) => {
-    if (err) {
-      console.error("[HelpDesk Tickets PUT] Error:", err);
-      return res.status(500).json({ error: "Failed to update ticket", details: err.message });
-    }
-    res.json({ message: "Ticket updated successfully" });
-  });
-});
-
-// Update Ticket Status specifically
-router.put("/:id/status", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'edit'), (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
-  db.query("SELECT * FROM helpdesk_tickets WHERE ticket_code = ? OR id = ?", [id, id], (errFetch, rows) => {
-    const resolvedClause = (status === 'Resolved' || status === 'Closed') ? ', resolved_at = NOW()' : '';
-    const sql = `UPDATE helpdesk_tickets SET status = ? ${resolvedClause} WHERE ticket_code = ? OR id = ?`;
-    
-    db.query(sql, [status, id, id], (err, result) => {
-      if (err) {
-        console.error("[HelpDesk Status PUT] Error:", err);
-        return res.status(500).json(err);
-      }
-
-      if (rows && rows.length > 0) {
-        const ticket = rows[0];
-        try {
-          const NotificationService = require("../services/NotificationService");
-          NotificationService.triggerHelpDeskStatusUpdate(ticket.id, ticket.employee_id || 1, ticket.subject, status)
-            .catch(e => console.error("Ticket status notification error:", e));
-        } catch (e) { }
-      }
-
-      res.json({ message: "Ticket status updated successfully" });
-    });
-  });
-});
-
-// Delete Ticket
-router.delete("/:id", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'delete'), (req, res) => {
-  const { id } = req.params;
-  db.query("DELETE FROM helpdesk_tickets WHERE ticket_code = ? OR id = ?", [id, id], (err, result) => {
-    if (err) {
-      console.error("[HelpDesk Tickets DELETE] Error:", err);
-      return res.status(500).json({ error: "Failed to delete ticket", details: err.message });
-    }
-    res.json({ message: "Ticket deleted successfully" });
   });
 });
 
@@ -819,6 +708,122 @@ router.get("/welcome-kits", authenticateJWT, (req, res) => {
   db.query(sql, (err, rows) => {
     if (err) return res.status(500).json(err);
     res.json(rows);
+  });
+});
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PARAMETERIZED TICKET ID ROUTES (Must be placed AFTER all static subroutes)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Single ticket view
+router.get("/:id", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'view'), (req, res) => {
+  const { id } = req.params;
+  const sql = `
+    SELECT 
+      t.id as db_id,
+      t.ticket_code as id,
+      t.subject,
+      t.category as cat,
+      t.priority,
+      t.requester,
+      t.employee_id,
+      t.department,
+      t.assigned_to,
+      t.description,
+      t.status,
+      DATE_FORMAT(t.created_at, '%d %b %Y %h:%i %p') as date,
+      t.created_at,
+      t.resolved_at
+    FROM helpdesk_tickets t
+    WHERE t.ticket_code = ? OR t.id = ?
+    LIMIT 1
+  `;
+  db.query(sql, [id, id], (err, rows) => {
+    if (err || !rows || rows.length === 0) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+    res.json(rows[0]);
+  });
+});
+
+// Update Ticket (Full or Partial)
+router.put("/:id", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'edit'), (req, res) => {
+  const { id } = req.params;
+  const { subject, cat, category, priority, requester, department, description, assigned_to, status } = req.body;
+
+  const updates = [];
+  const params = [];
+
+  if (subject !== undefined) { updates.push("subject = ?"); params.push(subject); }
+  if (cat !== undefined || category !== undefined) { updates.push("category = ?"); params.push(cat || category); }
+  if (priority !== undefined) { updates.push("priority = ?"); params.push(priority); }
+  if (requester !== undefined) { updates.push("requester = ?"); params.push(requester); }
+  if (department !== undefined) { updates.push("department = ?"); params.push(department); }
+  if (description !== undefined) { updates.push("description = ?"); params.push(description); }
+  if (assigned_to !== undefined) { updates.push("assigned_to = ?"); params.push(assigned_to); }
+  if (status !== undefined) { 
+    updates.push("status = ?"); 
+    params.push(status);
+    if (status === 'Resolved' || status === 'Closed') {
+      updates.push("resolved_at = NOW()");
+    }
+  }
+
+  if (updates.length === 0) {
+    return res.json({ message: "No fields to update" });
+  }
+
+  params.push(id, id);
+  const sql = `UPDATE helpdesk_tickets SET ${updates.join(', ')} WHERE ticket_code = ? OR id = ?`;
+
+  db.query(sql, params, (err, result) => {
+    if (err) {
+      console.error("[HelpDesk Tickets PUT] Error:", err);
+      return res.status(500).json({ error: "Failed to update ticket", details: err.message });
+    }
+    res.json({ message: "Ticket updated successfully" });
+  });
+});
+
+// Update Ticket Status specifically
+router.put("/:id/status", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'edit'), (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  db.query("SELECT * FROM helpdesk_tickets WHERE ticket_code = ? OR id = ?", [id, id], (errFetch, rows) => {
+    const resolvedClause = (status === 'Resolved' || status === 'Closed') ? ', resolved_at = NOW()' : '';
+    const sql = `UPDATE helpdesk_tickets SET status = ? ${resolvedClause} WHERE ticket_code = ? OR id = ?`;
+    
+    db.query(sql, [status, id, id], (err, result) => {
+      if (err) {
+        console.error("[HelpDesk Status PUT] Error:", err);
+        return res.status(500).json(err);
+      }
+
+      if (rows && rows.length > 0) {
+        const ticket = rows[0];
+        try {
+          const NotificationService = require("../services/NotificationService");
+          NotificationService.triggerHelpDeskStatusUpdate(ticket.id, ticket.employee_id || 1, ticket.subject, status)
+            .catch(e => console.error("Ticket status notification error:", e));
+        } catch (e) { }
+      }
+
+      res.json({ message: "Ticket status updated successfully" });
+    });
+  });
+});
+
+// Delete Ticket
+router.delete("/:id", authenticateJWT, checkPermission('helpdesk', 'support_tickets', 'delete'), (req, res) => {
+  const { id } = req.params;
+  db.query("DELETE FROM helpdesk_tickets WHERE ticket_code = ? OR id = ?", [id, id], (err, result) => {
+    if (err) {
+      console.error("[HelpDesk Tickets DELETE] Error:", err);
+      return res.status(500).json({ error: "Failed to delete ticket", details: err.message });
+    }
+    res.json({ message: "Ticket deleted successfully" });
   });
 });
 

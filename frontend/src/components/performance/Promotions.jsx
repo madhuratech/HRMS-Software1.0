@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../lib/api';
 import React, { useState, useEffect, useCallback } from 'react';
 import AppDropdown from '../ui/AppDropdown';
 import { ChevronDown, Plus, ChevronLeft, ChevronRight, X, Award } from 'lucide-react';
@@ -57,7 +58,7 @@ export default function Promotions() {
 
   const fetchMeta = async () => {
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
+      const headers = getAuthHeaders();
 
       // Fetch departments
       const deptRes = await fetch('/app/requirements/meta/all', { headers });
@@ -80,7 +81,7 @@ export default function Promotions() {
   const fetchDashboardStats = useCallback(async () => {
     try {
       const res = await fetch('/app/promotions/dashboard', {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {
@@ -100,7 +101,7 @@ export default function Promotions() {
       }
 
       const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {
@@ -155,10 +156,7 @@ export default function Promotions() {
 
       const res = await fetch('/app/promotions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
       const resData = await res.json();
@@ -185,10 +183,7 @@ export default function Promotions() {
     try {
       const res = await fetch(`/app/promotions/${promotionId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ status: 'Approved' })
       });
       const resData = await res.json();

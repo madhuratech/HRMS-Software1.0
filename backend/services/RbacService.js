@@ -368,9 +368,38 @@ class RbacService {
         return ['dashboard', 'employees', 'attendance', 'leave', 'projects', 'clients', 'performance', 'reports', 'documents', 'helpdesk'].includes(mKey);
       }
       if (keyUpper === 'EMPLOYEE') {
-        if (sKey === 'leave_balance' || sKey === 'my_leave' || sKey === 'comp_off' || sKey === 'holiday_list' || sKey === 'daily_attendance' || sKey === 'gps_attendance' || sKey === 'shift_roster' || sKey === 'employee_profile' || sKey === 'tasks' || sKey === 'timesheets' || sKey === 'generate_payslips') return true;
-        if (sKey === 'leave_approval' || sKey === 'leave_requests' || sKey === 'leave_types' || sKey === 'add_employee') return false;
-        return ['dashboard', 'employees', 'attendance', 'leave', 'payroll', 'projects', 'performance', 'documents', 'helpdesk'].includes(mKey);
+        const employeeAllowedSubmodules = [
+          'dashboard_overview',
+          'company_profile',
+          'holiday_calendar',
+          'employee_profile',
+          'employee_documents',
+          'daily_attendance',
+          'gps_attendance',
+          'gps_attendance_punch',
+          'regularization',
+          'shift_roster',
+          'overtime',
+          'leave_dashboard',
+          'my_leave',
+          'leave_balance',
+          'holiday_list',
+          'comp_off',
+          'generate_payslips',
+          'reimbursements',
+          'loans_advances',
+          'goals',
+          'reviews',
+          'feedback',
+          'tasks',
+          'timesheets',
+          'doc_employee',
+          'doc_policies',
+          'doc_company',
+          'tickets',
+          'knowledge_base'
+        ];
+        return employeeAllowedSubmodules.includes(sKey);
       }
       return true;
     };
@@ -386,6 +415,22 @@ class RbacService {
       if (keyUpper === 'HR_MANAGER' || keyUpper === 'HR') {
         return hrAllowedModules.includes(mKey);
       }
+      if (keyUpper === 'EMPLOYEE') {
+        const employeeAllowedCreate = [
+          'my_leave',
+          'comp_off',
+          'regularization',
+          'overtime',
+          'gps_attendance',
+          'gps_attendance_punch',
+          'timesheets',
+          'reimbursements',
+          'loans_advances',
+          'tickets',
+          'feedback'
+        ];
+        return employeeAllowedCreate.includes(sKey);
+      }
       if (sKey === 'my_leave' || sKey === 'comp_off') return true;
       return false;
     };
@@ -396,6 +441,15 @@ class RbacService {
         return hrAllowedModules.includes(mKey);
       }
       if (keyUpper === 'TEAM_LEADER' && (sKey === 'leave_approval' || sKey === 'comp_off')) return true;
+      if (keyUpper === 'EMPLOYEE') {
+        const employeeAllowedEdit = [
+          'employee_profile',
+          'tasks',
+          'timesheets',
+          'tickets'
+        ];
+        return employeeAllowedEdit.includes(sKey);
+      }
       return false;
     };
 

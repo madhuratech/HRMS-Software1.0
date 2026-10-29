@@ -230,13 +230,13 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const IdentityService = require("../services/IdentityService");
-    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || null;
+    const authIdentifier = (req.user && (req.user.email || req.user.employee_id || req.user.employeeId || req.user.userId || req.user.id)) || null;
 
-    if (!authIdentifier) {
+    if (!authIdentifier && !req.user) {
       return res.status(401).json({ success: false, message: 'Unauthenticated' });
     }
 
-    const identity = await IdentityService.resolveUser(authIdentifier);
+    const identity = await IdentityService.resolveUser(req.user || authIdentifier);
     if (!identity) {
       return res.status(404).json({ success: false, message: 'User identity not found' });
     }

@@ -714,18 +714,20 @@ router.delete("/teams/:id", authenticateJWT, checkPermission("organization", "te
 /**
  * HOLIDAYS CRUD
  */
-router.get("/holidays", authenticateJWT, checkPermission("organization", "holiday_calendar", "view"), (req, res) => {
+// All authenticated users can view holidays
+router.get("/holidays", authenticateJWT, (req, res) => {
   const sql = `
     SELECT 
       id,
       name,
+      COALESCE(DATE_FORMAT(holiday_date, '%Y-%m-%d'), h.date) as holiday_date,
       COALESCE(NULLIF(DATE_FORMAT(holiday_date, '%d %b %Y'), ''), h.date, DATE_FORMAT(NOW(), '%d %b %Y')) as date,
       COALESCE(type, 'National') as type,
       COALESCE(branch, 'All Branches') as branch,
       description,
       COALESCE(status, 'Active') as status
     FROM holidays h
-    ORDER BY id ASC
+    ORDER BY holiday_date ASC, id ASC
   `;
   db.query(sql, (err, rows) => {
     if (err) return res.status(500).json(err);
@@ -733,27 +735,53 @@ router.get("/holidays", authenticateJWT, checkPermission("organization", "holida
   });
 });
 
+// Admin/HR creation
 router.post("/holidays", authenticateJWT, checkPermission("organization", "holiday_calendar", "create"), (req, res) => {
-  const { name, date, type, branch, description, status } = req.body;
+  const { name, date, holiday_date, type, branch, description, status } = req.body;
+  const rawDate = holiday_date || date;
+  let formattedHolidayDate = rawDate;
+  let displayDate = date;
+
+  try {
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      formattedHolidayDate = d.toISOString().split('T')[0];
+      displayDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+  } catch (e) {}
+
   const sql = `
     INSERT INTO holidays (name, date, holiday_date, type, branch, description, status)
-    VALUES (?, ?, CURRENT_DATE(), ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `;
-  db.query(sql, [name, date, type || 'National', branch || 'All Branches', description, status || 'Active'], (err, result) => {
+  db.query(sql, [name, displayDate, formattedHolidayDate, type || 'National', branch || 'All Branches', description || '', status || 'Active'], (err, result) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Holiday created successfully", id: result.insertId });
   });
 });
 
+// Admin/HR update
 router.put("/holidays/:id", authenticateJWT, checkPermission("organization", "holiday_calendar", "edit"), (req, res) => {
   const { id } = req.params;
-  const { name, date, type, branch, description, status } = req.body;
+  const { name, date, holiday_date, type, branch, description, status } = req.body;
+  const rawDate = holiday_date || date;
+  let formattedHolidayDate = rawDate;
+  let displayDate = date;
+
+  try {
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      formattedHolidayDate = d.toISOString().split('T')[0];
+      displayDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+  } catch (e) {}
+
   const sql = `
     UPDATE holidays
-    SET name = ?, date = ?, type = ?, branch = ?, description = ?, status = ?
+    SET name = ?, date = ?, holiday_date = ?, type = ?, branch = ?, description = ?, status = ?
     WHERE id = ?
   `;
-  db.query(sql, [name, date, type, branch, description, status, id], (err, result) => {
+  db.query(sql, [name, displayDate, formattedHolidayDate, type, branch, description || '', status, id], (err, result) => {
     if (err) return res.status(500).json(err);
     res.json({ message: "Holiday updated successfully" });
   });

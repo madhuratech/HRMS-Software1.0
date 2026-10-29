@@ -38,14 +38,14 @@ function getTeamLeaderContext(req, callback) {
 
   db.query(sql, [reqId || 0, reqId || 0, reqId || 0, userEmail || '', reqId || 0], (err, rows) => {
     if (err || !rows || rows.length === 0) {
-      return callback(null, { isTeamLeader: isTL, leaderId: reqId, teamId: null, teamName: null });
+      return callback(null, { isTeamLeader: isTL, isAdminOrHR, userRole, leaderId: reqId, teamId: null, teamName: null });
     }
     const emp = rows[0];
     const resolvedLeaderId = emp.emp_id;
     const teamId = emp.lead_team_id || emp.team_id || null;
     const teamName = emp.lead_team_name || null;
 
-    callback(null, { isTeamLeader: isTL, leaderId: resolvedLeaderId, teamId, teamName, emp });
+    callback(null, { isTeamLeader: isTL, isAdminOrHR, userRole, leaderId: resolvedLeaderId, teamId, teamName, emp });
   });
 }
 
@@ -261,6 +261,11 @@ router.get("/", authenticateJWT, (req, res) => {
         conditions.push("(e.team_id = ? OR e.id = ?)");
         params.push(ctx.teamId, ctx.leaderId);
       }
+    } else if (!ctx.isAdminOrHR) {
+      // Regular employee: ONLY return their own record
+      const myId = (ctx && ctx.leaderId) || (req.user && (req.user.employeeId || req.user.employee_id || req.user.id)) || 0;
+      conditions.push("e.id = ?");
+      params.push(myId);
     }
 
     if (search) {
@@ -803,8 +808,8 @@ router.get("/me/profile", authenticateJWT, async (req, res) => {
 router.get("/me", authenticateJWT, async (req, res) => {
   try {
     const IdentityService = require("../services/IdentityService");
-    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
-    const identity = await IdentityService.resolveUser(authIdentifier);
+    const authIdentifier = (req.user && (req.user.email || req.user.employee_id || req.user.employeeId || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
+    const identity = await IdentityService.resolveUser(req.user || authIdentifier);
     if (!identity || !identity.employeeId) {
       return res.status(404).json({ error: "Employee profile unavailable" });
     }
@@ -821,8 +826,8 @@ router.get("/me", authenticateJWT, async (req, res) => {
 router.get("/:id/profile", authenticateJWT, (req, res) => {
   if (req.params.id === 'me') {
     const IdentityService = require("../services/IdentityService");
-    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
-    return IdentityService.resolveUser(authIdentifier).then(identity => {
+    const authIdentifier = (req.user && (req.user.email || req.user.employee_id || req.user.employeeId || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
+    return IdentityService.resolveUser(req.user || authIdentifier).then(identity => {
       if (!identity || !identity.employeeId) return res.status(404).json({ error: "Employee profile unavailable" });
       renderEmployeeProfileResponse(identity.employeeId, false, res);
     });
@@ -857,6 +862,13 @@ router.get("/:id/profile", authenticateJWT, (req, res) => {
       });
     }
 
+    if (!ctx.isAdminOrHR && !ctx.isTeamLeader && !isSelf) {
+      return res.status(403).json({
+        error: "Access denied. You are only authorized to view your own employee profile.",
+        code: "ACCESS_DENIED"
+      });
+    }
+
     renderEmployeeProfileResponse(targetId, false, res);
   });
 });
@@ -867,8 +879,8 @@ router.get("/:id/profile", authenticateJWT, (req, res) => {
 router.get("/:id", authenticateJWT, (req, res, next) => {
   if (req.params.id === 'me') {
     const IdentityService = require("../services/IdentityService");
-    const authIdentifier = (req.user && (req.user.employee_id || req.user.employeeId || req.user.email || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
-    return IdentityService.resolveUser(authIdentifier).then(identity => {
+    const authIdentifier = (req.user && (req.user.email || req.user.employee_id || req.user.employeeId || req.user.userId || req.user.id)) || (req.headers && req.headers['x-employee-id']);
+    return IdentityService.resolveUser(req.user || authIdentifier).then(identity => {
       if (!identity || !identity.employeeId) return res.status(404).json({ error: "Employee profile unavailable" });
       renderEmployeeProfileResponse(identity.employeeId, false, res);
     });
@@ -905,6 +917,13 @@ router.get("/:id", authenticateJWT, (req, res, next) => {
           });
         }
         return renderEmployeeProfileResponse(targetId, true, res);
+      });
+    }
+
+    if (!ctx.isAdminOrHR && !ctx.isTeamLeader && !isSelf) {
+      return res.status(403).json({
+        error: "Access denied. You are only authorized to view your own employee profile.",
+        code: "ACCESS_DENIED"
       });
     }
 
@@ -1048,7 +1067,57 @@ function renderEmployeeProfileResponse(targetId, isTeamMemberView, res) {
         }
       };
 
-      res.json(profile);
+      // Resolve assigned shift
+      const shiftSql = `
+        SELECT s.* 
+        FROM shifts s
+        LEFT JOIN shift_roster sr ON sr.shift_id = s.id AND sr.employee_id = ?
+        WHERE (sr.employee_id IS NOT NULL AND (sr.start_date <= CURDATE() AND (sr.end_date >= CURDATE() OR sr.end_date IS NULL)))
+           OR s.shift_type = ? OR s.name = ? OR s.shift_name = ?
+           OR ? LIKE CONCAT('%', s.name, '%')
+        ORDER BY (sr.employee_id IS NOT NULL) DESC, (s.status = 'Active') DESC, s.id ASC
+        LIMIT 1
+      `;
+      const empShiftType = emp.shift_type || 'Regular';
+
+      db.query(shiftSql, [emp.id, empShiftType, empShiftType, empShiftType, empShiftType], (sErr, sRows) => {
+        let matchedShift = (sRows && sRows.length > 0) ? sRows[0] : null;
+
+        const attachShiftAndSend = (finalShift) => {
+          if (finalShift) {
+            let workingDays = finalShift.workingDays;
+            if (typeof workingDays === 'string') {
+              try { workingDays = JSON.parse(workingDays); } catch (e) { workingDays = workingDays.split(',').map(d => d.trim()); }
+            }
+            if (!Array.isArray(workingDays)) {
+              workingDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+            }
+
+            profile.shift = {
+              id: finalShift.id,
+              name: finalShift.name || finalShift.shift_name || 'General Shift',
+              shift_name: finalShift.shift_name || finalShift.name || 'General Shift',
+              startTime: finalShift.startTime || finalShift.start_time || '09:00:00',
+              endTime: finalShift.endTime || finalShift.end_time || '18:00:00',
+              breakTime: finalShift.breakTime || '60 mins',
+              workingHours: finalShift.workingHours || '9 hours',
+              workingDays,
+              status: finalShift.status || 'Active'
+            };
+          } else {
+            profile.shift = null;
+          }
+          res.json(profile);
+        };
+
+        if (matchedShift) {
+          attachShiftAndSend(matchedShift);
+        } else {
+          db.query("SELECT * FROM shifts WHERE status = 'Active' ORDER BY id ASC LIMIT 1", (fErr, fRows) => {
+            attachShiftAndSend((fRows && fRows.length > 0) ? fRows[0] : null);
+          });
+        }
+      });
     }
   });
 }

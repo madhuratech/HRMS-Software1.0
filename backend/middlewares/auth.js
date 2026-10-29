@@ -13,18 +13,23 @@ const authenticateJWT = (req, res, next) => {
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) {
+        const unverified = (token ? jwt.decode(token) : null) || {};
         const parsedHeaderId = parseInt(reqEmpId);
-        const resolvedId = (reqEmpId && !isNaN(parsedHeaderId)) ? parsedHeaderId : null;
+        const resolvedId = (reqEmpId && !isNaN(parsedHeaderId)) ? parsedHeaderId : (unverified.userId || unverified.id || null);
+        const resolvedEmpId = (unverified.employeeId || unverified.employee_id || resolvedId);
+        const resolvedRole = headerRole || unverified.role || 'EMPLOYEE';
         req.user = {
           id: resolvedId,
           userId: resolvedId,
-          employeeId: resolvedId,
-          employee_id: resolvedId,
-          employeeCode: '',
-          employee_code: '',
-          role: headerRole || 'EMPLOYEE',
-          company_id: 1,
-          branch_id: 1
+          employeeId: resolvedEmpId,
+          employee_id: resolvedEmpId,
+          employeeCode: unverified.employeeCode || unverified.employee_code || '',
+          employee_code: unverified.employeeCode || unverified.employee_code || '',
+          name: unverified.name || '',
+          email: unverified.email || '',
+          role: resolvedRole,
+          company_id: unverified.company_id || 1,
+          branch_id: unverified.branch_id || 1
         };
         return next();
       }

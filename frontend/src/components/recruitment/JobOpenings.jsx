@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { canCreate, canEdit, canDelete, checkActionPermission } from '../../lib/permissions';
-import { API_URL } from '../../lib/api';
+import { API_URL, getAuthHeaders } from '../../lib/api';
 
 // ─── Custom Dropdown ─────────────────────────────────────────────────────────
 function CustomSelect({ id, value, onChange, options, placeholder = 'Select...', accentColor = '#3B82F6', isOpen, onToggle, onClose }) {
@@ -178,9 +178,7 @@ export default function JobOpenings() {
   const fetchMeta = async () => {
     try {
       const res = await fetch('/app/requirements/meta/all', {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (data && data.departments) {
@@ -215,9 +213,7 @@ export default function JobOpenings() {
       if (selectedStatus) query.append('status', selectedStatus);
 
       const res = await fetch(`/app/requirements?${query}`, {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success) {
@@ -341,10 +337,7 @@ export default function JobOpenings() {
 
       const res = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -371,7 +364,7 @@ export default function JobOpenings() {
         : `/app/requirements/${jobId}/publish`;
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' })
       });
       const data = await res.json();
       await fetchRequirements();
@@ -394,10 +387,7 @@ export default function JobOpenings() {
       setIsPublishingId(jobId);
       const res = await fetch(`/app/requirements/${jobId}/publish-linkedin`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' })
       });
       const data = await res.json();
       if (data.success && data.status === 'PUBLISHED') {
@@ -443,7 +433,7 @@ export default function JobOpenings() {
     try {
       const res = await fetch(`/app/requirements/${jobId}/close`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ scope: closeScope, channels: closeChannels, reason: closeReason })
       });
       const data = await res.json();
@@ -468,7 +458,7 @@ export default function JobOpenings() {
     try {
       const res = await fetch(`/app/requirements/${jobId}/reopen`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ channels: reopenChannels })
       });
       const data = await res.json();
@@ -504,9 +494,7 @@ export default function JobOpenings() {
     try {
       const res = await fetch(`/app/requirements/${jobId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}`
-        }
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (data.success) {
@@ -524,7 +512,7 @@ export default function JobOpenings() {
   const fetchChannelsForJob = async (jobId) => {
     try {
       const res = await fetch(`/app/requirements/${jobId}/publishing-channels`, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (data.success) {

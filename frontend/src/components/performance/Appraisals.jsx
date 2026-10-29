@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../lib/api';
 import React, { useState, useEffect, useCallback } from 'react';
 import AppDropdown from '../ui/AppDropdown';
 import { ChevronDown, Plus, ChevronLeft, ChevronRight, X, TrendingUp, DollarSign } from 'lucide-react';
@@ -59,7 +60,7 @@ export default function Appraisals() {
 
   const fetchMeta = async () => {
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
+      const headers = getAuthHeaders();
 
       // Fetch departments
       const deptRes = await fetch('/app/requirements/meta/all', { headers });
@@ -82,7 +83,7 @@ export default function Appraisals() {
   const fetchDashboardStats = useCallback(async () => {
     try {
       const res = await fetch('/app/appraisals/dashboard', {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {
@@ -105,7 +106,7 @@ export default function Appraisals() {
       }
 
       const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {
@@ -158,10 +159,7 @@ export default function Appraisals() {
 
       const res = await fetch('/app/appraisals', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
       const resData = await res.json();
@@ -188,10 +186,7 @@ export default function Appraisals() {
     try {
       const res = await fetch(`/app/appraisals/${appraisalId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ status: 'Approved' })
       });
       const resData = await res.json();

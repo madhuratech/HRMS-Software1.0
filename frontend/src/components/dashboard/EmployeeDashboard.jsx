@@ -62,11 +62,7 @@ export function EmployeeDashboard() {
   const [totalWorkingDays, setTotalWorkingDays] = useState(22);
 
   // Shift State
-  const [shift, setShift] = useState({
-    name: 'General Shift',
-    time: '09:00 AM - 06:00 PM',
-    workingDays: 'Mon, Tue, Wed, Thu, Fri'
-  });
+  const [shift, setShift] = useState(null);
 
   // Leave Balance State
   const [leaveBalance, setLeaveBalance] = useState({
@@ -199,19 +195,22 @@ export function EmployeeDashboard() {
           avatar: cleanAvatar
         });
 
-        // 2. Fetch Active Shift
+        // 2. Fetch Assigned Shift
         try {
-          const shiftRes = await apiFetch('/organization/shifts');
-          if (Array.isArray(shiftRes) && shiftRes.length > 0) {
-            const activeShift = shiftRes.find(s => s.status === 'Active') || shiftRes[0];
+          const profileRes = await apiFetch('/employees/me/profile');
+          if (profileRes && profileRes.shift) {
+            const s = profileRes.shift;
             setShift({
-              name: activeShift.name || 'General Shift',
-              time: `${activeShift.startTime || '09:00 AM'} - ${activeShift.endTime || '06:00 PM'}`,
-              workingDays: Array.isArray(activeShift.workingDays) ? activeShift.workingDays.join(', ') : 'Mon, Tue, Wed, Thu, Fri'
+              name: s.name || s.shift_name || 'General Shift',
+              time: `${s.startTime || '09:00 AM'} - ${s.endTime || '06:00 PM'}`,
+              workingDays: Array.isArray(s.workingDays) ? s.workingDays.join(', ') : (s.workingDays || 'Mon, Tue, Wed, Thu, Fri')
             });
+          } else {
+            setShift(null);
           }
         } catch (e) {
           console.error("Failed to load shift data:", e);
+          setShift(null);
         }
 
         // 3. Fetch Next Holiday
@@ -536,7 +535,7 @@ export function EmployeeDashboard() {
       }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '700', letterSpacing: '-0.02em' }}>
-            {getGreeting()}, {employee.name || userName || 'Employee'}! 👋
+            {getGreeting()}, {employee.name || 'Employee'}! 👋
           </h1>
           <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: '#DBEAFE', fontWeight: '400' }}>
             Here's what's happening with your work today.
@@ -599,16 +598,25 @@ export function EmployeeDashboard() {
               <Sun size={18} />
             </div>
           </div>
-          <div style={{ fontSize: '18px', fontWeight: '700', color: '#0F172A', marginBottom: '4px' }}>
-            {shift.name}
+          <div style={{ fontSize: '18px', fontWeight: '700', color: shift ? '#0F172A' : '#64748B', marginBottom: '4px' }}>
+            {shift ? shift.name : 'No shift assigned'}
           </div>
-          <div style={{ fontSize: '13px', fontWeight: '600', color: '#2563EB', marginBottom: '12px' }}>
-            {shift.time}
-          </div>
-          <div style={{ borderTop: '1px dashed #E2E8F0', paddingTop: '12px' }} className="text-xs text-slate-500">
-            <span>Working Days:</span>
-            <p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#334155' }}>{shift.workingDays}</p>
-          </div>
+          {shift ? (
+            <>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#2563EB', marginBottom: '12px' }}>
+                {shift.time}
+              </div>
+              <div style={{ borderTop: '1px dashed #E2E8F0', paddingTop: '12px' }} className="text-xs text-slate-500">
+                <span>Working Days:</span>
+                <p style={{ margin: '2px 0 0 0', fontWeight: '600', color: '#334155' }}>{shift.workingDays}</p>
+              </div>
+            </>
+          ) : (
+            <div style={{ borderTop: '1px dashed #E2E8F0', paddingTop: '12px' }} className="text-xs text-slate-400">
+              <span>Working Days:</span>
+              <p style={{ margin: '2px 0 0 0', fontWeight: '500', color: '#94A3B8' }}>No working days set</p>
+            </div>
+          )}
         </div>
 
         {/* Card 3 — Leave Balance */}

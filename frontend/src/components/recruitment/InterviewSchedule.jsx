@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AppDropdown from '../ui/AppDropdown';
 import { ChevronLeft, ChevronRight, Video, Clock, Plus, MessageSquare, X } from 'lucide-react';
 import { useToast } from '../ui/Toast';
+import { getAuthHeaders } from '../../lib/api';
 import { canCreate, canEdit, checkActionPermission } from '../../lib/permissions';
 
 export default function InterviewSchedule() {
@@ -56,7 +57,7 @@ export default function InterviewSchedule() {
 
   const fetchDropdownData = async () => {
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
+      const headers = getAuthHeaders();
 
       // Fetch candidates
       const candRes = await fetch('/app/candidates/dropdown', { headers });
@@ -123,7 +124,7 @@ export default function InterviewSchedule() {
     setLoading(true);
     try {
       const res = await fetch('/app/interviews', {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const data = await res.json();
       if (data.success && data.data) {
@@ -185,10 +186,7 @@ export default function InterviewSchedule() {
 
       const res = await fetch('/app/interviews', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -220,10 +218,7 @@ export default function InterviewSchedule() {
     try {
       const res = await fetch(`/app/interviews/${feedbackForm.schedule_id}/status`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           status: 'Completed',
           remarks: `Rating: ${feedbackForm.rating}/5. Rec: ${feedbackForm.recommendation}. Strengths: ${feedbackForm.strengths}. Comments: ${feedbackForm.comments}`

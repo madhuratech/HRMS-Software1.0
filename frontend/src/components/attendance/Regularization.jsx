@@ -11,6 +11,9 @@ export default function Regularization() {
   const [activeTab, setActiveTab] = useState('pending');
   const [requests, setRequests] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [selectedDepartment, setSelectedDepartment] = useState('All');
+  const [selectedType, setSelectedType] = useState('All');
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showApplyModal, setShowApplyModal] = useState(false);
 
@@ -54,7 +57,14 @@ export default function Regularization() {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      const res = await apiFetch(`/attendance/regularization?status=${activeTab}`);
+      const params = new URLSearchParams({ status: activeTab });
+      if (selectedDepartment && selectedDepartment !== 'All' && selectedDepartment !== 'All Departments') {
+        params.append('department', selectedDepartment);
+      }
+      if (selectedType && selectedType !== 'All' && selectedType !== 'All Types') {
+        params.append('type', selectedType);
+      }
+      const res = await apiFetch(`/attendance/regularization?${params.toString()}`);
       if (Array.isArray(res)) {
         setRequests(res);
       }
@@ -63,6 +73,16 @@ export default function Regularization() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    apiFetch('/employees/lookup/departments')
+      .then(res => {
+        if (Array.isArray(res)) {
+          setDepartments(res.map(d => ({ value: d.dept_name || d.department_name, label: d.dept_name || d.department_name })));
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     loadRequests();
@@ -174,17 +194,39 @@ export default function Regularization() {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '16px', flexWrap: 'nowrap', overflowX: 'auto', paddingBottom: '16px' }}>
-          <div className="hrms-flex-start" style={{ flexWrap: 'nowrap', flexShrink: 0 }}>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '160px', justifyContent: 'space-between', cursor: 'pointer' }}>
-              <span className="hrms-text-sm" style={{ color: '#475569', fontWeight: '500' }}>All Departments</span>
-              <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+          <div className="hrms-flex-start" style={{ flexWrap: 'nowrap', flexShrink: 0, gap: '12px', alignItems: 'center' }}>
+            <div style={{ minWidth: '170px' }}>
+              <AppDropdown
+                value={selectedDepartment}
+                onChange={v => setSelectedDepartment(v)}
+                options={departments}
+                allOption="All Departments"
+                allOptionValue="All"
+                size="sm"
+              />
             </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', minWidth: '160px', justifyContent: 'space-between', cursor: 'pointer' }}>
-              <span className="hrms-text-sm" style={{ color: '#475569', fontWeight: '500' }}>All Types</span>
-              <ChevronDown size={16} style={{ color: '#94a3b8' }} />
+            <div style={{ minWidth: '160px' }}>
+              <AppDropdown
+                value={selectedType}
+                onChange={v => setSelectedType(v)}
+                options={[
+                  { value: 'Late Arrival', label: 'Late Arrival' },
+                  { value: 'Early Exit', label: 'Early Exit' },
+                  { value: 'Missed Punch', label: 'Missed Punch' },
+                  { value: 'On-Duty', label: 'On-Duty' },
+                  { value: 'Absent', label: 'Absent' }
+                ]}
+                allOption="All Types"
+                allOptionValue="All"
+                size="sm"
+              />
             </div>
-            <button style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', color: '#64748b', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              <Filter size={16} /> Filter
+            <button
+              type="button"
+              onClick={loadRequests}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#2563EB', border: 'none', borderRadius: '8px', padding: '8px 16px', color: '#fff', fontWeight: '600', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 2px 4px rgba(37,99,235,0.2)' }}
+            >
+              <Filter size={15} /> Filter
             </button>
           </div>
         </div>

@@ -56,7 +56,7 @@ export default function HolidayList() {
       const matchesLoc = selectedLocation === 'All Locations' || (h.branch || h.location || 'All Locations') === selectedLocation;
       if (!matchesLoc) return false;
       if (selectedYear !== 'All') {
-        const parsed = new Date(h.date);
+        const parsed = new Date(h.holiday_date || h.date);
         if (!isNaN(parsed.getTime()) && String(parsed.getFullYear()) !== selectedYear) {
           return false;
         }
@@ -160,7 +160,7 @@ export default function HolidayList() {
                   </tr>
                 ) : (
                   filteredHolidays.map((holiday, idx) => {
-                    const fmt = formatHolidayDate(holiday.date);
+                    const fmt = formatHolidayDate(holiday.holiday_date || holiday.date);
                     return (
                       <tr key={holiday.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
                         <td style={{ padding: '16px 24px', fontSize: '13px', fontWeight: '600', color: '#1e293b', whiteSpace: 'nowrap' }}>{fmt.dateStr}</td>

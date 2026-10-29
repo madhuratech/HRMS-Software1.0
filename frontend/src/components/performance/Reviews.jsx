@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../lib/api';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import AppDropdown from '../ui/AppDropdown';
 import { ChevronDown, Plus, ChevronLeft, ChevronRight, X, CheckCircle, AlertCircle, Eye, Calculator, Trash2 } from 'lucide-react';
@@ -74,7 +75,7 @@ export default function Reviews() {
 
   const fetchMeta = async () => {
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
+      const headers = getAuthHeaders();
 
       // Fetch departments
       try {
@@ -107,7 +108,7 @@ export default function Reviews() {
   const fetchDashboardStats = useCallback(async () => {
     try {
       const res = await fetch('/app/reviews/dashboard', {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {
@@ -130,7 +131,7 @@ export default function Reviews() {
       }
 
       const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {
@@ -171,7 +172,7 @@ export default function Reviews() {
     setLoadingTree(true);
     try {
       const res = await fetch(`/app/reviews/employee-tree/${empId}`, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && Array.isArray(resData.data) && resData.data.length > 0) {
@@ -381,10 +382,7 @@ export default function Reviews() {
 
       const res = await fetch('/app/reviews', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
       const resData = await res.json();
@@ -421,7 +419,7 @@ export default function Reviews() {
     setDetailLoading(true);
     try {
       const res = await fetch(`/app/reviews/${reviewId}`, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {

@@ -1,3 +1,4 @@
+import { getAuthHeaders } from '../../lib/api';
 import React, { useState, useEffect, useCallback } from 'react';
 import AppDropdown from '../ui/AppDropdown';
 import { ChevronDown, Plus, ChevronLeft, ChevronRight, X, MessageSquare } from 'lucide-react';
@@ -59,7 +60,7 @@ export default function Feedback() {
 
   const fetchMeta = async () => {
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
+      const headers = getAuthHeaders();
 
       // Fetch departments
       try {
@@ -92,7 +93,7 @@ export default function Feedback() {
   const fetchDashboardStats = useCallback(async () => {
     try {
       const res = await fetch('/app/feedback/dashboard', {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {
@@ -115,7 +116,7 @@ export default function Feedback() {
       }
 
       const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: getAuthHeaders()
       });
       const resData = await res.json();
       if (resData.success && resData.data) {
@@ -167,10 +168,7 @@ export default function Feedback() {
 
       const res = await fetch('/app/feedback', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(payload)
       });
       const resData = await res.json();

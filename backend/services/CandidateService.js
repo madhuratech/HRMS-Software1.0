@@ -357,7 +357,9 @@ class CandidateService {
 
     // Pagination
     sql += ` LIMIT ? OFFSET ?`;
-    params.push(pagination.limit, pagination.offset);
+    const limitVal = parseInt(pagination && pagination.limit) || 10;
+    const offsetVal = (pagination && pagination.offset !== undefined && pagination.offset !== null && !isNaN(parseInt(pagination.offset))) ? parseInt(pagination.offset) : (((parseInt(pagination && pagination.page) || 1) - 1) * limitVal);
+    params.push(limitVal, offsetVal);
 
     const rows = await Candidate.query(sql, params);
 

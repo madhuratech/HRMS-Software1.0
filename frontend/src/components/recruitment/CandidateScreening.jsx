@@ -4,7 +4,7 @@ import { Search, Download, Eye, CheckCircle2, XCircle, Calendar, FileText, UserC
 import { useToast } from '../ui/Toast';
 import { useNavigate } from 'react-router-dom';
 import { canEdit, checkActionPermission } from '../../lib/permissions';
-import { API_URL } from '../../lib/api';
+import { API_URL, getAuthHeaders } from '../../lib/api';
 
 export default function CandidateScreening() {
   const { addToast } = useToast();
@@ -100,7 +100,7 @@ export default function CandidateScreening() {
 
     const appId = candidate.application_id || candidate.id;
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
+      const headers = getAuthHeaders();
       // 1. Try application-specific ATS evaluation endpoint first
       let res = await fetch(`/api/applications/${appId}/ats-evaluation`, { headers });
       let data = await res.json();
@@ -124,7 +124,7 @@ export default function CandidateScreening() {
   const fetchCandidates = useCallback(async () => {
     setLoading(true);
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
+      const headers = getAuthHeaders();
       const res = await fetch(`/app/candidates?limit=100`, { headers });
       const data = await res.json();
       if (data.success && data.data && data.data.candidates) {
@@ -142,7 +142,7 @@ export default function CandidateScreening() {
 
   const fetchMeta = async () => {
     try {
-      const headers = { 'Authorization': `Bearer ${getAuthToken()}` };
+      const headers = getAuthHeaders();
       const res = await fetch('/app/requirements/meta/all', { headers });
       const data = await res.json();
       if (data) {

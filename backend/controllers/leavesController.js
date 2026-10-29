@@ -329,19 +329,28 @@ exports.getApplications = async (req, res) => {
     const whereParts = [];
     const params = [];
 
-    if (employee_id) {
-      whereParts.push("la.employee_id = ?");
-      params.push(employee_id);
-    } else if (['SUPERADMIN', 'ADMIN', 'HR', 'HRMANAGER', 'HRADMIN', 'BRANCHMANAGER'].includes(userRole)) {
-      // Full view
-    } else if (['TEAMLEADER', 'TEAMLEAD', 'LEAD'].includes(userRole)) {
-      whereParts.push(`(
-        (e.team_id IS NOT NULL AND e.team_id = ?) 
-        OR e.id = ? 
-        OR e.team_id IN (SELECT id FROM teams WHERE team_lead_id = ?)
-      )`);
-      params.push(currentTeamId || 0, currentEmpId || 0, currentEmpId || 0);
+    const isAdminOrHR = ['SUPERADMIN', 'ADMIN', 'HR', 'HRMANAGER', 'HRADMIN', 'BRANCHMANAGER'].includes(userRole);
+    const isTL = ['TEAMLEADER', 'TEAMLEAD', 'LEAD'].includes(userRole);
+
+    if (isAdminOrHR) {
+      if (employee_id) {
+        whereParts.push("la.employee_id = ?");
+        params.push(employee_id);
+      }
+    } else if (isTL) {
+      if (employee_id) {
+        whereParts.push("la.employee_id = ? AND ((e.team_id IS NOT NULL AND e.team_id = ?) OR e.id = ? OR e.team_id IN (SELECT id FROM teams WHERE team_lead_id = ?))");
+        params.push(employee_id, currentTeamId || 0, currentEmpId || 0, currentEmpId || 0);
+      } else {
+        whereParts.push(`(
+          (e.team_id IS NOT NULL AND e.team_id = ?) 
+          OR e.id = ? 
+          OR e.team_id IN (SELECT id FROM teams WHERE team_lead_id = ?)
+        )`);
+        params.push(currentTeamId || 0, currentEmpId || 0, currentEmpId || 0);
+      }
     } else {
+      // Regular employee can ONLY see their own applications
       whereParts.push("la.employee_id = ?");
       params.push(currentEmpId || 0);
     }
@@ -405,6 +414,26 @@ exports.submitApplication = async (req, res) => {
     const requestedDays = Math.ceil((eDate - sDate) / (1000 * 60 * 60 * 24)) + 1;
     if (requestedDays <= 0) {
       return res.status(400).json({ success: false, message: "Invalid date range." });
+    }
+
+    // Check for overlapping active or pending leave applications for this employee
+    const overlapRows = await new Promise(r => db.query(
+      `SELECT id, start_date, end_date, status 
+       FROM leave_applications 
+       WHERE employee_id = ? 
+         AND status NOT IN ('Rejected', 'Cancelled')
+         AND start_date <= ? 
+         AND end_date >= ?
+       LIMIT 1`,
+      [targetEmpId, end_date, start_date],
+      (err, rows) => r(rows || [])
+    ));
+
+    if (overlapRows && overlapRows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "A leave request already exists for the selected date range."
+      });
     }
 
     // Resolve Leave Type
